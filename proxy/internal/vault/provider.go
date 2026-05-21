@@ -14,10 +14,10 @@ func (p StaticTokenProvider) Token(context.Context) (string, error) {
 	return p.Value, nil
 }
 
-// Err: production placeholder until vault-agent SO_PEERCRED (task 11).
+// ErrTokenProviderUnavailable is returned when no vault token source is configured.
 var ErrTokenProviderUnavailable = errors.New("vault token provider not configured")
 
-// UnavailableTokenProvider always fails; use until SO_PEERCRED token reader exists.
+// UnavailableTokenProvider always fails; use when VAULT_AGENT_SOCKET is unset.
 type UnavailableTokenProvider struct{}
 
 func (UnavailableTokenProvider) Token(context.Context) (string, error) {

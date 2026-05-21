@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
@@ -39,8 +41,33 @@ func main() {
 		addr = v
 	}
 
-	vaultCfg := vault.SignConfig{VaultAddr: os.Getenv("LUNA_VAULT_ADDR")}
-	handler := api.NewServer(cfg, store, replay, vaultCfg, vault.UnavailableTokenProvider{})
+	vaultAddr := os.Getenv("LUNA_VAULT_ADDR")
+	if vaultAddr == "" {
+		vaultAddr = os.Getenv("VAULT_ADDR")
+	}
+	vaultCfg := vault.SignConfig{VaultAddr: vaultAddr}
+	if mount := os.Getenv("VAULT_SSH_MOUNT"); mount != "" {
+		role := os.Getenv("VAULT_SSH_ROLE")
+		if role == "" {
+			role = "agent-role"
+		}
+		vaultCfg.SignPath = fmt.Sprintf("/v1/%s/sign/%s", mount, role)
+	}
+
+	var tokens vault.TokenProvider = vault.UnavailableTokenProvider{}
+	if sock := os.Getenv("VAULT_AGENT_SOCKET"); sock != "" {
+		uidStr := os.Getenv("VAULT_AGENT_UID")
+		if uidStr == "" {
+			log.Fatal("VAULT_AGENT_UID required when VAULT_AGENT_SOCKET is set")
+		}
+		uid, err := strconv.Atoi(uidStr)
+		if err != nil {
+			log.Fatalf("VAULT_AGENT_UID: %v", err)
+		}
+		tokens = vault.AgentTokenProvider{SocketPath: sock, AllowedUID: uid}
+	}
+
+	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens)
 	srv := api.NewHTTPServer(addr, handler, tlsCfg)
 	log.Printf("luna-proxy listening on %s", addr)
 	if err := srv.ListenAndServeTLS("", ""); err != nil {
