@@ -4,65 +4,14 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/tls"
-	"crypto/x509"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/ba0f3/luna-ztrust/sdk/sign"
 )
-
-func testCADir(t *testing.T) string {
-	t.Helper()
-	return filepath.Join("..", "..", "testdata", "ca")
-}
-
-func loadTestTLSConfigs(t *testing.T) (server, client *tls.Config) {
-	t.Helper()
-	dir := testCADir(t)
-
-	caPEM, err := os.ReadFile(filepath.Join(dir, "ca.crt"))
-	if err != nil {
-		t.Fatalf("read ca.crt: %v", err)
-	}
-	caPool := x509.NewCertPool()
-	if !caPool.AppendCertsFromPEM(caPEM) {
-		t.Fatal("append ca.crt")
-	}
-
-	serverCert, err := tls.LoadX509KeyPair(
-		filepath.Join(dir, "server.crt"),
-		filepath.Join(dir, "server.key"),
-	)
-	if err != nil {
-		t.Fatalf("load server cert: %v", err)
-	}
-	clientCert, err := tls.LoadX509KeyPair(
-		filepath.Join(dir, "client.crt"),
-		filepath.Join(dir, "client.key"),
-	)
-	if err != nil {
-		t.Fatalf("load client cert: %v", err)
-	}
-
-	server = &tls.Config{
-		Certificates: []tls.Certificate{serverCert},
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    caPool,
-		MinVersion:   tls.VersionTLS12,
-	}
-	client = &tls.Config{
-		Certificates: []tls.Certificate{clientCert},
-		RootCAs:      caPool,
-		ServerName:   "localhost",
-		MinVersion:   tls.VersionTLS12,
-	}
-	return server, client
-}
 
 func TestBodyHMACRoundTrip(t *testing.T) {
 	body := []byte(`{"target_user":"u"}`)

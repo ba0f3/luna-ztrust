@@ -1,0 +1,53 @@
+package sdk
+
+import (
+	"context"
+	"crypto/ed25519"
+	"crypto/tls"
+	"crypto/x509"
+	"time"
+
+	"github.com/ba0f3/luna-ztrust/sdk/sign"
+	"golang.org/x/crypto/ssh"
+)
+
+// CertRequest identifies the SSH session to certify.
+type CertRequest struct {
+	TargetUser string
+	TargetIP   string
+}
+
+// Config configures the Luna SDK HTTP client.
+type Config struct {
+	ProxyURL   string
+	TLSCert    tls.Certificate
+	TLSRootCAs *x509.CertPool
+	Timeout    time.Duration
+}
+
+// Client requests ephemeral SSH certificates from luna-proxy.
+type Client struct {
+	inner *sign.Client
+}
+
+// NewClient creates an SDK client backed by the sign HTTP transport.
+func NewClient(cfg Config) (*Client, error) {
+	inner, err := sign.NewClient(sign.Config{
+		ProxyURL:   cfg.ProxyURL,
+		TLSCert:    cfg.TLSCert,
+		TLSRootCAs: cfg.TLSRootCAs,
+		Timeout:    cfg.Timeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Client{inner: inner}, nil
+}
+
+// RequestCertificate obtains a signed SSH user certificate and ephemeral private key.
+func (c *Client) RequestCertificate(ctx context.Context, req CertRequest) (*ssh.Certificate, ed25519.PrivateKey, error) {
+	return c.inner.RequestCertificate(ctx, sign.CertRequest{
+		TargetUser: req.TargetUser,
+		TargetIP:   req.TargetIP,
+	})
+}
