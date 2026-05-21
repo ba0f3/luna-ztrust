@@ -45,7 +45,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, _ := s.store.Create(req.TargetUser, req.TargetIP)
+	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	_ = json.NewEncoder(w).Encode(signResponse{TxID: tx.ID})

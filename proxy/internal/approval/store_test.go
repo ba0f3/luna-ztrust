@@ -11,7 +11,7 @@ import (
 
 func TestStoreApproveWakesWaiter(t *testing.T) {
 	s := approval.NewStore(60 * time.Second)
-	tx, _ := s.Create("deploy", "10.0.0.1")
+	tx, _ := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA")
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		s.Approve(tx.ID, "certpem")
@@ -28,7 +28,7 @@ func TestStoreApproveWakesWaiter(t *testing.T) {
 func TestStoreDevBypass(t *testing.T) {
 	s := approval.NewStore(60 * time.Second)
 	s.SetConfig(config.Config{Env: "dev"})
-	tx, ch := s.Create("deploy", "10.0.0.1")
+	tx, ch := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA")
 	select {
 	case res := <-ch:
 		if res.Err != nil {

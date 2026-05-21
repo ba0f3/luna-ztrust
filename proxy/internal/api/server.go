@@ -14,12 +14,17 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
 )
+
+// TokenProvider supplies a Vault API token for SSH CA signing.
+type TokenProvider = vault.TokenProvider
 
 type tlsConnKey struct{}
 
 // NewServer returns an HTTP handler for sign, wait, and health routes.
-func NewServer(cfg config.Config, store *approval.Store, replay *auth.ReplayLRU) http.Handler {
+func NewServer(cfg config.Config, store *approval.Store, replay *auth.ReplayLRU, vaultCfg vault.SignConfig, tokens TokenProvider) http.Handler {
+	store.SetVault(vaultCfg, tokens)
 	s := &server{
 		cfg:    cfg,
 		store:  store,

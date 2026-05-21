@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -26,6 +27,7 @@ type Transaction struct {
 	ID         string
 	TargetUser string
 	TargetIP   string
+	PublicKey  string
 	State      State
 	CreatedAt  time.Time
 }
@@ -45,10 +47,12 @@ var (
 
 // Store holds in-flight approval transactions.
 type Store struct {
-	mu      sync.Mutex
-	cfg     config.Config
-	timeout time.Duration
-	txs     map[string]*txEntry
+	mu       sync.Mutex
+	cfg      config.Config
+	vaultCfg vault.SignConfig
+	tokens   vault.TokenProvider
+	timeout  time.Duration
+	txs      map[string]*txEntry
 }
 
 type txEntry struct {
@@ -77,19 +81,28 @@ func (s *Store) SetConfig(cfg config.Config) {
 	}
 }
 
+// SetVault configures Vault SSH signing used when Approve is called and VaultAddr is set.
+func (s *Store) SetVault(cfg vault.SignConfig, tokens vault.TokenProvider) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.vaultCfg = cfg
+	s.tokens = tokens
+}
+
 func newTxID() string {
 	return "tx_" + ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
 }
 
 // Create registers a pending transaction and returns its metadata and result channel.
-// When cfg.Env is "dev", the transaction is auto-approved with placeholder cert "dev-cert".
-func (s *Store) Create(targetUser, targetIP string) (*Transaction, <-chan Result) {
+// When cfg.Env is "dev" and VaultAddr is unset, auto-approves with placeholder cert "dev-cert".
+func (s *Store) Create(targetUser, targetIP, publicKey string) (*Transaction, <-chan Result) {
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
 		ID:         id,
 		TargetUser: targetUser,
 		TargetIP:   targetIP,
+		PublicKey:  publicKey,
 		State:      StatePending,
 		CreatedAt:  time.Now(),
 	}
@@ -101,6 +114,7 @@ func (s *Store) Create(targetUser, targetIP string) (*Transaction, <-chan Result
 	s.txs[id] = entry
 	timeout := s.timeout
 	cfg := s.cfg
+	vaultAddr := s.vaultCfg.VaultAddr
 	s.mu.Unlock()
 
 	entry.timer = time.AfterFunc(timeout, func() {
@@ -108,15 +122,59 @@ func (s *Store) Create(targetUser, targetIP string) (*Transaction, <-chan Result
 	})
 
 	if cfg.Env == "dev" {
-		go s.Approve(id, "dev-cert")
+		if vaultAddr != "" {
+			go s.approveViaVault(context.Background(), id)
+		} else {
+			go s.Approve(id, "dev-cert")
+		}
 	}
 
 	return tx, ch
 }
 
 // Approve marks the transaction approved and delivers certPEM to waiters.
+// When VaultAddr is configured, certPEM is ignored and the cert is obtained from Vault.
 func (s *Store) Approve(txID, certPEM string) {
+	s.mu.Lock()
+	vaultAddr := s.vaultCfg.VaultAddr
+	s.mu.Unlock()
+	if vaultAddr != "" {
+		s.approveViaVault(context.Background(), txID)
+		return
+	}
 	s.finish(txID, StateApproved, &Result{Cert: certPEM})
+}
+
+func (s *Store) approveViaVault(ctx context.Context, txID string) {
+	entry := s.getEntry(txID)
+	if entry == nil {
+		return
+	}
+	if s.tokens == nil {
+		s.finish(txID, StateDenied, &Result{Err: vault.ErrTokenProviderUnavailable})
+		return
+	}
+	token, err := s.tokens.Token(ctx)
+	if err != nil {
+		s.finish(txID, StateDenied, &Result{Err: err})
+		return
+	}
+	cert, err := vault.SignSSHKey(ctx, s.vaultCfg, token, entry.tx.PublicKey, entry.tx.TargetUser, entry.tx.TargetIP)
+	if err != nil {
+		s.finish(txID, StateDenied, &Result{Err: err})
+		return
+	}
+	s.finish(txID, StateApproved, &Result{Cert: cert})
+}
+
+func (s *Store) getEntry(txID string) *txEntry {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, ok := s.txs[txID]
+	if !ok || entry.result != nil {
+		return nil
+	}
+	return entry
 }
 
 // Deny marks the transaction denied and delivers ErrDenied to waiters.

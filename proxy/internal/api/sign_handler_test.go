@@ -24,6 +24,7 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -136,12 +137,12 @@ type testEnv struct {
 	client *mtlsClient
 }
 
-func startTestServer(t *testing.T, cfg config.Config) *testEnv {
+func startTestServer(t *testing.T, cfg config.Config, vaultCfg vault.SignConfig, tokens vault.TokenProvider) *testEnv {
 	t.Helper()
 	store := approval.NewStore(cfg.ApprovalTimeout)
 	store.SetConfig(cfg)
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, store, replay)
+	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens)
 
 	serverTLS, clientTLS := loadTestTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)
@@ -231,14 +232,19 @@ func postSign(t *testing.T, env *testEnv, rawBody []byte) string {
 	return out.TxID
 }
 
+func startTestServerDefault(t *testing.T, cfg config.Config) *testEnv {
+	t.Helper()
+	return startTestServer(t, cfg, vault.SignConfig{}, nil)
+}
+
 func TestPostSignReturns202(t *testing.T) {
-	env := startTestServer(t, config.Config{ApprovalTimeout: 60 * time.Second})
+	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 60 * time.Second})
 	body := buildSignBody(t, "deploy", "10.0.0.5")
 	postSign(t, env, body)
 }
 
 func TestGetWaitReturns200AfterApprove(t *testing.T) {
-	env := startTestServer(t, config.Config{ApprovalTimeout: 60 * time.Second})
+	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 60 * time.Second})
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
 
 	env.store.Approve(txID, "ssh-ed25519-cert-v01@openssh.com AAAAtest")
@@ -270,7 +276,7 @@ func TestGetWaitReturns200AfterApprove(t *testing.T) {
 }
 
 func TestGetWaitTimeout408(t *testing.T) {
-	env := startTestServer(t, config.Config{ApprovalTimeout: 50 * time.Millisecond})
+	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 50 * time.Millisecond})
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
 
 	resp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
@@ -286,7 +292,7 @@ func TestGetWaitTimeout408(t *testing.T) {
 }
 
 func TestHealthzNoMTLS(t *testing.T) {
-	env := startTestServer(t, config.Config{})
+	env := startTestServerDefault(t, config.Config{})
 	_, clientTLS := loadTestTLSConfigs(t)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
@@ -308,7 +314,7 @@ func TestHealthzNoMTLS(t *testing.T) {
 }
 
 func TestGetWaitNotFound404(t *testing.T) {
-	env := startTestServer(t, config.Config{ApprovalTimeout: time.Second})
+	env := startTestServerDefault(t, config.Config{ApprovalTimeout: time.Second})
 	resp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/tx_doesnotexist/wait")
 	if err != nil {
 		t.Fatal(err)
@@ -320,7 +326,7 @@ func TestGetWaitNotFound404(t *testing.T) {
 }
 
 func TestPostSignReplay409(t *testing.T) {
-	env := startTestServer(t, config.Config{ApprovalTimeout: 60 * time.Second})
+	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 60 * time.Second})
 	body := buildSignBody(t, "deploy", "10.0.0.5")
 	postSign(t, env, body)
 
@@ -347,4 +353,84 @@ func TestPostSignReplay409(t *testing.T) {
 	if resp.StatusCode != http.StatusConflict {
 		t.Fatalf("replay status = %d, want 409", resp.StatusCode)
 	}
+}
+
+func TestApproveUsesVaultWhenConfigured(t *testing.T) {
+	const signed = "ssh-ed25519-cert-v01@openssh.com AAAAvaultsigned"
+	vaultSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Vault-Token") != "test-token" {
+			t.Errorf("token = %q", r.Header.Get("X-Vault-Token"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": map[string]string{"signed_key": signed},
+		})
+	}))
+	defer vaultSrv.Close()
+
+	env := startTestServer(t, config.Config{ApprovalTimeout: 60 * time.Second}, vault.SignConfig{
+		VaultAddr: vaultSrv.URL,
+	}, vault.StaticTokenProvider{Value: "test-token"})
+
+	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
+	env.store.Approve(txID, "ignored-placeholder")
+
+	resp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("status = %d, body = %s", resp.StatusCode, body)
+	}
+	var out struct {
+		SSHCertificate string `json:"ssh_certificate"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.SSHCertificate != signed {
+		t.Fatalf("cert = %q, want %q", out.SSHCertificate, signed)
+	}
+}
+
+func TestDevBypassUsesVaultWhenConfigured(t *testing.T) {
+	const signed = "ssh-ed25519-cert-v01@openssh.com AAAAutodev"
+	vaultSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": map[string]string{"signed_key": signed},
+		})
+	}))
+	defer vaultSrv.Close()
+
+	env := startTestServer(t, config.Config{
+		Env:             "dev",
+		ApprovalTimeout: 60 * time.Second,
+	}, vault.SignConfig{VaultAddr: vaultSrv.URL}, vault.StaticTokenProvider{Value: "test-token"})
+
+	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		resp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.StatusCode == http.StatusOK {
+			var out struct {
+				SSHCertificate string `json:"ssh_certificate"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+			if out.SSHCertificate != signed {
+				t.Fatalf("cert = %q, want %q", out.SSHCertificate, signed)
+			}
+			return
+		}
+		resp.Body.Close()
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("dev vault auto-approve did not complete")
 }
