@@ -31,7 +31,7 @@ fi
 
 echo "Writing agent-role..."
 vault write ssh-agent-signer/roles/agent-role \
-	key_type=ed25519 \
+	key_type=ca \
 	allow_user_certificates=true \
 	allowed_users='*' \
 	allowed_critical_options=source-address \
