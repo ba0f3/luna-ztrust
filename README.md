@@ -88,6 +88,27 @@ Generate test mTLS material (when `scripts/gen-test-ca.sh` is present):
 make testdata
 ```
 
+## E2E
+
+Local end-to-end stack: Vault dev mode, SSH CA setup (`ssh-agent-signer`), and `luna-proxy` with `LUNA_ENV=dev` (auto-approve) and test mTLS certificates.
+
+**Prerequisites:** Docker, Docker Compose v2, OpenSSL (`make testdata`).
+
+```bash
+make testdata
+make e2e-up          # starts vault, vault-setup, luna-proxy on :8443
+make e2e-test        # SDK sign client against https://localhost:8443
+make e2e-down        # tear down volumes
+```
+
+Manual test run:
+
+```bash
+LUNA_PROXY_URL=https://localhost:8443 go test -tags=e2e ./sdk/sign/... -v
+```
+
+The `e2e` build tag skips automatically when Docker is unavailable or the stack is not running. For E2E only, `luna-proxy` accepts `LUNA_VAULT_TOKEN` (dev root token); production should use `VAULT_AGENT_SOCKET` instead.
+
 ## Configuration (overview)
 
 ### luna-proxy

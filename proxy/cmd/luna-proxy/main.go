@@ -58,7 +58,9 @@ func main() {
 	}
 
 	var tokens vault.TokenProvider = vault.UnavailableTokenProvider{}
-	if sock := os.Getenv("VAULT_AGENT_SOCKET"); sock != "" {
+	if token := os.Getenv("LUNA_VAULT_TOKEN"); token != "" {
+		tokens = vault.StaticTokenProvider{Value: token}
+	} else if sock := os.Getenv("VAULT_AGENT_SOCKET"); sock != "" {
 		uidStr := os.Getenv("VAULT_AGENT_UID")
 		if uidStr == "" {
 			log.Fatal("VAULT_AGENT_UID required when VAULT_AGENT_SOCKET is set")
