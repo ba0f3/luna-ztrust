@@ -1,0 +1,20 @@
+# Build luna-proxy for E2E docker-compose (repo root context).
+FROM golang:1.23-bookworm AS build
+
+WORKDIR /build
+COPY sdk/ sdk/
+COPY proxy/ proxy/
+
+WORKDIR /build/proxy
+ENV GOWORK=off
+RUN CGO_ENABLED=0 go build -o /out/luna-proxy ./cmd/luna-proxy
+
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /out/luna-proxy /usr/local/bin/luna-proxy
+
+ENTRYPOINT ["luna-proxy"]
