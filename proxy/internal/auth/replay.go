@@ -88,13 +88,5 @@ func (r *ReplayLRU) evictExpired(now time.Time) {
 
 // ValidateTimestamp checks that ts is within ±windowSec of the current time.
 func ValidateTimestamp(ts int64, windowSec int) error {
-	now := time.Now().Unix()
-	delta := now - ts
-	if delta < 0 {
-		delta = -delta
-	}
-	if delta > int64(windowSec) {
-		return ErrTimestampOutsideWindow
-	}
-	return nil
+	return ValidateTimestampAt(ts, time.Now(), windowSec)
 }
