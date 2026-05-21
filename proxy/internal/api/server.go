@@ -23,6 +23,7 @@ type TokenProvider = vault.TokenProvider
 type tlsConnKey struct{}
 
 // NewServer returns an HTTP handler for sign, wait, webhook, and health routes.
+// GET /healthz is registered without the mTLS gate: probes may use TLS without a client certificate.
 func NewServer(cfg config.Config, store *approval.Store, replay *auth.ReplayLRU, vaultCfg vault.SignConfig, tokens TokenProvider, telegram *approval.Notifier) http.Handler {
 	store.SetVault(vaultCfg, tokens)
 	s := &server{
@@ -56,6 +57,7 @@ func (s *server) withMTLS(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// handleHealthz is intentionally outside withMTLS so load balancers can probe without a client cert.
 func (s *server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok\n"))

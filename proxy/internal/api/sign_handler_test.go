@@ -311,6 +311,13 @@ func TestHealthzNoMTLS(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d", resp.StatusCode)
 	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ok\n" {
+		t.Fatalf("body = %q, want ok\\n", body)
+	}
 }
 
 func TestGetWaitNotFound404(t *testing.T) {

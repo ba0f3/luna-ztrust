@@ -21,14 +21,17 @@ type waitResponse struct {
 }
 
 func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
+		s.logSignRequest(r, start, "", "", "", "read_body_error")
 		http.Error(w, "read body", http.StatusBadRequest)
 		return
 	}
 
 	var req auth.SignRequest
 	if err := json.Unmarshal(rawBody, &req); err != nil {
+		s.logSignRequest(r, start, "", "", "", "invalid_json")
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
@@ -36,11 +39,13 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 	conn, ok := tlsConnFromContext(r.Context())
 	if !ok {
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "tls_required")
 		http.Error(w, "tls connection required", http.StatusUnauthorized)
 		return
 	}
 
 	if err := auth.ValidateSignRequest(conn, rawBody, &req, time.Now(), s.replay); err != nil {
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, signOutcomeFromAuthErr(err))
 		writeAuthError(w, err)
 		return
 	}
@@ -51,6 +56,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 			_ = s.telegram.Notify(r.Context(), tx)
 		}()
 	}
+	s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "accepted")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	_ = json.NewEncoder(w).Encode(signResponse{TxID: tx.ID})
