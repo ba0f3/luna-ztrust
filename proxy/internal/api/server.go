@@ -22,25 +22,28 @@ type TokenProvider = vault.TokenProvider
 
 type tlsConnKey struct{}
 
-// NewServer returns an HTTP handler for sign, wait, and health routes.
-func NewServer(cfg config.Config, store *approval.Store, replay *auth.ReplayLRU, vaultCfg vault.SignConfig, tokens TokenProvider) http.Handler {
+// NewServer returns an HTTP handler for sign, wait, webhook, and health routes.
+func NewServer(cfg config.Config, store *approval.Store, replay *auth.ReplayLRU, vaultCfg vault.SignConfig, tokens TokenProvider, telegram *approval.Notifier) http.Handler {
 	store.SetVault(vaultCfg, tokens)
 	s := &server{
-		cfg:    cfg,
-		store:  store,
-		replay: replay,
+		cfg:      cfg,
+		store:    store,
+		replay:   replay,
+		telegram: telegram,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("POST /api/v1/ssh/sign", s.withMTLS(s.handleSign))
 	mux.HandleFunc("GET /api/v1/ssh/sign/{tx_id}/wait", s.withMTLS(s.handleWait))
+	mux.HandleFunc("POST /api/v1/telegram/webhook", s.handleTelegramWebhook)
 	return mux
 }
 
 type server struct {
-	cfg    config.Config
-	store  *approval.Store
-	replay *auth.ReplayLRU
+	cfg      config.Config
+	store    *approval.Store
+	replay   *auth.ReplayLRU
+	telegram *approval.Notifier
 }
 
 func (s *server) withMTLS(next http.HandlerFunc) http.HandlerFunc {

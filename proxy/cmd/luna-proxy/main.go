@@ -16,8 +16,11 @@ import (
 
 func main() {
 	cfg := config.Config{
-		Env:             os.Getenv("LUNA_ENV"),
-		ApprovalTimeout: 60 * time.Second,
+		Env:                   os.Getenv("LUNA_ENV"),
+		ApprovalTimeout:       60 * time.Second,
+		TelegramBotToken:      os.Getenv("TELEGRAM_BOT_TOKEN"),
+		TelegramWebhookSecret: os.Getenv("TELEGRAM_WEBHOOK_SECRET"),
+		TelegramChatID:        os.Getenv("TELEGRAM_CHAT_ID"),
 	}
 	if v := os.Getenv("LUNA_APPROVAL_TIMEOUT"); v != "" {
 		d, err := time.ParseDuration(v)
@@ -67,7 +70,11 @@ func main() {
 		tokens = vault.AgentTokenProvider{SocketPath: sock, AllowedUID: uid}
 	}
 
-	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens)
+	telegram := approval.NewNotifier(approval.NotifierConfig{
+		BotToken: cfg.TelegramBotToken,
+		ChatID:   cfg.TelegramChatID,
+	})
+	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens, telegram)
 	srv := api.NewHTTPServer(addr, handler, tlsCfg)
 	log.Printf("luna-proxy listening on %s", addr)
 	if err := srv.ListenAndServeTLS("", ""); err != nil {

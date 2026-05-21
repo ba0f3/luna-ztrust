@@ -142,7 +142,7 @@ func startTestServer(t *testing.T, cfg config.Config, vaultCfg vault.SignConfig,
 	store := approval.NewStore(cfg.ApprovalTimeout)
 	store.SetConfig(cfg)
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens)
+	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens, nil)
 
 	serverTLS, clientTLS := loadTestTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)

@@ -97,7 +97,8 @@ make testdata
 | `LUNA_ENV=dev` | Auto-approve (proxy only; not client-settable) |
 | `VAULT_AGENT_SOCKET` | Unix path for Vault token handoff |
 | `TELEGRAM_BOT_TOKEN` | Outbound Telegram API |
-| `TELEGRAM_WEBHOOK_SECRET` | Webhook validation |
+| `TELEGRAM_WEBHOOK_SECRET` | Webhook validation (`X-Telegram-Bot-Api-Secret-Token`) |
+| `TELEGRAM_CHAT_ID` | Admin chat for approval prompts |
 
 ### luna-agent
 

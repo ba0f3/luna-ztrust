@@ -46,6 +46,11 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey)
+	if s.cfg.Env != "dev" && s.telegram != nil {
+		go func() {
+			_ = s.telegram.Notify(r.Context(), tx)
+		}()
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	_ = json.NewEncoder(w).Encode(signResponse{TxID: tx.ID})
