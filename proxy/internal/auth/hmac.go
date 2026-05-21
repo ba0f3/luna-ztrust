@@ -30,6 +30,11 @@ func VerifyBodyHMAC(conn *tls.Conn, body []byte, headerHex string) error {
 	return nil
 }
 
+// ComputeBodyHMAC returns HMAC-SHA256 of body using the TLS exporter key.
+func ComputeBodyHMAC(conn *tls.Conn, body []byte) ([]byte, error) {
+	return computeBodyHMAC(conn, body)
+}
+
 func computeBodyHMAC(conn *tls.Conn, body []byte) ([]byte, error) {
 	state := conn.ConnectionState()
 	key, err := state.ExportKeyingMaterial(exporterLabel, nil, 32)
