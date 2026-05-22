@@ -153,6 +153,7 @@ PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed w
 | Change type | Update |
 |-------------|--------|
 | User-facing behavior, env vars, API | `README.md` |
+| Vault / vault-agent / target `sshd` setup | `docs/setup.md` |
 | Agent architecture, security, build | `AGENTS.md` |
 | Approved component design | `docs/superpowers/specs/2026-05-21-luna-core-design.md` |
 | Task breakdown / file map | `docs/superpowers/plans/2026-05-21-luna-core.md` |

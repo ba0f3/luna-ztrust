@@ -155,6 +155,7 @@ Auth order on sign requests: mTLS → HMAC (`X-Luna-Body-Mac` via TLS exporter `
 
 | Document | Contents |
 |----------|----------|
+| [docs/setup.md](docs/setup.md) | Vault SSH CA, vault-agent auto-auth, target `sshd` trust |
 | [docs/design-specification.md](docs/design-specification.md) | North-star system design (Vault phases, zero-disk keys, lunacli) |
 | [docs/superpowers/specs/2026-05-21-luna-core-design.md](docs/superpowers/specs/2026-05-21-luna-core-design.md) | Approved design for sdk, proxy, agent |
 | [docs/superpowers/plans/2026-05-21-luna-core.md](docs/superpowers/plans/2026-05-21-luna-core.md) | Phased implementation plan |
