@@ -16,6 +16,7 @@ services:
       LUNA_MTLS_SERVER_CERT: /etc/luna/certs/server.crt
       LUNA_MTLS_SERVER_KEY: /etc/luna/certs/server.key
       LUNA_MTLS_CLIENT_CA: /etc/luna/certs/ca.crt
+      LUNA_CONTROL_SOCKET: /run/luna/control.sock
     volumes:
       - ../testdata/ca:/etc/luna/certs:ro
       - ../testdata/ssh:/etc/luna/ssh:ro

@@ -3,7 +3,6 @@
 package sign_test
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -20,8 +19,6 @@ import (
 	"github.com/ba0f3/luna-ztrust/sdk/sign"
 	"golang.org/x/crypto/ssh"
 )
-
-const e2eKeyPassphrase = "test-pass"
 
 func TestE2ERequestCertificate(t *testing.T) {
 	if !dockerAvailable() {
@@ -127,38 +124,44 @@ func e2eProxyReady(t *testing.T) bool {
 
 func e2eUnseal(t *testing.T, proxyURL string, adminCert tls.Certificate, pool *x509.CertPool) {
 	t.Helper()
-	body, err := json.Marshal(map[string]string{"passphrase": e2eKeyPassphrase})
-	if err != nil {
-		t.Fatal(err)
+	if e2eProxyUnsealed(t, proxyURL, adminCert, pool) {
+		return
 	}
-	req, err := http.NewRequest(http.MethodPost, proxyURL+"/api/v1/admin/unseal", bytes.NewReader(body))
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
+	t.Fatal("proxy keystore sealed; run: make e2e-unseal")
+}
 
-	client := &http.Client{
-		Timeout: 15 * time.Second,
+func e2eProxyUnsealed(t *testing.T, proxyURL string, clientCert tls.Certificate, pool *x509.CertPool) bool {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, proxyURL+"/api/v1/capabilities", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				Certificates: []tls.Certificate{adminCert},
+				Certificates: []tls.Certificate{clientCert},
 				RootCAs:      pool,
 				MinVersion:   tls.VersionTLS12,
 			},
 		},
 	}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
-		t.Fatalf("admin unseal: %v", err)
+		t.Fatalf("capabilities: %v", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusGone {
-		t.Skip("HTTP admin unseal removed; E2E must use luna-proxy key load on control socket")
-	}
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
-		t.Fatalf("admin unseal status %d: %s", resp.StatusCode, b)
+		t.Fatalf("capabilities status %d: %s", resp.StatusCode, b)
 	}
+	var caps struct {
+		Sealed bool `json:"sealed"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&caps); err != nil {
+		t.Fatal(err)
+	}
+	return !caps.Sealed
 }
 
 func e2eCADir(t *testing.T) string {

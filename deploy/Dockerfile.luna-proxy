@@ -18,3 +18,4 @@ RUN apt-get update \
 COPY --from=build /out/luna-proxy /usr/local/bin/luna-proxy
 
 ENTRYPOINT ["luna-proxy"]
+CMD ["serve"]
