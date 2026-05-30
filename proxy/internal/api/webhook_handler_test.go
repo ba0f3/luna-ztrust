@@ -44,6 +44,7 @@ func TestTelegramWebhookApprove(t *testing.T) {
 	env := startTestServerDefault(t, config.Config{
 		ApprovalTimeout:       60 * time.Second,
 		TelegramWebhookSecret: "whsec-test",
+		TelegramChatID:        "4242",
 		AllowedTTLSeconds:     []int{180, 300, 900},
 	})
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
@@ -78,6 +79,7 @@ func TestTelegramWebhookDeny(t *testing.T) {
 	env := startTestServerDefault(t, config.Config{
 		ApprovalTimeout:       60 * time.Second,
 		TelegramWebhookSecret: "whsec-test",
+		TelegramChatID:        "4242",
 	})
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
 
@@ -85,6 +87,9 @@ func TestTelegramWebhookDeny(t *testing.T) {
 		"callback_query": map[string]any{
 			"id":   "cq2",
 			"data": "deny:" + txID,
+			"message": map[string]any{
+				"chat": map[string]any{"id": 4242},
+			},
 		},
 	}
 	raw, _ := json.Marshal(upd)
@@ -101,6 +106,40 @@ func TestTelegramWebhookDeny(t *testing.T) {
 	defer waitResp.Body.Close()
 	if waitResp.StatusCode != http.StatusForbidden {
 		t.Fatalf("wait status = %d, want 403", waitResp.StatusCode)
+	}
+}
+
+func TestTelegramWebhookWrongChatIgnored(t *testing.T) {
+	env := startTestServerDefault(t, config.Config{
+		ApprovalTimeout:       50 * time.Millisecond,
+		TelegramWebhookSecret: "whsec-test",
+		TelegramChatID:        "4242",
+	})
+	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
+
+	upd := map[string]any{
+		"callback_query": map[string]any{
+			"id":   "cq3",
+			"data": "approve:" + txID + ":300",
+			"message": map[string]any{
+				"chat": map[string]any{"id": 9999},
+			},
+		},
+	}
+	raw, _ := json.Marshal(upd)
+	resp := postTelegramWebhook(t, env, "whsec-test", raw)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("webhook status = %d", resp.StatusCode)
+	}
+
+	waitResp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer waitResp.Body.Close()
+	if waitResp.StatusCode != http.StatusRequestTimeout {
+		t.Fatalf("wait status = %d, want 408 (not approved)", waitResp.StatusCode)
 	}
 }
 
@@ -146,6 +185,7 @@ func TestSign_SecondRequestUsesLease(t *testing.T) {
 	cfg := config.Config{
 		ApprovalTimeout:       60 * time.Second,
 		TelegramWebhookSecret: "whsec-test",
+		TelegramChatID:        "99",
 		AllowedTTLSeconds:     []int{300},
 	}
 	env := startTestServer(t, cfg, nil)

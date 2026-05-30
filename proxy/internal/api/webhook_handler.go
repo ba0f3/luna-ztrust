@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 )
@@ -33,9 +35,6 @@ func (s *server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	secret := r.Header.Get("X-Telegram-Bot-Api-Secret-Token")
-	if secret == "" {
-		secret = r.URL.Query().Get("secret")
-	}
 	if subtle.ConstantTimeCompare([]byte(secret), []byte(s.cfg.TelegramWebhookSecret)) != 1 {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -63,19 +62,34 @@ func (s *server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if upd.CallbackQuery.Message == nil || !telegramChatAllowed(s.cfg.TelegramChatID, upd.CallbackQuery.Message.Chat.ID) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	switch action {
 	case "approve":
 		if ttl <= 0 {
 			ttl = DefaultTTLFromAllowed(s.cfg.AllowedTTLSeconds)
 		}
-		approver := ""
-		if upd.CallbackQuery.Message != nil {
-			approver = lease.FormatApproverChatID(upd.CallbackQuery.Message.Chat.ID)
-		}
+		approver := lease.FormatApproverChatID(upd.CallbackQuery.Message.Chat.ID)
 		s.store.Approve(txID, ttl, approver)
 	case "deny":
 		s.store.Deny(txID)
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// telegramChatAllowed reports whether chatID matches configured TELEGRAM_CHAT_ID.
+func telegramChatAllowed(configuredChatID string, chatID int64) bool {
+	configuredChatID = strings.TrimSpace(configuredChatID)
+	if configuredChatID == "" {
+		return false
+	}
+	allowed, err := strconv.ParseInt(configuredChatID, 10, 64)
+	if err != nil {
+		return false
+	}
+	return chatID == allowed
 }

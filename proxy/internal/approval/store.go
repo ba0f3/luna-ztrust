@@ -56,12 +56,13 @@ type Result struct {
 }
 
 var (
-	ErrNotFound       = errors.New("transaction not found")
-	ErrDenied         = errors.New("transaction denied")
-	ErrExpired        = errors.New("transaction expired")
-	ErrTimeout        = errors.New("approval timeout")
-	ErrSignerNotReady = errors.New("signer not configured")
-	ErrAgentSignData  = errors.New("agent_sign_data required for local-key mode")
+	ErrNotFound           = errors.New("transaction not found")
+	ErrDenied             = errors.New("transaction denied")
+	ErrExpired            = errors.New("transaction expired")
+	ErrTimeout            = errors.New("approval timeout")
+	ErrSignerNotReady     = errors.New("signer not configured")
+	ErrAgentSignData      = errors.New("agent_sign_data required for local-key mode")
+	ErrWaitClientMismatch = errors.New("client certificate mismatch")
 )
 
 // Store holds in-flight approval transactions.
@@ -210,17 +211,18 @@ func (s *Store) IssueFromLease(ctx context.Context, lookup lease.LookupKey, publ
 }
 
 // CreateInstantApproved registers a completed transaction for lease fast-path.
-func (s *Store) CreateInstantApproved(targetUser, targetIP, publicKey, sourceIP string, res Result) *Transaction {
+func (s *Store) CreateInstantApproved(targetUser, targetIP, publicKey, sourceIP, clientCertFP string, res Result) *Transaction {
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
-		ID:         id,
-		TargetUser: targetUser,
-		TargetIP:   targetIP,
-		PublicKey:  publicKey,
-		SourceIP:   sourceIP,
-		State:      StateApproved,
-		CreatedAt:  time.Now(),
+		ID:           id,
+		TargetUser:   targetUser,
+		TargetIP:     targetIP,
+		PublicKey:    publicKey,
+		SourceIP:     sourceIP,
+		ClientCertFP: clientCertFP,
+		State:        StateApproved,
+		CreatedAt:    time.Now(),
 	}
 	ch := make(chan Result, 1)
 	ch <- res
@@ -408,4 +410,15 @@ func (s *Store) remove(txID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.txs, txID)
+}
+
+// ClientCertFP returns the mTLS client cert fingerprint bound to txID.
+func (s *Store) ClientCertFP(txID string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, ok := s.txs[txID]
+	if !ok {
+		return "", false
+	}
+	return entry.tx.ClientCertFP, true
 }
