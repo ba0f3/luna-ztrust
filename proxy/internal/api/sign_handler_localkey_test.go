@@ -19,7 +19,7 @@ func startTestServerLocalKey(t *testing.T) *testEnv {
 		ApprovalTimeout: 60 * time.Second,
 		SignerMode:      approval.SignerModeLocalKey,
 	}
-	ks := keystore.New()
+	ks := keystore.NewWithMode(keystore.ModeLocalKey)
 	unsealTestKeystore(t, ks)
 	env := startTestServer(t, cfg, ks)
 	env.store.SetKeySigner(signing.NewLocalKey(ks))
@@ -30,7 +30,11 @@ func TestLocalKeySignReturnsSignature(t *testing.T) {
 	env := startTestServerLocalKey(t)
 
 	challenge := []byte("ssh-auth-challenge")
-	body := buildSignBodyWithAgentData(t, "deploy", "10.0.0.5", challenge)
+	fp, err := env.ks.SoleFingerprint()
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := buildSignBodyWithAgentData(t, "deploy", "10.0.0.5", challenge, fp)
 	txID := postSign(t, env, body)
 	env.store.Approve(txID, 5*time.Minute, "telegram:1")
 
@@ -53,7 +57,7 @@ func TestLocalKeySignReturnsSignature(t *testing.T) {
 	}
 }
 
-func buildSignBodyWithAgentData(t *testing.T, user, ip string, data []byte) []byte {
+func buildSignBodyWithAgentData(t *testing.T, user, ip string, data []byte, hostFP string) []byte {
 	t.Helper()
 	body := buildSignBody(t, user, ip)
 	var m map[string]any
@@ -61,6 +65,7 @@ func buildSignBodyWithAgentData(t *testing.T, user, ip string, data []byte) []by
 		t.Fatal(err)
 	}
 	m["agent_sign_data"] = base64.StdEncoding.EncodeToString(data)
+	m["host_key_fingerprint"] = hostFP
 	out, err := json.Marshal(m)
 	if err != nil {
 		t.Fatal(err)

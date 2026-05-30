@@ -25,8 +25,10 @@ type SignRequest struct {
 	TargetIP      string `json:"target_ip"`
 	Timestamp     int64  `json:"timestamp"`
 	PopSignature  string `json:"pop_signature"`
-	AgentSignData string `json:"agent_sign_data,omitempty"`
-	BodyMAC       string `json:"-"` // X-Luna-Body-Mac header, set by handler
+	AgentSignData      string `json:"agent_sign_data,omitempty"`
+	HostPublicKey      string `json:"host_public_key,omitempty"`
+	HostKeyFingerprint string `json:"host_key_fingerprint,omitempty"`
+	BodyMAC            string `json:"-"` // X-Luna-Body-Mac header, set by handler
 }
 
 // ValidateSignRequest runs HMAC, timestamp, replay, and PoP checks in that order.

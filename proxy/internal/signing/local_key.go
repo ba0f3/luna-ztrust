@@ -18,12 +18,15 @@ func NewLocalKey(ks *keystore.Keystore) *LocalKey {
 	return &LocalKey{ks: ks}
 }
 
-// SignAgent signs data using the hosted SSH private key (OpenSSH agent protocol).
-func (k *LocalKey) SignAgent(_ context.Context, data []byte) ([]byte, error) {
+// SignAgent signs data using the hosted SSH private key identified by hostFP.
+func (k *LocalKey) SignAgent(_ context.Context, hostFP string, data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty sign data")
 	}
-	signer, err := k.ks.SSHSigner()
+	if hostFP == "" {
+		return nil, fmt.Errorf("host key fingerprint required")
+	}
+	signer, err := k.ks.SignerForFingerprint(hostFP)
 	if err != nil {
 		return nil, err
 	}

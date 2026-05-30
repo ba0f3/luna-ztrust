@@ -48,8 +48,8 @@ func TestKeystore_UnsealLoadsSigner(t *testing.T) {
 	writeEncryptedKeyFile(t, path)
 
 	ks := keystore.New()
-	if err := ks.Unseal(path, testPassphrase); err != nil {
-		t.Fatalf("unseal: %v", err)
+	if _, err := ks.LoadPEMFile(path, testPassphrase, ""); err != nil {
+		t.Fatalf("load: %v", err)
 	}
 	if !ks.Available() {
 		t.Fatal("expected available after unseal")

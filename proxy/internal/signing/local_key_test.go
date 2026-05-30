@@ -27,21 +27,32 @@ func writeEncryptedKeyForHost(t *testing.T, priv ed25519.PrivateKey) string {
 	return path
 }
 
-func TestLocalKey_SignAgent(t *testing.T) {
-	ks := keystore.New()
-	path := writeEncryptedCA(t)
-	if err := ks.Unseal(path, "test-pass"); err != nil {
+func loadHostKeyPool(t *testing.T, path string) (*keystore.Keystore, string) {
+	t.Helper()
+	ks := keystore.NewWithMode(keystore.ModeLocalKey)
+	fp, err := ks.LoadPEMFile(path, "test-pass", "host")
+	if err != nil {
 		t.Fatal(err)
 	}
+	return ks, fp
+}
+
+func TestLocalKey_SignAgent(t *testing.T) {
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := writeEncryptedKeyForHost(t, priv)
+	ks, fp := loadHostKeyPool(t, path)
 
 	hostKey := signing.NewLocalKey(ks)
 	challenge := []byte("ssh-userauth challenge")
-	blob, err := hostKey.SignAgent(context.Background(), challenge)
+	blob, err := hostKey.SignAgent(context.Background(), fp, challenge)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	signer, err := ks.SSHSigner()
+	signer, err := ks.SignerForFingerprint(fp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,15 +68,12 @@ func TestLocalKey_SignAgentMatchesHostedKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ks := keystore.New()
 	path := writeEncryptedKeyForHost(t, priv)
-	if err := ks.Unseal(path, "test-pass"); err != nil {
-		t.Fatal(err)
-	}
+	ks, fp := loadHostKeyPool(t, path)
 
 	local := signing.NewLocalKey(ks)
 	data := []byte("session-id-123")
-	blob, err := local.SignAgent(context.Background(), data)
+	blob, err := local.SignAgent(context.Background(), fp, data)
 	if err != nil {
 		t.Fatal(err)
 	}
