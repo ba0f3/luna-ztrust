@@ -89,7 +89,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 	if s.cfg.Env != "dev" {
 		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData); ok {
-			tx := s.store.CreateInstantApproved(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, res)
+			tx := s.store.CreateInstantApproved(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, res)
 			s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "lease_hit")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
@@ -117,6 +117,12 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleWait(w http.ResponseWriter, r *http.Request) {
 	txID := r.PathValue("tx_id")
+	if bound, ok := s.store.ClientCertFP(txID); ok && bound != "" {
+		if clientCertFPFromRequest(r) != bound {
+			http.Error(w, approval.ErrWaitClientMismatch.Error(), http.StatusForbidden)
+			return
+		}
+	}
 	cert, signature, expiresAt, leaseExpiresAt, err := s.store.Wait(r.Context(), txID)
 	if err != nil {
 		writeWaitError(w, err)
@@ -161,6 +167,8 @@ func writeAuthError(w http.ResponseWriter, err error) {
 
 func writeWaitError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, approval.ErrWaitClientMismatch):
+		http.Error(w, err.Error(), http.StatusForbidden)
 	case errors.Is(err, approval.ErrDenied):
 		http.Error(w, err.Error(), http.StatusForbidden)
 	case errors.Is(err, approval.ErrTimeout):

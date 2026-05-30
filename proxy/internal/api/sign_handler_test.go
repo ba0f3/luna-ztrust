@@ -311,6 +311,35 @@ func TestGetWaitReturns200AfterApprove(t *testing.T) {
 	}
 }
 
+func TestGetWaitWrongClientCert403(t *testing.T) {
+	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 60 * time.Second})
+	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
+	env.store.Approve(txID, 5*time.Minute, "telegram:1")
+
+	dir := testCADir(t)
+	adminCert, err := tls.LoadX509KeyPair(
+		filepath.Join(dir, "admin-client.crt"),
+		filepath.Join(dir, "admin-client.key"),
+	)
+	if err != nil {
+		t.Fatalf("load admin client cert: %v", err)
+	}
+	_, clientTLS := loadTestTLSConfigs(t)
+	otherTLS := clientTLS.Clone()
+	otherTLS.Certificates = []tls.Certificate{adminCert}
+	otherClient := newMTLSClient(t, env.ts, otherTLS)
+
+	resp, err := otherClient.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("status = %d, want 403, body = %s", resp.StatusCode, body)
+	}
+}
+
 func TestGetWaitTimeout408(t *testing.T) {
 	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 50 * time.Millisecond})
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
