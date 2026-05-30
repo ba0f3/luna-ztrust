@@ -1,0 +1,7060 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "5bcc4d0fb9d9a3737d35f03f2c28334a64879e64",
+  "generatedAt": "2026-05-30T17:02:20.643Z",
+  "files": {
+    "agent/agent_test.go": {
+      "filePath": "agent/agent_test.go",
+      "contentHash": "92ee3ddb9df81f2a0ea41d2f646c24ca00e357c021cc4b72cfedf95691051a95",
+      "functions": [
+        {
+          "name": "SignerMode",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "RequestCertificate",
+          "params": [
+            "_",
+            "req"
+          ],
+          "returnType": "(*ssh.Certificate, ed25519.PrivateKey, error)",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "RequestSignature",
+          "params": [
+            "_",
+            "req",
+            "data"
+          ],
+          "returnType": "(*ssh.Signature, error)",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "testCertAndKey",
+          "params": [
+            "t"
+          ],
+          "returnType": "(*ssh.Certificate, ed25519.PrivateKey)",
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "TestLunaAgentSignCallsProvider",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "TestLunaAgentSignLocalKeyMode",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "TestLunaAgentListEmpty",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestLunaAgentSignProviderError",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [
+        {
+          "name": "mockProvider",
+          "methods": [
+            "SignerMode",
+            "RequestCertificate",
+            "RequestSignature"
+          ],
+          "properties": [
+            "signerMode",
+            "lastReq",
+            "lastSigReq",
+            "lastData",
+            "cert",
+            "priv",
+            "sig",
+            "err"
+          ],
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/agent",
+          "specifiers": [
+            "agent"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "SignerMode",
+        "RequestCertificate",
+        "RequestSignature",
+        "TestLunaAgentSignCallsProvider",
+        "TestLunaAgentSignLocalKeyMode",
+        "TestLunaAgentListEmpty",
+        "TestLunaAgentSignProviderError"
+      ],
+      "totalLines": 163,
+      "hasStructuralAnalysis": true
+    },
+    "agent/agent.go": {
+      "filePath": "agent/agent.go",
+      "contentHash": "abd8b03debca889283b557c86a16eb0fde02b966e3f4b87be8bba8941f4f5b9a",
+      "functions": [
+        {
+          "name": "NewLunaAgent",
+          "params": [
+            "provider",
+            "signerMode",
+            "targetUser",
+            "targetHost"
+          ],
+          "returnType": "*LunaAgent",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "List",
+          "params": [],
+          "returnType": "([]*agent.Key, error)",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Sign",
+          "params": [
+            "pub",
+            "data"
+          ],
+          "returnType": "(*ssh.Signature, error)",
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "Add",
+          "params": [
+            "_"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "Remove",
+          "params": [
+            "_"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "RemoveAll",
+          "params": [],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "Lock",
+          "params": [
+            "_"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Unlock",
+          "params": [
+            "_"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Signers",
+          "params": [],
+          "returnType": "([]ssh.Signer, error)",
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [
+        {
+          "name": "AccessProvider",
+          "methods": [
+            "SignerMode",
+            "RequestCertificate",
+            "RequestSignature"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "LunaAgent",
+          "methods": [
+            "List",
+            "Sign",
+            "Add",
+            "Remove",
+            "RemoveAll",
+            "Lock",
+            "Unlock",
+            "Signers"
+          ],
+          "properties": [
+            "provider",
+            "signerMode",
+            "targetUser",
+            "targetHost",
+            "mu",
+            "locked"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh/agent",
+          "specifiers": [
+            "agent"
+          ]
+        }
+      ],
+      "exports": [
+        "AccessProvider",
+        "LunaAgent",
+        "NewLunaAgent",
+        "List",
+        "Sign",
+        "Add",
+        "Remove",
+        "RemoveAll",
+        "Lock",
+        "Unlock",
+        "Signers"
+      ],
+      "totalLines": 117,
+      "hasStructuralAnalysis": true
+    },
+    "agent/cmd/luna-agent/main.go": {
+      "filePath": "agent/cmd/luna-agent/main.go",
+      "contentHash": "4827a6782ac61ebfd93f0f6b93a56c4efb751cc8148e4ccc951a948fe80404fb",
+      "functions": [
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 65
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "log",
+          "specifiers": [
+            "log"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/signal",
+          "specifiers": [
+            "signal"
+          ]
+        },
+        {
+          "source": "syscall",
+          "specifiers": [
+            "syscall"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/agent",
+          "specifiers": [
+            "agent"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh/agent",
+          "specifiers": [
+            "sshagent"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "agent/config.go": {
+      "filePath": "agent/config.go",
+      "contentHash": "d1530343599110d9a6b53be68b7afa0b69f5824c8d6e6f7439a6f3f0d3cc9515",
+      "functions": [
+        {
+          "name": "LoadFromEnv",
+          "params": [],
+          "returnType": "(Config, error)",
+          "exported": true,
+          "lineCount": 39
+        }
+      ],
+      "classes": [
+        {
+          "name": "Config",
+          "methods": [],
+          "properties": [
+            "ProxyURL",
+            "MTLSCert",
+            "MTLSKey",
+            "MTLSCA",
+            "TargetUser",
+            "TargetHost",
+            "SocketPath",
+            "SignerMode"
+          ],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        }
+      ],
+      "exports": [
+        "Config",
+        "LoadFromEnv"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "agent/go.sum": {
+      "filePath": "agent/go.sum",
+      "contentHash": "677b5c67c64d1fe7cbae9a083bf228058a46d71ca5cdeeb7daa7957973a0ace9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": false
+    },
+    "go.work": {
+      "filePath": "go.work",
+      "contentHash": "42400a869b262a377a19fd2f65cfc470f55d9cbb081b4913467f91bc39edc278",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": false
+    },
+    "go.work.sum": {
+      "filePath": "go.work.sum",
+      "contentHash": "f3e9e73f453da1a3592a52a220a476acdf7509704eb3a335e3e99ece724d97e5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": false
+    },
+    "proxy/cmd/luna-proxy/main.go": {
+      "filePath": "proxy/cmd/luna-proxy/main.go",
+      "contentHash": "ddacac6abc961529af65e36d0fd49e98e10f1ee3ac64b328ce37ca7147596043",
+      "functions": [
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 54
+        },
+        {
+          "name": "envOrDefault",
+          "params": [
+            "key",
+            "fallback"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "log",
+          "specifiers": [
+            "log"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/api",
+          "specifiers": [
+            "api"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 78,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/go.sum": {
+      "filePath": "proxy/go.sum",
+      "contentHash": "c9362fc24a04c8ff14faaf4799defced40b37757dbdd1475909ebfaf81021f24",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": false
+    },
+    "proxy/internal/api/admin_handler_test.go": {
+      "filePath": "proxy/internal/api/admin_handler_test.go",
+      "contentHash": "0157293efe92d9d1c598089727f213c57ecdd5a59c4f37e2f55aa91bec9100ef",
+      "functions": [
+        {
+          "name": "startAdminServer",
+          "params": [
+            "t",
+            "cfg",
+            "ks"
+          ],
+          "returnType": "(*httptest.Server, *mtlsClient, *mtlsClient)",
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "loadAdminTLSConfigs",
+          "params": [
+            "t"
+          ],
+          "returnType": "(server, admin, automation *tls.Config)",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "writeEncryptedKeyFileAPI",
+          "params": [
+            "t",
+            "path"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "TestAdmin_UnsealAndSealStatus",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 41
+        },
+        {
+          "name": "TestAdmin_UnsealRejectsOversizedBody",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestAdmin_UnsealForbiddenForAutomationCert",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestSign_SealedReturns503",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 26
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/api",
+          "specifiers": [
+            "api"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestAdmin_UnsealAndSealStatus",
+        "TestAdmin_UnsealRejectsOversizedBody",
+        "TestAdmin_UnsealForbiddenForAutomationCert",
+        "TestSign_SealedReturns503"
+      ],
+      "totalLines": 185,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/admin_handler.go": {
+      "filePath": "proxy/internal/api/admin_handler.go",
+      "contentHash": "8b931232e89c156ff98b4a1d32affdaf0e7cff3e43bcecd2dd9e68088f519c84",
+      "functions": [
+        {
+          "name": "handleUnseal",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "handleSealStatus",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "withAdminMTLS",
+          "params": [
+            "next"
+          ],
+          "returnType": "http.HandlerFunc",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "adminClientAllowed",
+          "params": [
+            "requiredOU",
+            "cert"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "unsealRequest",
+          "methods": [],
+          "properties": [
+            "Passphrase"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "sealStatusResponse",
+          "methods": [],
+          "properties": [
+            "Sealed"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 89,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/callback.go": {
+      "filePath": "proxy/internal/api/callback.go",
+      "contentHash": "07575e9552f5ef51ec81392f9404ddcda59032ffaca816e34c8331afd536277f",
+      "functions": [
+        {
+          "name": "ParseCallbackData",
+          "params": [
+            "data",
+            "allowedTTLs"
+          ],
+          "returnType": "(action, txID string, ttl time.Duration, ok bool)",
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "ttlAllowed",
+          "params": [
+            "sec",
+            "allowed"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "DefaultTTLFromAllowed",
+          "params": [
+            "allowed"
+          ],
+          "returnType": "time.Duration",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "ParseCallbackData",
+        "DefaultTTLFromAllowed"
+      ],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/capabilities_handler_test.go": {
+      "filePath": "proxy/internal/api/capabilities_handler_test.go",
+      "contentHash": "d754b57b16db1f7dbec60a2b9e6908f0a173041cf9a6cfbad873a3a0876d1c46",
+      "functions": [
+        {
+          "name": "TestCapabilities_ReturnsSignerModeAndTTLs",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 37
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        "TestCapabilities_ReturnsSignerModeAndTTLs"
+      ],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/capabilities_handler.go": {
+      "filePath": "proxy/internal/api/capabilities_handler.go",
+      "contentHash": "e66512fd5036cecb19c1184b95d7bd18663116735f47e0e4ee7e73eacc785589",
+      "functions": [
+        {
+          "name": "handleCapabilities",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "classes": [
+        {
+          "name": "capabilitiesResponse",
+          "methods": [],
+          "properties": [
+            "SignerMode",
+            "LeaseSupported",
+            "AllowedTTLSeconds",
+            "Sealed"
+          ],
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/mobile_handler_test.go": {
+      "filePath": "proxy/internal/api/mobile_handler_test.go",
+      "contentHash": "baedebf1ca52e99b329e5381005c1e12aacf1999c857562b741caf07819b9cfb",
+      "functions": [
+        {
+          "name": "TestMobileEnrollAndApprove",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 86
+        },
+        {
+          "name": "TestMobileDeleteDevice",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 34
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        "TestMobileEnrollAndApprove",
+        "TestMobileDeleteDevice"
+      ],
+      "totalLines": 140,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/mobile_handler.go": {
+      "filePath": "proxy/internal/api/mobile_handler.go",
+      "contentHash": "55b2a04d5afb2c09305f0c7d05194bce84822194f62a16b2c99eb8855e18dd6c",
+      "functions": [
+        {
+          "name": "handleMobileEnroll",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "handleMobileDeleteDevice",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "handleMobileApprove",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 60
+        }
+      ],
+      "classes": [
+        {
+          "name": "mobileEnrollRequest",
+          "methods": [],
+          "properties": [
+            "Label",
+            "DevicePubKey"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "mobileEnrollResponse",
+          "methods": [],
+          "properties": [
+            "DeviceID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "mobileApproveSignPayload",
+          "methods": [],
+          "properties": [
+            "TxID",
+            "Action",
+            "TTLSeconds",
+            "DeviceID",
+            "Timestamp"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "mobileApproveRequest",
+          "methods": [],
+          "properties": [
+            "Signature"
+          ],
+          "exported": false,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/mobile",
+          "specifiers": [
+            "mobile"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 133,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/remote_addr_test.go": {
+      "filePath": "proxy/internal/api/remote_addr_test.go",
+      "contentHash": "b9c31f545af8dd8376fae5e421c8ba11b0f062e06f1dd65fce5f437d05f8a716",
+      "functions": [
+        {
+          "name": "TestClientIPFromRemoteAddr",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestClientIPFromRemoteAddr"
+      ],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/remote_addr.go": {
+      "filePath": "proxy/internal/api/remote_addr.go",
+      "contentHash": "454777b5093aec46f50f6ebcc5046569198c726c6d96fffb30afeffb4a6d30f2",
+      "functions": [
+        {
+          "name": "clientIPFromRemoteAddr",
+          "params": [
+            "addr"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/server.go": {
+      "filePath": "proxy/internal/api/server.go",
+      "contentHash": "9d0a6f1faf23d3d13036b02d3d55aa3f6bfc51002d63ffed2bd040c5b547ad79",
+      "functions": [
+        {
+          "name": "NewServer",
+          "params": [
+            "cfg",
+            "ks",
+            "store",
+            "replay",
+            "telegram"
+          ],
+          "returnType": "http.Handler",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "withMTLS",
+          "params": [
+            "next"
+          ],
+          "returnType": "http.HandlerFunc",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "handleHealthz",
+          "params": [
+            "w",
+            "_"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "ConnContext",
+          "params": [
+            "ctx",
+            "c"
+          ],
+          "returnType": "context.Context",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "tlsConnFromContext",
+          "params": [
+            "ctx"
+          ],
+          "returnType": "(*tls.Conn, bool)",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "TLSConfigFromEnv",
+          "params": [],
+          "returnType": "(*tls.Config, error)",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "envOr",
+          "params": [
+            "key",
+            "fallback"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "defaultCertPath",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "LoadTLSConfig",
+          "params": [
+            "certFile",
+            "keyFile",
+            "caFile"
+          ],
+          "returnType": "(*tls.Config, error)",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "NewHTTPServer",
+          "params": [
+            "addr",
+            "handler",
+            "tlsConfig"
+          ],
+          "returnType": "*http.Server",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [
+        {
+          "name": "tlsConnKey",
+          "methods": [],
+          "properties": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "server",
+          "methods": [
+            "withMTLS",
+            "handleHealthz"
+          ],
+          "properties": [
+            "cfg",
+            "keystore",
+            "store",
+            "replay",
+            "telegram",
+            "mobile",
+            "push"
+          ],
+          "exported": false,
+          "lineCount": 9
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/mobile",
+          "specifiers": [
+            "mobile"
+          ]
+        }
+      ],
+      "exports": [
+        "NewServer",
+        "ConnContext",
+        "TLSConfigFromEnv",
+        "LoadTLSConfig",
+        "NewHTTPServer"
+      ],
+      "totalLines": 148,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/sign_handler_localkey_test.go": {
+      "filePath": "proxy/internal/api/sign_handler_localkey_test.go",
+      "contentHash": "cc48e521a572e3c7cc4c484be2650d232ddb16cc25831c1c38c2e24bece97cbe",
+      "functions": [
+        {
+          "name": "startTestServerLocalKey",
+          "params": [
+            "t"
+          ],
+          "returnType": "*testEnv",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "TestLocalKeySignReturnsSignature",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 26
+        },
+        {
+          "name": "buildSignBodyWithAgentData",
+          "params": [
+            "t",
+            "user",
+            "ip",
+            "data"
+          ],
+          "returnType": "[]byte",
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLocalKeySignReturnsSignature"
+      ],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/sign_handler_test.go": {
+      "filePath": "proxy/internal/api/sign_handler_test.go",
+      "contentHash": "05e1fd07bde20759942ccad664d8f2e3fc96dd2bc489713d09ac5372fe7decd4",
+      "functions": [
+        {
+          "name": "testCADir",
+          "params": [
+            "t"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "loadTestTLSConfigs",
+          "params": [
+            "t"
+          ],
+          "returnType": "(server, client *tls.Config)",
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "dial",
+          "params": [
+            "ctx"
+          ],
+          "returnType": "(*tls.Conn, error)",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "transport",
+          "params": [],
+          "returnType": "*http.Transport",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "newMTLSClient",
+          "params": [
+            "t",
+            "ts",
+            "clientTLS"
+          ],
+          "returnType": "*mtlsClient",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "startTestServer",
+          "params": [
+            "t",
+            "cfg",
+            "ks"
+          ],
+          "returnType": "*testEnv",
+          "exported": false,
+          "lineCount": 32
+        },
+        {
+          "name": "signPoP",
+          "params": [
+            "t",
+            "sshPub",
+            "priv",
+            "user",
+            "ip",
+            "ts"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "buildSignBody",
+          "params": [
+            "t",
+            "user",
+            "ip"
+          ],
+          "returnType": "[]byte",
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "postSign",
+          "params": [
+            "t",
+            "env",
+            "rawBody"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 40
+        },
+        {
+          "name": "unsealTestKeystore",
+          "params": [
+            "t",
+            "ks"
+          ],
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "startTestServerDefault",
+          "params": [
+            "t",
+            "cfg"
+          ],
+          "returnType": "*testEnv",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "TestPostSignReturns202",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "TestGetWaitReturns200AfterApprove",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "TestGetWaitWrongClientCert403",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "TestGetWaitTimeout408",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "TestHealthzNoMTLS",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "TestGetWaitNotFound404",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "TestPostSignReplay409",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "TestApproveIssuesLocalCACert",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "TestDevBypassIssuesLocalCACert",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 32
+        }
+      ],
+      "classes": [
+        {
+          "name": "sharedTLSConn",
+          "methods": [
+            "dial",
+            "transport"
+          ],
+          "properties": [
+            "once",
+            "conn",
+            "err",
+            "cfg",
+            "addr"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "mtlsClient",
+          "methods": [],
+          "properties": [
+            "http",
+            "shared"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "testEnv",
+          "methods": [],
+          "properties": [
+            "ts",
+            "store",
+            "client"
+          ],
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/api",
+          "specifiers": [
+            "api"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestPostSignReturns202",
+        "TestGetWaitReturns200AfterApprove",
+        "TestGetWaitWrongClientCert403",
+        "TestGetWaitTimeout408",
+        "TestHealthzNoMTLS",
+        "TestGetWaitNotFound404",
+        "TestPostSignReplay409",
+        "TestApproveIssuesLocalCACert",
+        "TestDevBypassIssuesLocalCACert"
+      ],
+      "totalLines": 488,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/sign_handler.go": {
+      "filePath": "proxy/internal/api/sign_handler.go",
+      "contentHash": "4b18b788eb6340cbbe9745617caf97fb20f907cbdeeeb85c4b63e6294d1e56c1",
+      "functions": [
+        {
+          "name": "handleSign",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 85
+        },
+        {
+          "name": "handleWait",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 29
+        },
+        {
+          "name": "formatTimeRFC3339",
+          "params": [
+            "t",
+            "fallbackTTL"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "writeAuthError",
+          "params": [
+            "w",
+            "err"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "writeWaitError",
+          "params": [
+            "w",
+            "err"
+          ],
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [
+        {
+          "name": "signResponse",
+          "methods": [],
+          "properties": [
+            "TxID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "waitResponse",
+          "methods": [],
+          "properties": [
+            "SSHCertificate",
+            "SSHSignature",
+            "ExpiresAt",
+            "LeaseExpiresAt"
+          ],
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 182,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/sign_log_test.go": {
+      "filePath": "proxy/internal/api/sign_log_test.go",
+      "contentHash": "831e8983a77877fda44615ccd64eef21ed1d514f35da64de234bbaea80004b61",
+      "functions": [
+        {
+          "name": "captureSignLog",
+          "params": [
+            "t"
+          ],
+          "returnType": "*bytes.Buffer",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "TestEmitSignLogJSON",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 31
+        },
+        {
+          "name": "TestSignOutcomeFromAuthErr",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestClientCertFingerprint",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "loadTestClientCert",
+          "params": [
+            "t"
+          ],
+          "returnType": "*x509.Certificate",
+          "exported": false,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        }
+      ],
+      "exports": [
+        "TestEmitSignLogJSON",
+        "TestSignOutcomeFromAuthErr",
+        "TestClientCertFingerprint"
+      ],
+      "totalLines": 102,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/sign_log.go": {
+      "filePath": "proxy/internal/api/sign_log.go",
+      "contentHash": "83fd484498ffac76ae8f21056cd84cd4525cf1f53b741837798c04030c1df67a",
+      "functions": [
+        {
+          "name": "emitSignLog",
+          "params": [
+            "e"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "clientCertFingerprint",
+          "params": [
+            "cert"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "clientCertFPFromRequest",
+          "params": [
+            "r"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "signOutcomeFromAuthErr",
+          "params": [
+            "err"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "logSignRequest",
+          "params": [
+            "r",
+            "start",
+            "txID",
+            "targetUser",
+            "targetIP",
+            "outcome"
+          ],
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "classes": [
+        {
+          "name": "signLogEntry",
+          "methods": [],
+          "properties": [
+            "TxID",
+            "ClientCertFP",
+            "TargetUser",
+            "TargetIP",
+            "Outcome",
+            "LatencyMS"
+          ],
+          "exported": false,
+          "lineCount": 8
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/sha256",
+          "specifiers": [
+            "sha256"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/auth",
+          "specifiers": [
+            "auth"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/webhook_chat_test.go": {
+      "filePath": "proxy/internal/api/webhook_chat_test.go",
+      "contentHash": "916b40e6f698e1d4c6f5dd0da866cc1c0501ca6a8f47d39c10af69947782b13c",
+      "functions": [
+        {
+          "name": "TestTelegramChatAllowed",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestTelegramChatAllowed"
+      ],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/webhook_handler_test.go": {
+      "filePath": "proxy/internal/api/webhook_handler_test.go",
+      "contentHash": "e2eb47b46c309c1ff46d1a3d672bbc07cf5e16e598ec189b4382ecfac4d7c808",
+      "functions": [
+        {
+          "name": "postTelegramWebhook",
+          "params": [
+            "t",
+            "env",
+            "secret",
+            "body"
+          ],
+          "returnType": "*http.Response",
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "TestTelegramWebhookApprove",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "TestTelegramWebhookDeny",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "TestTelegramWebhookWrongChatIgnored",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "TestTelegramWebhookBadSecret401",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "TestParseCallbackData",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "TestSign_SecondRequestUsesLease",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 49
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/api",
+          "specifiers": [
+            "api"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        "TestTelegramWebhookApprove",
+        "TestTelegramWebhookDeny",
+        "TestTelegramWebhookWrongChatIgnored",
+        "TestTelegramWebhookBadSecret401",
+        "TestParseCallbackData",
+        "TestSign_SecondRequestUsesLease"
+      ],
+      "totalLines": 233,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/webhook_handler.go": {
+      "filePath": "proxy/internal/api/webhook_handler.go",
+      "contentHash": "64e2a72e5c7ee0f1856fdac274a4d3d73b51f9bfc09d95a21b4baa344567ede9",
+      "functions": [
+        {
+          "name": "handleTelegramWebhook",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 51
+        },
+        {
+          "name": "telegramChatAllowed",
+          "params": [
+            "configuredChatID",
+            "chatID"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "telegramUpdate",
+          "methods": [],
+          "properties": [
+            "CallbackQuery"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "telegramCallbackQuery",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Data",
+            "Message"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "telegramMessage",
+          "methods": [],
+          "properties": [
+            "Chat"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "telegramChat",
+          "methods": [],
+          "properties": [
+            "ID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/subtle",
+          "specifiers": [
+            "subtle"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "strconv",
+          "specifiers": [
+            "strconv"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/approval/store_test.go": {
+      "filePath": "proxy/internal/approval/store_test.go",
+      "contentHash": "c730d7959c98b2cbc68cb1288e4667adf273cac80d098110d1341f965e213c90",
+      "functions": [
+        {
+          "name": "IssueCert",
+          "params": [
+            "_",
+            "req"
+          ],
+          "returnType": "(signing.IssueResult, error)",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "TestStoreApproveWakesWaiter",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "TestStoreDevBypass",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "TestStoreLocalKeyRequiresAgentSignData",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 13
+        }
+      ],
+      "classes": [
+        {
+          "name": "stubIssuer",
+          "methods": [
+            "IssueCert"
+          ],
+          "properties": [
+            "cert"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        }
+      ],
+      "exports": [
+        "IssueCert",
+        "TestStoreApproveWakesWaiter",
+        "TestStoreDevBypass",
+        "TestStoreLocalKeyRequiresAgentSignData"
+      ],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/approval/store.go": {
+      "filePath": "proxy/internal/approval/store.go",
+      "contentHash": "0a77da8ada6bfc9629ade03c79bf4034a53fdf02c857b28832a40f6fa341c905",
+      "functions": [
+        {
+          "name": "NewStore",
+          "params": [
+            "timeout"
+          ],
+          "returnType": "*Store",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "SetConfig",
+          "params": [
+            "cfg"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "SetIssuer",
+          "params": [
+            "issuer"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SetKeySigner",
+          "params": [
+            "keySigner"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SetLeases",
+          "params": [
+            "leases"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "signerMode",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "newTxID",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "Create",
+          "params": [
+            "targetUser",
+            "targetIP",
+            "publicKey",
+            "sourceIP",
+            "clientCertFP",
+            "agentSignData"
+          ],
+          "returnType": "(*Transaction, <-chan Result)",
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "Approve",
+          "params": [
+            "txID",
+            "ttl",
+            "approverChatID"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "IssueFromLease",
+          "params": [
+            "ctx",
+            "lookup",
+            "publicKey",
+            "agentSignData"
+          ],
+          "returnType": "(Result, bool)",
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "CreateInstantApproved",
+          "params": [
+            "targetUser",
+            "targetIP",
+            "publicKey",
+            "sourceIP",
+            "clientCertFP",
+            "res"
+          ],
+          "returnType": "*Transaction",
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "approveWithIssuer",
+          "params": [
+            "ctx",
+            "txID",
+            "ttl",
+            "approverChatID"
+          ],
+          "exported": false,
+          "lineCount": 25
+        },
+        {
+          "name": "issueForTransaction",
+          "params": [
+            "ctx",
+            "tx",
+            "until"
+          ],
+          "returnType": "(Result, error)",
+          "exported": false,
+          "lineCount": 46
+        },
+        {
+          "name": "getEntry",
+          "params": [
+            "txID"
+          ],
+          "returnType": "*txEntry",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "Deny",
+          "params": [
+            "txID"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "expire",
+          "params": [
+            "txID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "finish",
+          "params": [
+            "txID",
+            "state",
+            "res"
+          ],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "Wait",
+          "params": [
+            "ctx",
+            "txID"
+          ],
+          "returnType": "(cert, signature string, expiresAt, leaseExpiresAt time.Time, err error)",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "waitResult",
+          "params": [
+            "ctx",
+            "txID"
+          ],
+          "returnType": "(waitSlot, bool)",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "cancelWait",
+          "params": [
+            "txID"
+          ],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "remove",
+          "params": [
+            "txID"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "ClientCertFP",
+          "params": [
+            "txID"
+          ],
+          "returnType": "(string, bool)",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [
+        {
+          "name": "Transaction",
+          "methods": [],
+          "properties": [
+            "ID",
+            "TargetUser",
+            "TargetIP",
+            "PublicKey",
+            "SourceIP",
+            "ClientCertFP",
+            "AgentSignData",
+            "State",
+            "CreatedAt"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "Result",
+          "methods": [],
+          "properties": [
+            "Cert",
+            "Signature",
+            "ExpiresAt",
+            "LeaseExpiresAt",
+            "Err"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "Store",
+          "methods": [
+            "SetConfig",
+            "SetIssuer",
+            "SetKeySigner",
+            "SetLeases",
+            "signerMode",
+            "Create",
+            "Approve",
+            "IssueFromLease",
+            "CreateInstantApproved",
+            "approveWithIssuer",
+            "issueForTransaction",
+            "getEntry",
+            "Deny",
+            "expire",
+            "finish",
+            "Wait",
+            "waitResult",
+            "cancelWait",
+            "remove",
+            "ClientCertFP"
+          ],
+          "properties": [
+            "mu",
+            "cfg",
+            "issuer",
+            "keySigner",
+            "leases",
+            "timeout",
+            "txs"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "txEntry",
+          "methods": [],
+          "properties": [
+            "tx",
+            "result",
+            "resultCh",
+            "timer",
+            "waiters"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "waitSlot",
+          "methods": [],
+          "properties": [
+            "ch"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        },
+        {
+          "source": "github.com/oklog/ulid/v2",
+          "specifiers": [
+            "v2"
+          ]
+        }
+      ],
+      "exports": [
+        "Transaction",
+        "Result",
+        "Store",
+        "NewStore",
+        "SetConfig",
+        "SetIssuer",
+        "SetKeySigner",
+        "SetLeases",
+        "Create",
+        "Approve",
+        "IssueFromLease",
+        "CreateInstantApproved",
+        "Deny",
+        "Wait",
+        "ClientCertFP"
+      ],
+      "totalLines": 425,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/approval/telegram_test.go": {
+      "filePath": "proxy/internal/approval/telegram_test.go",
+      "contentHash": "b55000866b2f3e178533261344ccc64e010555158ebc58a01fabef90ae58e29d",
+      "functions": [
+        {
+          "name": "TestNotifierIdempotent",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 53
+        },
+        {
+          "name": "TestNotifierNoOpWhenUnconfigured",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync/atomic",
+          "specifiers": [
+            "atomic"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        }
+      ],
+      "exports": [
+        "TestNotifierIdempotent",
+        "TestNotifierNoOpWhenUnconfigured"
+      ],
+      "totalLines": 78,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/approval/telegram.go": {
+      "filePath": "proxy/internal/approval/telegram.go",
+      "contentHash": "7d7f6946e324c1401dfb815b6d0f38a67ac927ae29fcc06c739a6c5ea739295a",
+      "functions": [
+        {
+          "name": "NewNotifier",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "*Notifier",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "Notify",
+          "params": [
+            "ctx",
+            "tx"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 49
+        },
+        {
+          "name": "approvalKeyboard",
+          "params": [
+            "txID",
+            "allowedTTLs"
+          ],
+          "returnType": "[][]map[string]string",
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "formatTTLLabel",
+          "params": [
+            "sec"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "forgetSent",
+          "params": [
+            "txID"
+          ],
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "classes": [
+        {
+          "name": "Notifier",
+          "methods": [
+            "Notify",
+            "forgetSent"
+          ],
+          "properties": [
+            "token",
+            "chatID",
+            "allowedTTLs",
+            "baseURL",
+            "client",
+            "mu",
+            "sent"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "NotifierConfig",
+          "methods": [],
+          "properties": [
+            "BotToken",
+            "ChatID",
+            "AllowedTTLSeconds",
+            "BaseURL",
+            "Client"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "Notifier",
+        "NotifierConfig",
+        "NewNotifier",
+        "Notify"
+      ],
+      "totalLines": 142,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/auth/hmac.go": {
+      "filePath": "proxy/internal/auth/hmac.go",
+      "contentHash": "0aee36e3dc6a9fecaf48f1b895c4b703edd3ad5edd1ae1d79a94d89c3eba9fba",
+      "functions": [
+        {
+          "name": "VerifyBodyHMAC",
+          "params": [
+            "conn",
+            "body",
+            "headerHex"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "ComputeBodyHMAC",
+          "params": [
+            "conn",
+            "body"
+          ],
+          "returnType": "([]byte, error)",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "computeBodyHMAC",
+          "params": [
+            "conn",
+            "body"
+          ],
+          "returnType": "([]byte, error)",
+          "exported": false,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/hmac",
+          "specifiers": [
+            "hmac"
+          ]
+        },
+        {
+          "source": "crypto/sha256",
+          "specifiers": [
+            "sha256"
+          ]
+        },
+        {
+          "source": "crypto/subtle",
+          "specifiers": [
+            "subtle"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        }
+      ],
+      "exports": [
+        "VerifyBodyHMAC",
+        "ComputeBodyHMAC"
+      ],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/auth/pipeline_test.go": {
+      "filePath": "proxy/internal/auth/pipeline_test.go",
+      "contentHash": "d02b4928b9461e248d2b7651f865648e88d57872bf721a12b006ee16c8e03cb7",
+      "functions": [
+        {
+          "name": "testCADir",
+          "params": [
+            "t"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "loadTestTLSConfigs",
+          "params": [
+            "t"
+          ],
+          "returnType": "(server, client *tls.Config)",
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "dialTestTLS",
+          "params": [
+            "t"
+          ],
+          "returnType": "(clientConn, serverConn *tls.Conn)",
+          "exported": false,
+          "lineCount": 56
+        },
+        {
+          "name": "signPoP",
+          "params": [
+            "t",
+            "sshPub",
+            "priv",
+            "user",
+            "ip",
+            "ts"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "TestValidateSignRequestRejectsBadHMACBeforePoP",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 44
+        },
+        {
+          "name": "TestValidateSignRequestValidRequest",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 48
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestValidateSignRequestRejectsBadHMACBeforePoP",
+        "TestValidateSignRequestValidRequest"
+      ],
+      "totalLines": 230,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/auth/pipeline.go": {
+      "filePath": "proxy/internal/auth/pipeline.go",
+      "contentHash": "bfbfafc64028cb2f23a87aa0784b86974a3b1a5e631c1864c3e88dcfe8c698fe",
+      "functions": [
+        {
+          "name": "ValidateSignRequest",
+          "params": [
+            "conn",
+            "rawBody",
+            "req",
+            "now",
+            "replay"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "ValidateTimestampAt",
+          "params": [
+            "ts",
+            "now",
+            "windowSec"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "SignRequest",
+          "methods": [],
+          "properties": [
+            "PublicKey",
+            "TargetUser",
+            "TargetIP",
+            "Timestamp",
+            "PopSignature",
+            "AgentSignData",
+            "BodyMAC"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/sha256",
+          "specifiers": [
+            "sha256"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "SignRequest",
+        "ValidateSignRequest",
+        "ValidateTimestampAt"
+      ],
+      "totalLines": 66,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/auth/pop.go": {
+      "filePath": "proxy/internal/auth/pop.go",
+      "contentHash": "f3806fb332065433a6c62f2fe0f3b2c3752acfc0fd7913d464bc169a00f1ae18",
+      "functions": [
+        {
+          "name": "popChallenge",
+          "params": [
+            "user",
+            "ip",
+            "ts"
+          ],
+          "returnType": "[]byte",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "VerifyPoP",
+          "params": [
+            "pub",
+            "user",
+            "ip",
+            "ts",
+            "sigHex"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "VerifyPoP"
+      ],
+      "totalLines": 23,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/auth/replay_test.go": {
+      "filePath": "proxy/internal/auth/replay_test.go",
+      "contentHash": "1c5a8e283a0187ec04ea0b56b009a81e2e81e5d468a0099c7c15013fa33cc7a3",
+      "functions": [
+        {
+          "name": "TestReplayLRURejectsDuplicate",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestTimestampWindow",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "TestReplayLRURejectsDuplicate",
+        "TestTimestampWindow"
+      ],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/auth/replay.go": {
+      "filePath": "proxy/internal/auth/replay.go",
+      "contentHash": "26fa96b761ad8f42d91973ca4c249008e18d99503fb727e59ddab215cc08ae82",
+      "functions": [
+        {
+          "name": "NewReplayLRU",
+          "params": [
+            "ttl",
+            "max"
+          ],
+          "returnType": "*ReplayLRU",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "AddIfNew",
+          "params": [
+            "key"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 37
+        },
+        {
+          "name": "evictExpired",
+          "params": [
+            "now"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "ValidateTimestamp",
+          "params": [
+            "ts",
+            "windowSec"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [
+        {
+          "name": "ReplayLRU",
+          "methods": [
+            "AddIfNew",
+            "evictExpired"
+          ],
+          "properties": [
+            "ttl",
+            "max",
+            "mu",
+            "byKey",
+            "order"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "replayEntry",
+          "methods": [],
+          "properties": [
+            "key",
+            "expiresAt"
+          ],
+          "exported": false,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "container/list",
+          "specifiers": [
+            "list"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "ReplayLRU",
+        "NewReplayLRU",
+        "AddIfNew",
+        "ValidateTimestamp"
+      ],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/config.go": {
+      "filePath": "proxy/internal/config/config.go",
+      "contentHash": "feaef332c3ebc067db8ec59537a863e5cfe8aca5d926ad26e3d972a10b25c682",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Config",
+          "methods": [],
+          "properties": [
+            "Env",
+            "ApprovalTimeout",
+            "TelegramBotToken",
+            "TelegramWebhookSecret",
+            "TelegramChatID",
+            "AdminClientOU",
+            "KeyPath",
+            "SignerMode",
+            "AllowedTTLSeconds"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "Config"
+      ],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/keystore_test.go": {
+      "filePath": "proxy/internal/keystore/keystore_test.go",
+      "contentHash": "3a055bbea36fcb009d7497844785edec703ace8882a4b105e9c446f593c9c838",
+      "functions": [
+        {
+          "name": "writeEncryptedKeyFile",
+          "params": [
+            "t",
+            "path"
+          ],
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "TestKeystore_SealedBlocksSigner",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestKeystore_UnsealLoadsSigner",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "TestKeystore_UnsealWrongPassphrase",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "TestKeystore_UnsealLockoutAfterFailures",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestKeystore_UnsealMissingFile",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestKeystore_SealedBlocksSigner",
+        "TestKeystore_UnsealLoadsSigner",
+        "TestKeystore_UnsealWrongPassphrase",
+        "TestKeystore_UnsealLockoutAfterFailures",
+        "TestKeystore_UnsealMissingFile"
+      ],
+      "totalLines": 109,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/keystore.go": {
+      "filePath": "proxy/internal/keystore/keystore.go",
+      "contentHash": "c1cce5e225a9d9e91a9424811db891ff10372fe035449880cc448ed4a40abbe1",
+      "functions": [
+        {
+          "name": "New",
+          "params": [],
+          "returnType": "*Keystore",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Available",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "SSHSigner",
+          "params": [],
+          "returnType": "(ssh.Signer, error)",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Unseal",
+          "params": [
+            "path",
+            "passphrase"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 57
+        },
+        {
+          "name": "recordUnsealFailure",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "Keystore",
+          "methods": [
+            "Available",
+            "SSHSigner",
+            "Unseal",
+            "recordUnsealFailure"
+          ],
+          "properties": [
+            "mu",
+            "signer",
+            "unsealFails",
+            "unsealLockedUntil"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "runtime",
+          "specifiers": [
+            "runtime"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "Keystore",
+        "New",
+        "Available",
+        "SSHSigner",
+        "Unseal"
+      ],
+      "totalLines": 122,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/mlock_linux.go": {
+      "filePath": "proxy/internal/keystore/mlock_linux.go",
+      "contentHash": "58a09446c03a41bb374f1ffca1d2861cb31024725460e336b6f1a5566fe6b2b3",
+      "functions": [
+        {
+          "name": "mlockSigner",
+          "params": [
+            "signer"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "mlockBytes",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "zeroBytes",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "reflect",
+          "specifiers": [
+            "reflect"
+          ]
+        },
+        {
+          "source": "unsafe",
+          "specifiers": [
+            "unsafe"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        },
+        {
+          "source": "golang.org/x/sys/unix",
+          "specifiers": [
+            "unix"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/mlock_stub.go": {
+      "filePath": "proxy/internal/keystore/mlock_stub.go",
+      "contentHash": "6159cf590803632571cce6fa01224839eb354d8d2e9d9aa3a365dde8a4ccba57",
+      "functions": [
+        {
+          "name": "mlockSigner",
+          "params": [
+            "_"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "mlockBytes",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "zeroBytes",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/lease/key.go": {
+      "filePath": "proxy/internal/lease/key.go",
+      "contentHash": "3bcc8a4b46b7f4674e918ddcab4ae466a0901d147d93b5c6f7a26be946e8dba1",
+      "functions": [
+        {
+          "name": "lookupString",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "String",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "NewLookupKey",
+          "params": [
+            "clientCertFP",
+            "targetUser",
+            "targetIP",
+            "sourceIP"
+          ],
+          "returnType": "LookupKey",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "NewFullKey",
+          "params": [
+            "lookup",
+            "approver"
+          ],
+          "returnType": "FullKey",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "FormatApproverChatID",
+          "params": [
+            "chatID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "FormatApproverDeviceID",
+          "params": [
+            "deviceID"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [
+        {
+          "name": "LookupKey",
+          "methods": [
+            "lookupString"
+          ],
+          "properties": [
+            "ClientCertFP",
+            "TargetUser",
+            "TargetIP",
+            "SourceIP"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "FullKey",
+          "methods": [
+            "String"
+          ],
+          "properties": [
+            "Approver"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        }
+      ],
+      "exports": [
+        "LookupKey",
+        "FullKey",
+        "String",
+        "NewLookupKey",
+        "NewFullKey",
+        "FormatApproverChatID",
+        "FormatApproverDeviceID"
+      ],
+      "totalLines": 54,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/lease/store_index_test.go": {
+      "filePath": "proxy/internal/lease/store_index_test.go",
+      "contentHash": "6350049cb05a336ad2b3cfabd60f9f25b22607c1aee4b7eb8050dd54ea6e3b5d",
+      "functions": [
+        {
+          "name": "TestFindActive_UsesLookupIndex",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        }
+      ],
+      "exports": [
+        "TestFindActive_UsesLookupIndex"
+      ],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/lease/store_test.go": {
+      "filePath": "proxy/internal/lease/store_test.go",
+      "contentHash": "8943067ce53177debe9cfad910af677c237f31d26bc4d0718fb929fd3427ecd4",
+      "functions": [
+        {
+          "name": "TestLeaseKey_DifferentApproverSeparate",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "TestLeaseKey_DeterministicLookup",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "TestFindActive_ExpiredIgnored",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
+          "specifiers": [
+            "lease"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLeaseKey_DifferentApproverSeparate",
+        "TestLeaseKey_DeterministicLookup",
+        "TestFindActive_ExpiredIgnored"
+      ],
+      "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/lease/store.go": {
+      "filePath": "proxy/internal/lease/store.go",
+      "contentHash": "1ae5003368b3f54196730ea37c4d44a130be7d601393bff3b3a3422e8a0526ae",
+      "functions": [
+        {
+          "name": "NewStore",
+          "params": [],
+          "returnType": "*Store",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "purgeLoop",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "purgeExpired",
+          "params": [],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "deleteLocked",
+          "params": [
+            "full"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "lookupFromFullKey",
+          "params": [
+            "full"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "Put",
+          "params": [
+            "key",
+            "expiresAt"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "FindActive",
+          "params": [
+            "lookup"
+          ],
+          "returnType": "(ActiveLease, bool)",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "Remaining",
+          "params": [],
+          "returnType": "time.Duration",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "ActiveLease",
+          "methods": [
+            "Remaining"
+          ],
+          "properties": [
+            "Approver",
+            "ExpiresAt"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "Store",
+          "methods": [
+            "purgeLoop",
+            "purgeExpired",
+            "deleteLocked",
+            "Put",
+            "FindActive"
+          ],
+          "properties": [
+            "mu",
+            "leases",
+            "byLookup"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "ActiveLease",
+        "Store",
+        "NewStore",
+        "Put",
+        "FindActive",
+        "Remaining"
+      ],
+      "totalLines": 116,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/mobile/push.go": {
+      "filePath": "proxy/internal/mobile/push.go",
+      "contentHash": "56deb603918c0810850761a2ea53a6f95f14c64852a018c2ceac905296b83ab7",
+      "functions": [
+        {
+          "name": "NotifyPending",
+          "params": [],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "NewPushNotifier",
+          "params": [
+            "fcmCredentials"
+          ],
+          "returnType": "Notifier",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "Notifier",
+          "methods": [
+            "NotifyPending"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "StubNotifier",
+          "methods": [
+            "NotifyPending"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        }
+      ],
+      "exports": [
+        "Notifier",
+        "StubNotifier",
+        "NotifyPending",
+        "NewPushNotifier"
+      ],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/mobile/store_test.go": {
+      "filePath": "proxy/internal/mobile/store_test.go",
+      "contentHash": "b85d5ca8c25a10a29dfeddd68797df2ad3fac1647ee054985655c905ee24292c",
+      "functions": [
+        {
+          "name": "TestStoreEnrollReturnsDeviceID",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "TestStoreDelete",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/mobile",
+          "specifiers": [
+            "mobile"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        }
+      ],
+      "exports": [
+        "TestStoreEnrollReturnsDeviceID",
+        "TestStoreDelete"
+      ],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/mobile/store.go": {
+      "filePath": "proxy/internal/mobile/store.go",
+      "contentHash": "eeb746099e59903ebcb93b40cfd95f48221820b555d27b4144e04309952c8730",
+      "functions": [
+        {
+          "name": "NewStore",
+          "params": [],
+          "returnType": "*Store",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Enroll",
+          "params": [
+            "label",
+            "devicePubKeyB64"
+          ],
+          "returnType": "(*Device, error)",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "Get",
+          "params": [
+            "id"
+          ],
+          "returnType": "(*Device, bool)",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Delete",
+          "params": [
+            "id"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [
+        {
+          "name": "Device",
+          "methods": [],
+          "properties": [
+            "ID",
+            "Label",
+            "PubKey",
+            "EnrolledAt"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Store",
+          "methods": [
+            "Enroll",
+            "Get",
+            "Delete"
+          ],
+          "properties": [
+            "mu",
+            "devices"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/oklog/ulid/v2",
+          "specifiers": [
+            "v2"
+          ]
+        }
+      ],
+      "exports": [
+        "Device",
+        "Store",
+        "NewStore",
+        "Enroll",
+        "Get",
+        "Delete"
+      ],
+      "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/signing/local_ca_test.go": {
+      "filePath": "proxy/internal/signing/local_ca_test.go",
+      "contentHash": "2554c42874315e158c4eb7bc609406dc82ba53bb4c3107ec90d7cc4894c60d93",
+      "functions": [
+        {
+          "name": "TestLocalCA_IssueCert",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 45
+        },
+        {
+          "name": "writeEncryptedCA",
+          "params": [
+            "t"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "generateClientSSHKey",
+          "params": [
+            "t"
+          ],
+          "returnType": "(ssh.PublicKey, string)",
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLocalCA_IssueCert"
+      ],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/signing/local_ca.go": {
+      "filePath": "proxy/internal/signing/local_ca.go",
+      "contentHash": "f76e085cc95ff4a2a504a37e38f48ee8b3d2f495ec82bfdfa531c3fe313297fa",
+      "functions": [
+        {
+          "name": "NewLocalCA",
+          "params": [
+            "ks"
+          ],
+          "returnType": "*LocalCA",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "IssueCert",
+          "params": [
+            "_",
+            "req"
+          ],
+          "returnType": "(IssueResult, error)",
+          "exported": true,
+          "lineCount": 42
+        }
+      ],
+      "classes": [
+        {
+          "name": "LocalCA",
+          "methods": [
+            "IssueCert"
+          ],
+          "properties": [
+            "ks"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "LocalCA",
+        "NewLocalCA",
+        "IssueCert"
+      ],
+      "totalLines": 66,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/signing/local_key_test.go": {
+      "filePath": "proxy/internal/signing/local_key_test.go",
+      "contentHash": "f0270bd4a02e601a32799c05d75a1263829b1e52b0ff0e310e484feb1c10b283",
+      "functions": [
+        {
+          "name": "writeEncryptedKeyForHost",
+          "params": [
+            "t",
+            "priv"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "TestLocalKey_SignAgent",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "TestLocalKey_SignAgentMatchesHostedKey",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 30
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
+          "specifiers": [
+            "signing"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLocalKey_SignAgent",
+        "TestLocalKey_SignAgentMatchesHostedKey"
+      ],
+      "totalLines": 85,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/signing/local_key.go": {
+      "filePath": "proxy/internal/signing/local_key.go",
+      "contentHash": "da36f4ea09a90daed3e5868f1818f237827485e7a3130747ec7770e6b2d3a652",
+      "functions": [
+        {
+          "name": "NewLocalKey",
+          "params": [
+            "ks"
+          ],
+          "returnType": "*LocalKey",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "SignAgent",
+          "params": [
+            "_",
+            "data"
+          ],
+          "returnType": "([]byte, error)",
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "classes": [
+        {
+          "name": "LocalKey",
+          "methods": [
+            "SignAgent"
+          ],
+          "properties": [
+            "ks"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        }
+      ],
+      "exports": [
+        "LocalKey",
+        "NewLocalKey",
+        "SignAgent"
+      ],
+      "totalLines": 36,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/signing/signer.go": {
+      "filePath": "proxy/internal/signing/signer.go",
+      "contentHash": "46adde5ff41c83ee4d4b93f7d6a13b0a33b0b41c4a9647b223ffbb6437bb0525",
+      "functions": [],
+      "classes": [
+        {
+          "name": "IssueRequest",
+          "methods": [],
+          "properties": [
+            "ClientPubKey",
+            "TargetUser",
+            "TargetIP",
+            "SourceIP",
+            "ValidUntil"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "IssueResult",
+          "methods": [],
+          "properties": [
+            "Certificate",
+            "ExpiresAt"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "CertIssuer",
+          "methods": [
+            "IssueCert"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "IssueRequest",
+        "IssueResult",
+        "CertIssuer"
+      ],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/capabilities.go": {
+      "filePath": "sdk/capabilities.go",
+      "contentHash": "47dcdb23d6eb198448d118d48db1da75a8917edc51256943afaa197db7c147b9",
+      "functions": [
+        {
+          "name": "FetchCapabilities",
+          "params": [
+            "ctx"
+          ],
+          "returnType": "(Capabilities, error)",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk/sign",
+          "specifiers": [
+            "sign"
+          ]
+        }
+      ],
+      "exports": [
+        "FetchCapabilities"
+      ],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/client.go": {
+      "filePath": "sdk/client.go",
+      "contentHash": "549160e60925edc75ee53592eafe33fbfc13b242bb9e43fbe3ce0b5a83ac1cb0",
+      "functions": [
+        {
+          "name": "NewClient",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "(*Client, error)",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "SignerMode",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "RequestCertificate",
+          "params": [
+            "ctx",
+            "req"
+          ],
+          "returnType": "(*ssh.Certificate, ed25519.PrivateKey, error)",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [
+        {
+          "name": "CertRequest",
+          "methods": [],
+          "properties": [
+            "TargetUser",
+            "TargetIP"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "Config",
+          "methods": [],
+          "properties": [
+            "ProxyURL",
+            "TLSCert",
+            "TLSRootCAs",
+            "Timeout",
+            "SignerMode"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "Client",
+          "methods": [
+            "SignerMode",
+            "RequestCertificate"
+          ],
+          "properties": [
+            "inner",
+            "signerMode"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk/sign",
+          "specifiers": [
+            "sign"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "CertRequest",
+        "Config",
+        "Client",
+        "NewClient",
+        "SignerMode",
+        "RequestCertificate"
+      ],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/doc.go": {
+      "filePath": "sdk/doc.go",
+      "contentHash": "d7e7603c7896a7792290f014d447e6d87ee4f9d3b2c3f73515147f8487e3d478",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/go.sum": {
+      "filePath": "sdk/go.sum",
+      "contentHash": "677b5c67c64d1fe7cbae9a083bf228058a46d71ca5cdeeb7daa7957973a0ace9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": false
+    },
+    "sdk/mtls.go": {
+      "filePath": "sdk/mtls.go",
+      "contentHash": "dd7cf2fde3a8ea43c658baabcc422115ff3e52845bf028a14ab8dfe579e926bb",
+      "functions": [
+        {
+          "name": "LoadTLSConfig",
+          "params": [
+            "certFile",
+            "keyFile",
+            "caFile"
+          ],
+          "returnType": "(tls.Certificate, *x509.CertPool, error)",
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        }
+      ],
+      "exports": [
+        "LoadTLSConfig"
+      ],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/pop_test.go": {
+      "filePath": "sdk/pop_test.go",
+      "contentHash": "8f3dbfd6c3bbbfcafcb1566ea9c1dd13298559efd857e178535ae0dc266bc6bd",
+      "functions": [
+        {
+          "name": "TestBuildAndVerifyPoP",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 18
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestBuildAndVerifyPoP"
+      ],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/pop.go": {
+      "filePath": "sdk/pop.go",
+      "contentHash": "82f6f5557e2eaf341ba59338c53362a2138f1262b9cbc5400ab7af8fd6b0e798",
+      "functions": [
+        {
+          "name": "challenge",
+          "params": [
+            "user",
+            "ip",
+            "ts"
+          ],
+          "returnType": "[]byte",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "SignPoP",
+          "params": [
+            "pub",
+            "priv",
+            "user",
+            "ip",
+            "ts"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "VerifyPoP",
+          "params": [
+            "pub",
+            "user",
+            "ip",
+            "ts",
+            "sigHex"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "SignPoP",
+        "VerifyPoP"
+      ],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/capabilities.go": {
+      "filePath": "sdk/sign/capabilities.go",
+      "contentHash": "98c86822361f74908ea05825559f9b32d84cd2f2252f4c6f42a2d1e8da7b3759",
+      "functions": [
+        {
+          "name": "FetchCapabilities",
+          "params": [
+            "ctx"
+          ],
+          "returnType": "(Capabilities, error)",
+          "exported": true,
+          "lineCount": 25
+        }
+      ],
+      "classes": [
+        {
+          "name": "Capabilities",
+          "methods": [],
+          "properties": [
+            "SignerMode",
+            "LeaseSupported",
+            "AllowedTTLSeconds",
+            "Sealed"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        }
+      ],
+      "exports": [
+        "Capabilities",
+        "FetchCapabilities"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/client_test.go": {
+      "filePath": "sdk/sign/client_test.go",
+      "contentHash": "2fdf5cd68f242a3325781e6aa7215d9b163131921bf0002210bd5603b218bd8b",
+      "functions": [
+        {
+          "name": "connContext",
+          "params": [
+            "ctx",
+            "c"
+          ],
+          "returnType": "context.Context",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "tlsConnFromContext",
+          "params": [
+            "ctx"
+          ],
+          "returnType": "(*tls.Conn, bool)",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "newMockSignServer",
+          "params": [],
+          "returnType": "*mockSignServer",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "handler",
+          "params": [],
+          "returnType": "http.Handler",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "handleCapabilities",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "handleSign",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "handleWait",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 32
+        },
+        {
+          "name": "verifyBodyHMAC",
+          "params": [
+            "conn",
+            "body",
+            "headerHex"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "Error",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "startMockServer",
+          "params": [
+            "t"
+          ],
+          "returnType": "(*httptest.Server, *tls.Config)",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "TestRequestCertificateHappyPath",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 41
+        },
+        {
+          "name": "TestFetchCapabilities",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "TestSDKClientFetchCapabilities",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 30
+        },
+        {
+          "name": "TestSDKClientRequestCertificate",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 34
+        },
+        {
+          "name": "TestMockServerRejectsMissingHMAC",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "TestMockHMACMatchesSignPackage",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 60
+        }
+      ],
+      "classes": [
+        {
+          "name": "tlsConnKey",
+          "methods": [],
+          "properties": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "mockSignServer",
+          "methods": [
+            "handler",
+            "handleCapabilities",
+            "handleSign",
+            "handleWait"
+          ],
+          "properties": [
+            "mu",
+            "pending"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "macError",
+          "methods": [
+            "Error"
+          ],
+          "properties": [
+            "msg"
+          ],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/hmac",
+          "specifiers": [
+            "hmac"
+          ]
+        },
+        {
+          "source": "crypto/subtle",
+          "specifiers": [
+            "subtle"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk/sign",
+          "specifiers": [
+            "sign"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "Error",
+        "TestRequestCertificateHappyPath",
+        "TestFetchCapabilities",
+        "TestSDKClientFetchCapabilities",
+        "TestSDKClientRequestCertificate",
+        "TestMockServerRejectsMissingHMAC",
+        "TestMockHMACMatchesSignPackage"
+      ],
+      "totalLines": 393,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/client.go": {
+      "filePath": "sdk/sign/client.go",
+      "contentHash": "459b83fa8307290e89a04751961b639f584679cb6f9a373586c82cf3ceaa206b",
+      "functions": [
+        {
+          "name": "NewClient",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "(*Client, error)",
+          "exported": true,
+          "lineCount": 47
+        },
+        {
+          "name": "RequestCertificate",
+          "params": [
+            "ctx",
+            "req"
+          ],
+          "returnType": "(*ssh.Certificate, ed25519.PrivateKey, error)",
+          "exported": true,
+          "lineCount": 50
+        },
+        {
+          "name": "postSign",
+          "params": [
+            "ctx",
+            "body"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 36
+        },
+        {
+          "name": "getWait",
+          "params": [
+            "ctx",
+            "txID"
+          ],
+          "returnType": "(WaitResponse, error)",
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "parseCertificate",
+          "params": [
+            "line"
+          ],
+          "returnType": "(*ssh.Certificate, error)",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "signPoP",
+          "params": [
+            "pub",
+            "priv",
+            "user",
+            "ip",
+            "ts"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "readHTTPError",
+          "params": [
+            "resp",
+            "op"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "dial",
+          "params": [
+            "ctx"
+          ],
+          "returnType": "(*tls.Conn, error)",
+          "exported": false,
+          "lineCount": 18
+        }
+      ],
+      "classes": [
+        {
+          "name": "Config",
+          "methods": [],
+          "properties": [
+            "ProxyURL",
+            "TLSCert",
+            "TLSRootCAs",
+            "Timeout"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Client",
+          "methods": [
+            "RequestCertificate",
+            "postSign",
+            "getWait"
+          ],
+          "properties": [
+            "httpClient",
+            "proxyURL",
+            "shared"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "sharedTLSConn",
+          "methods": [
+            "dial"
+          ],
+          "properties": [
+            "once",
+            "conn",
+            "err",
+            "cfg",
+            "addr"
+          ],
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/url",
+          "specifiers": [
+            "url"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "Config",
+        "Client",
+        "NewClient",
+        "RequestCertificate"
+      ],
+      "totalLines": 256,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/e2e_test.go": {
+      "filePath": "sdk/sign/e2e_test.go",
+      "contentHash": "23484b332d94a067128be2d36836b7684970293b817838d799471cbfc1ef9f81",
+      "functions": [
+        {
+          "name": "TestE2ERequestCertificate",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 64
+        },
+        {
+          "name": "dockerAvailable",
+          "params": [],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "e2eProxyReady",
+          "params": [
+            "t"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 29
+        },
+        {
+          "name": "e2eUnseal",
+          "params": [
+            "t",
+            "proxyURL",
+            "adminCert",
+            "pool"
+          ],
+          "exported": false,
+          "lineCount": 32
+        },
+        {
+          "name": "e2eCADir",
+          "params": [
+            "t"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk/sign",
+          "specifiers": [
+            "sign"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestE2ERequestCertificate"
+      ],
+      "totalLines": 175,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/hmac_test.go": {
+      "filePath": "sdk/sign/hmac_test.go",
+      "contentHash": "6d109d5b20af0edef610861ea622c5e794e315448a41af3168fa4b1506cb01ed",
+      "functions": [
+        {
+          "name": "TestBodyHMACRoundTrip",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 72
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/hmac",
+          "specifiers": [
+            "hmac"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "net/http/httptest",
+          "specifiers": [
+            "httptest"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk/sign",
+          "specifiers": [
+            "sign"
+          ]
+        }
+      ],
+      "exports": [
+        "TestBodyHMACRoundTrip"
+      ],
+      "totalLines": 88,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/hmac.go": {
+      "filePath": "sdk/sign/hmac.go",
+      "contentHash": "789ebc20e1f15b76f9a5de7d5cdef4769cc9ee73944de28affc9b1638c22ec78",
+      "functions": [
+        {
+          "name": "ComputeBodyHMAC",
+          "params": [
+            "conn",
+            "body"
+          ],
+          "returnType": "([]byte, error)",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "FormatMACHeader",
+          "params": [
+            "mac"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/hmac",
+          "specifiers": [
+            "hmac"
+          ]
+        },
+        {
+          "source": "crypto/sha256",
+          "specifiers": [
+            "sha256"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        }
+      ],
+      "exports": [
+        "ComputeBodyHMAC",
+        "FormatMACHeader"
+      ],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/request.go": {
+      "filePath": "sdk/sign/request.go",
+      "contentHash": "a2ba54933675c5ab4a819e819f625d949407719edcad20367afe1661ad02a11e",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Request",
+          "methods": [],
+          "properties": [
+            "PublicKey",
+            "TargetUser",
+            "TargetIP",
+            "Timestamp",
+            "PopSignature",
+            "AgentSignData"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Response",
+          "methods": [],
+          "properties": [
+            "TxID"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "WaitResponse",
+          "methods": [],
+          "properties": [
+            "SSHCertificate",
+            "SSHSignature",
+            "ExpiresAt",
+            "LeaseExpiresAt"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "CertRequest",
+          "methods": [],
+          "properties": [
+            "TargetUser",
+            "TargetIP"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "SignatureRequest",
+          "methods": [],
+          "properties": [
+            "TargetUser",
+            "TargetIP"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "Request",
+        "Response",
+        "WaitResponse",
+        "CertRequest",
+        "SignatureRequest"
+      ],
+      "totalLines": 37,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/signature.go": {
+      "filePath": "sdk/sign/signature.go",
+      "contentHash": "b7a10f47bc1339414a9487ddd48c07416a9dfc86efcdfc38c99fdffd576fd0f1",
+      "functions": [
+        {
+          "name": "RequestSignature",
+          "params": [
+            "ctx",
+            "req",
+            "signData"
+          ],
+          "returnType": "(*ssh.Signature, error)",
+          "exported": true,
+          "lineCount": 53
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "RequestSignature"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/sign/tls_test.go": {
+      "filePath": "sdk/sign/tls_test.go",
+      "contentHash": "c0a58778f066d59ad721827daa618be620f07369ef55cfa91b4fa99d5c3d31be",
+      "functions": [
+        {
+          "name": "testCADir",
+          "params": [
+            "t"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "loadTestTLSConfigs",
+          "params": [
+            "t"
+          ],
+          "returnType": "(server, client *tls.Config)",
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "certLineForPublicKey",
+          "params": [
+            "pubLine"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 29
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "crypto/rsa",
+          "specifiers": [
+            "rsa"
+          ]
+        },
+        {
+          "source": "crypto/tls",
+          "specifiers": [
+            "tls"
+          ]
+        },
+        {
+          "source": "crypto/x509",
+          "specifiers": [
+            "x509"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/signature.go": {
+      "filePath": "sdk/signature.go",
+      "contentHash": "6caf46bdafdb090ff859daf11d5f276785d592d5fa2d3c87c945e49a10add3b6",
+      "functions": [
+        {
+          "name": "RequestSignature",
+          "params": [
+            "ctx",
+            "req",
+            "signData"
+          ],
+          "returnType": "(*ssh.Signature, error)",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk/sign",
+          "specifiers": [
+            "sign"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "RequestSignature"
+      ],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "sdk/signer.go": {
+      "filePath": "sdk/signer.go",
+      "contentHash": "866063c47eb44bb36aae26baf39be9f9c9af1ea4e7248bb02e8eaf78c2c96d40",
+      "functions": [
+        {
+          "name": "NewCertSigner",
+          "params": [
+            "cert",
+            "priv"
+          ],
+          "returnType": "(ssh.Signer, error)",
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "NewCertSigner"
+      ],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "testdata/ca/.gitkeep": {
+      "filePath": "testdata/ca/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "testdata/ca/admin-client.crt": {
+      "filePath": "testdata/ca/admin-client.crt",
+      "contentHash": "c87cb116c3614933f4fbb6ed03f4acecb1d06095d2c897d92f5cca5226062fd8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": false
+    },
+    "testdata/ca/ca.crt": {
+      "filePath": "testdata/ca/ca.crt",
+      "contentHash": "01906ffa402bb072224935c5e308d2cd22794b2a99f7157c5b8c95c083b8370f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 32,
+      "hasStructuralAnalysis": false
+    },
+    "testdata/ca/client.crt": {
+      "filePath": "testdata/ca/client.crt",
+      "contentHash": "73a1aaad6dbbe8a52d0376ed99e16df0983b3c524511c3d466f8e1f88aad86c9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": false
+    },
+    "testdata/ca/server.crt": {
+      "filePath": "testdata/ca/server.crt",
+      "contentHash": "a489c37b9cc30b2fb848f64fee4500417a0990d495f8d47b311a665f6ec4f224",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": false
+    },
+    "testdata/ssh/ca.pub": {
+      "filePath": "testdata/ssh/ca.pub",
+      "contentHash": "d3a1fb6961eefc73b12fd8bccf323b4b3816158cbae29cc263f00c4ac63190a8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    "testdata/ssh/host.pub": {
+      "filePath": "testdata/ssh/host.pub",
+      "contentHash": "b2dc07c634df8c072e7f25bbdd0b7ffd4520dd6b9856920cb3ce00e014ceaf43",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    }
+  }
+}

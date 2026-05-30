@@ -1,0 +1,20 @@
+# .understandignore — patterns for files/dirs to exclude from analysis
+# --- From .gitignore (uncomment to exclude) ---
+
+# testdata/ca/*.key
+# testdata/ssh/encrypted_*.key
+# testdata/ssh/.*.tmp
+# bin/
+# *.csr
+
+# --- Detected directories (uncomment to exclude) ---
+
+# testdata/
+# docs/
+# scripts/
+
+# --- Test file patterns (uncomment to exclude) ---
+
+# *.test.*
+# *_test.go
+# *_test.go
