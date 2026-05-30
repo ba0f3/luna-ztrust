@@ -29,22 +29,24 @@ type LunaAgent struct {
 	provider   AccessProvider
 	signerMode string
 	targetUser string
-	targetHost string
+	targetHost         string
+	hostKeyFingerprint string
 
 	mu     sync.Mutex
 	locked bool
 }
 
 // NewLunaAgent returns an agent that signs via provider using the configured target identity.
-func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost string) *LunaAgent {
+func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost, hostKeyFingerprint string) *LunaAgent {
 	if signerMode == "" {
 		signerMode = SignerModeLocalCA
 	}
 	return &LunaAgent{
-		provider:   provider,
-		signerMode: signerMode,
-		targetUser: targetUser,
-		targetHost: targetHost,
+		provider:           provider,
+		signerMode:         signerMode,
+		targetUser:         targetUser,
+		targetHost:         targetHost,
+		hostKeyFingerprint: hostKeyFingerprint,
 	}
 }
 
@@ -73,8 +75,9 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 
 	if mode == SignerModeLocalKey {
 		return a.provider.RequestSignature(context.Background(), sdk.SignatureRequest{
-			TargetUser: a.targetUser,
-			TargetIP:   a.targetHost,
+			TargetUser:         a.targetUser,
+			TargetIP:           a.targetHost,
+			HostKeyFingerprint: a.hostKeyFingerprint,
 		}, data)
 	}
 

@@ -22,14 +22,21 @@ type tlsConnKey struct{}
 
 // NewServer returns an HTTP handler for sign, wait, webhook, and health routes.
 // GET /healthz is registered without the mTLS gate: probes may use TLS without a client certificate.
-func NewServer(cfg config.Config, ks *keystore.Keystore, store *approval.Store, replay *auth.ReplayLRU, telegram *approval.Notifier) http.Handler {
+func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.PendingStore, store *approval.Store, replay *auth.ReplayLRU, telegram *approval.Notifier, mob *mobile.Store) http.Handler {
+	if pending == nil {
+		pending = keystore.NewPendingStore()
+	}
+	if mob == nil {
+		mob = mobile.NewStore()
+	}
 	s := &server{
 		cfg:      cfg,
 		keystore: ks,
+		pending:  pending,
 		store:    store,
 		replay:   replay,
 		telegram: telegram,
-		mobile:   mobile.NewStore(),
+		mobile:   mob,
 		push:     mobile.NewPushNotifier(cfg.FCMCredentials),
 	}
 	mux := http.NewServeMux()
@@ -43,6 +50,7 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, store *approval.Store, 
 	mux.HandleFunc("POST /api/v1/mobile/enroll", s.withAdminMTLS(s.handleMobileEnroll))
 	mux.HandleFunc("DELETE /api/v1/mobile/devices/{device_id}", s.withAdminMTLS(s.handleMobileDeleteDevice))
 	mux.HandleFunc("POST /api/v1/mobile/approve", s.withMTLS(s.handleMobileApprove))
+	mux.HandleFunc("POST /api/v1/mobile/keys/pending", s.withMTLS(s.handleMobileKeysPending))
 	return mux
 }
 
@@ -53,6 +61,7 @@ type server struct {
 	replay   *auth.ReplayLRU
 	telegram *approval.Notifier
 	mobile   *mobile.Store
+	pending  *keystore.PendingStore
 	push     mobile.Notifier
 }
 

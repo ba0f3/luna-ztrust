@@ -37,7 +37,7 @@ func main() {
 		log.Fatalf("sdk client: %v", err)
 	}
 
-	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost)
+	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost, cfg.HostKeyFingerprint)
 
 	if err := os.Remove(cfg.SocketPath); err != nil && !os.IsNotExist(err) {
 		log.Fatalf("remove socket: %v", err)

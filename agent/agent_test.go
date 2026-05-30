@@ -82,7 +82,7 @@ func TestLunaAgentSignCallsProvider(t *testing.T) {
 	cert, priv := testCertAndKey(t)
 	mock := &mockProvider{cert: cert, priv: priv}
 
-	la := agent.NewLunaAgent(mock, agent.SignerModeLocalCA, "deploy", "10.0.0.5")
+	la := agent.NewLunaAgent(mock, agent.SignerModeLocalCA, "deploy", "10.0.0.5", "")
 	data := []byte("ssh-auth challenge")
 
 	sig, err := la.Sign(nil, data)
@@ -128,7 +128,7 @@ func TestLunaAgentSignLocalKeyMode(t *testing.T) {
 		signerMode: agent.SignerModeLocalKey,
 		sig:        want,
 	}
-	la := agent.NewLunaAgent(mock, agent.SignerModeLocalKey, "deploy", "10.0.0.5")
+	la := agent.NewLunaAgent(mock, agent.SignerModeLocalKey, "deploy", "10.0.0.5", "abc")
 	got, err := la.Sign(nil, []byte("challenge"))
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
@@ -142,7 +142,7 @@ func TestLunaAgentSignLocalKeyMode(t *testing.T) {
 }
 
 func TestLunaAgentListEmpty(t *testing.T) {
-	la := agent.NewLunaAgent(&mockProvider{}, agent.SignerModeLocalCA, "u", "1.2.3.4")
+	la := agent.NewLunaAgent(&mockProvider{}, agent.SignerModeLocalCA, "u", "1.2.3.4", "")
 	keys, err := la.List()
 	if err != nil {
 		t.Fatal(err)
@@ -154,7 +154,7 @@ func TestLunaAgentListEmpty(t *testing.T) {
 
 func TestLunaAgentSignProviderError(t *testing.T) {
 	mock := &mockProvider{err: context.DeadlineExceeded}
-	la := agent.NewLunaAgent(mock, agent.SignerModeLocalCA, "deploy", "10.0.0.5")
+	la := agent.NewLunaAgent(mock, agent.SignerModeLocalCA, "deploy", "10.0.0.5", "")
 	_, err := la.Sign(nil, []byte("data"))
 	if err == nil {
 		t.Fatal("expected error from provider")

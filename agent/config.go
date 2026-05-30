@@ -10,6 +10,7 @@ type Config struct {
 	MTLSCA     string
 	TargetUser string
 	TargetHost string
-	SocketPath string
-	SignerMode string
+	SocketPath         string
+	SignerMode         string
+	HostKeyFingerprint string
 }

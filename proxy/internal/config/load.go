@@ -41,6 +41,8 @@ func newViper() (*viper.Viper, error) {
 	v.SetDefault("admin_client_ou", defaultAdminClientOU)
 	v.SetDefault("signer_mode", defaultSignerMode)
 	v.SetDefault("approval_timeout", defaultApprovalPeriod.String())
+	v.SetDefault("control_socket", "/run/luna/control.sock")
+	v.SetDefault("control_socket_group", "luna-admin")
 
 	if path := os.Getenv("LUNA_CONFIG"); path != "" {
 		v.SetConfigFile(path)
@@ -67,6 +69,8 @@ func newViper() (*viper.Viper, error) {
 	bindEnv("mtls_server_key", "LUNA_MTLS_SERVER_KEY")
 	bindEnv("mtls_client_ca", "LUNA_MTLS_CLIENT_CA")
 	bindEnv("fcm_credentials", "FCM_CREDENTIALS")
+	bindEnv("control_socket", "LUNA_CONTROL_SOCKET")
+	bindEnv("control_socket_group", "LUNA_CONTROL_SOCKET_GROUP")
 
 	v.AutomaticEnv()
 	return v, nil
@@ -90,6 +94,8 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		SignerMode:            strings.TrimSpace(v.GetString("signer_mode")),
 		AllowedTTLSeconds:     append([]int(nil), defaultAllowedTTLSeconds...),
 		FCMCredentials:        strings.TrimSpace(v.GetString("fcm_credentials")),
+		ControlSocket:         strings.TrimSpace(v.GetString("control_socket")),
+		ControlSocketGroup:    strings.TrimSpace(v.GetString("control_socket_group")),
 		MTLSServerCert:        strings.TrimSpace(v.GetString("mtls_server_cert")),
 		MTLSServerKey:         strings.TrimSpace(v.GetString("mtls_server_key")),
 		MTLSClientCA:          strings.TrimSpace(v.GetString("mtls_client_ca")),

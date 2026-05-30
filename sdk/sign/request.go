@@ -7,7 +7,8 @@ type Request struct {
 	TargetIP      string `json:"target_ip"`
 	Timestamp     int64  `json:"timestamp"`
 	PopSignature  string `json:"pop_signature"`
-	AgentSignData string `json:"agent_sign_data,omitempty"`
+	AgentSignData      string `json:"agent_sign_data,omitempty"`
+	HostKeyFingerprint string `json:"host_key_fingerprint,omitempty"`
 }
 
 // Response is returned from POST /api/v1/ssh/sign with status 202.
@@ -31,6 +32,7 @@ type CertRequest struct {
 
 // SignatureRequest identifies the SSH session for hosted-key signing.
 type SignatureRequest struct {
-	TargetUser string
-	TargetIP   string
+	TargetUser         string
+	TargetIP           string
+	HostKeyFingerprint string
 }

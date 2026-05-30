@@ -12,12 +12,19 @@ const (
 	SignerModeLocalKey = "local-key"
 )
 
+// LoadedSigner is a host signing key currently available on the proxy.
+type LoadedSigner struct {
+	Fingerprint string `json:"fingerprint"`
+	Comment     string `json:"comment,omitempty"`
+}
+
 // Capabilities describes luna-proxy signing and approval features.
 type Capabilities struct {
-	SignerMode        string `json:"signer_mode"`
-	LeaseSupported    bool   `json:"lease_supported"`
-	AllowedTTLSeconds []int  `json:"allowed_ttl_seconds"`
-	Sealed            bool   `json:"sealed"`
+	SignerMode        string         `json:"signer_mode"`
+	LeaseSupported    bool           `json:"lease_supported"`
+	AllowedTTLSeconds []int          `json:"allowed_ttl_seconds"`
+	Sealed            bool           `json:"sealed"`
+	LoadedSigners     []LoadedSigner `json:"loaded_signers,omitempty"`
 }
 
 // FetchCapabilities returns proxy capabilities (requires mTLS, no request body).

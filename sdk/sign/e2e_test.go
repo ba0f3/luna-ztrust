@@ -152,6 +152,9 @@ func e2eUnseal(t *testing.T, proxyURL string, adminCert tls.Certificate, pool *x
 		t.Fatalf("admin unseal: %v", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusGone {
+		t.Skip("HTTP admin unseal removed; E2E must use luna-proxy key load on control socket")
+	}
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(resp.Body)
 		t.Fatalf("admin unseal status %d: %s", resp.StatusCode, b)
