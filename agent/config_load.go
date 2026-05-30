@@ -12,7 +12,7 @@ import (
 // Load reads configuration from defaults, optional config files, .env, and environment variables.
 // Config files are merged in order (later overrides earlier):
 //
-//	./agent.yml, ~/.config/luna/agent.yml, /etc/luna/agent.yml
+//	./agent.yml|.yaml, ~/.config/luna/agent.yml|.yaml, /etc/luna/agent.yml|.yaml
 //
 // Set LUNA_CONFIG to load a single explicit file instead.
 func Load() (Config, error) {

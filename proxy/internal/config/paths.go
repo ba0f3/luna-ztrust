@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const proxyConfigFile = "proxy.yml"
+const proxyConfigName = "proxy"
 
 func userLunaConfigDir() string {
 	if dir, err := os.UserConfigDir(); err == nil {
@@ -22,12 +22,20 @@ func userLunaConfigDir() string {
 }
 
 // proxyConfigPaths returns config file paths in merge order (later entries override earlier).
+// Each location accepts proxy.yml or proxy.yaml.
 func proxyConfigPaths() []string {
-	return []string{
-		filepath.Join(".", proxyConfigFile),
-		filepath.Join(userLunaConfigDir(), proxyConfigFile),
-		filepath.Join("/etc/luna", proxyConfigFile),
+	bases := []string{
+		".",
+		userLunaConfigDir(),
+		"/etc/luna",
 	}
+	var paths []string
+	for _, base := range bases {
+		for _, ext := range []string{".yml", ".yaml"} {
+			paths = append(paths, filepath.Join(base, proxyConfigName+ext))
+		}
+	}
+	return paths
 }
 
 func mergeConfigFiles(v *viper.Viper, paths []string) error {

@@ -8,6 +8,33 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 )
 
+func TestLoadMergesYAMLExtension(t *testing.T) {
+	clearProxyEnv(t)
+	t.Setenv("LUNA_CONFIG", "")
+
+	dir := t.TempDir()
+	origWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origWD) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "proxy.yaml"), []byte("listen_addr: \":8444\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.ListenAddr != ":8444" {
+		t.Fatalf("ListenAddr = %q, want :8444", cfg.ListenAddr)
+	}
+}
+
 func TestLoadMergesConfigFilesInOrder(t *testing.T) {
 	clearProxyEnv(t)
 	t.Setenv("LUNA_CONFIG", "")

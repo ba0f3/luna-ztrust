@@ -22,7 +22,7 @@ var defaultAllowedTTLSeconds = []int{180, 300, 900}
 // Load reads configuration from defaults, optional config files, .env, and environment variables.
 // Config files are merged in order (later overrides earlier):
 //
-//	./proxy.yml, ~/.config/luna/proxy.yml, /etc/luna/proxy.yml
+//	./proxy.yml|.yaml, ~/.config/luna/proxy.yml|.yaml, /etc/luna/proxy.yml|.yaml
 //
 // Set LUNA_CONFIG to load a single explicit file instead.
 func Load() (Config, error) {

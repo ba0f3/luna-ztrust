@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const agentConfigFile = "agent.yml"
+const agentConfigName = "agent"
 
 func userLunaConfigDir() string {
 	if dir, err := os.UserConfigDir(); err == nil {
@@ -22,11 +22,18 @@ func userLunaConfigDir() string {
 }
 
 func agentConfigPaths() []string {
-	return []string{
-		filepath.Join(".", agentConfigFile),
-		filepath.Join(userLunaConfigDir(), agentConfigFile),
-		filepath.Join("/etc/luna", agentConfigFile),
+	bases := []string{
+		".",
+		userLunaConfigDir(),
+		"/etc/luna",
 	}
+	var paths []string
+	for _, base := range bases {
+		for _, ext := range []string{".yml", ".yaml"} {
+			paths = append(paths, filepath.Join(base, agentConfigName+ext))
+		}
+	}
+	return paths
 }
 
 func mergeConfigFiles(v *viper.Viper, paths []string) error {
