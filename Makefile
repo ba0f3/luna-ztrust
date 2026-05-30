@@ -8,6 +8,7 @@ test:
 
 testdata:
 	./scripts/gen-test-ca.sh
+	./scripts/gen-test-ssh-ca.sh
 
 e2e-up: testdata
 	$(COMPOSE) up -d --build

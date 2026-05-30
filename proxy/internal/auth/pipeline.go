@@ -20,12 +20,13 @@ var ErrInvalidPoP = errors.New("invalid proof of possession")
 
 // SignRequest is the JSON body for POST /api/v1/ssh/sign.
 type SignRequest struct {
-	PublicKey    string `json:"public_key"`
-	TargetUser   string `json:"target_user"`
-	TargetIP     string `json:"target_ip"`
-	Timestamp    int64  `json:"timestamp"`
-	PopSignature string `json:"pop_signature"`
-	BodyMAC      string `json:"-"` // X-Luna-Body-Mac header, set by handler
+	PublicKey     string `json:"public_key"`
+	TargetUser    string `json:"target_user"`
+	TargetIP      string `json:"target_ip"`
+	Timestamp     int64  `json:"timestamp"`
+	PopSignature  string `json:"pop_signature"`
+	AgentSignData string `json:"agent_sign_data,omitempty"`
+	BodyMAC       string `json:"-"` // X-Luna-Body-Mac header, set by handler
 }
 
 // ValidateSignRequest runs HMAC, timestamp, replay, and PoP checks in that order.

@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
-	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/signing"
 )
 
 func main() {
@@ -21,6 +21,10 @@ func main() {
 		TelegramBotToken:      os.Getenv("TELEGRAM_BOT_TOKEN"),
 		TelegramWebhookSecret: os.Getenv("TELEGRAM_WEBHOOK_SECRET"),
 		TelegramChatID:        os.Getenv("TELEGRAM_CHAT_ID"),
+		AdminClientOU:         envOrDefault("LUNA_ADMIN_CLIENT_OU", "luna-admin"),
+		KeyPath:               os.Getenv("LUNA_KEY_PATH"),
+		SignerMode:            envOrDefault("LUNA_SIGNER_MODE", "local-ca"),
+		AllowedTTLSeconds:     []int{180, 300, 900},
 	}
 	if v := os.Getenv("LUNA_APPROVAL_TIMEOUT"); v != "" {
 		d, err := time.ParseDuration(v)
@@ -34,6 +38,14 @@ func main() {
 	store.SetConfig(cfg)
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
 
+	ks := keystore.New()
+	if cfg.SignerMode == approval.SignerModeLocalKey {
+		store.SetKeySigner(signing.NewLocalKey(ks))
+	} else {
+		store.SetIssuer(signing.NewLocalCA(ks))
+	}
+	store.SetLeases(lease.NewStore())
+
 	tlsCfg, err := api.TLSConfigFromEnv()
 	if err != nil {
 		log.Fatalf("tls config: %v", err)
@@ -44,42 +56,22 @@ func main() {
 		addr = v
 	}
 
-	vaultAddr := os.Getenv("LUNA_VAULT_ADDR")
-	if vaultAddr == "" {
-		vaultAddr = os.Getenv("VAULT_ADDR")
-	}
-	vaultCfg := vault.SignConfig{VaultAddr: vaultAddr}
-	if mount := os.Getenv("VAULT_SSH_MOUNT"); mount != "" {
-		role := os.Getenv("VAULT_SSH_ROLE")
-		if role == "" {
-			role = "agent-role"
-		}
-		vaultCfg.SignPath = fmt.Sprintf("/v1/%s/sign/%s", mount, role)
-	}
-
-	var tokens vault.TokenProvider = vault.UnavailableTokenProvider{}
-	if token := os.Getenv("LUNA_VAULT_TOKEN"); token != "" {
-		tokens = vault.StaticTokenProvider{Value: token}
-	} else if sock := os.Getenv("VAULT_AGENT_SOCKET"); sock != "" {
-		uidStr := os.Getenv("VAULT_AGENT_UID")
-		if uidStr == "" {
-			log.Fatal("VAULT_AGENT_UID required when VAULT_AGENT_SOCKET is set")
-		}
-		uid, err := strconv.Atoi(uidStr)
-		if err != nil {
-			log.Fatalf("VAULT_AGENT_UID: %v", err)
-		}
-		tokens = vault.AgentTokenProvider{SocketPath: sock, AllowedUID: uid}
-	}
-
 	telegram := approval.NewNotifier(approval.NotifierConfig{
-		BotToken: cfg.TelegramBotToken,
-		ChatID:   cfg.TelegramChatID,
+		BotToken:          cfg.TelegramBotToken,
+		ChatID:            cfg.TelegramChatID,
+		AllowedTTLSeconds: cfg.AllowedTTLSeconds,
 	})
-	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens, telegram)
+	handler := api.NewServer(cfg, ks, store, replay, telegram)
 	srv := api.NewHTTPServer(addr, handler, tlsCfg)
-	log.Printf("luna-proxy listening on %s", addr)
+	log.Printf("luna-proxy listening on %s (signer=%s)", addr, cfg.SignerMode)
 	if err := srv.ListenAndServeTLS("", ""); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }

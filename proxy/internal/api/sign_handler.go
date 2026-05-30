@@ -9,6 +9,7 @@ import (
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 )
 
 type signResponse struct {
@@ -16,8 +17,10 @@ type signResponse struct {
 }
 
 type waitResponse struct {
-	SSHCertificate string `json:"ssh_certificate"`
+	SSHCertificate string `json:"ssh_certificate,omitempty"`
+	SSHSignature   string `json:"ssh_signature,omitempty"`
 	ExpiresAt      string `json:"expires_at"`
+	LeaseExpiresAt string `json:"lease_expires_at,omitempty"`
 }
 
 func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
@@ -50,10 +53,42 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey)
-	if s.cfg.Env != "dev" && s.telegram != nil {
+	if !s.keystore.Available() {
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "sealed")
+		http.Error(w, "sealed", http.StatusServiceUnavailable)
+		return
+	}
+
+	clientFP := clientCertFPFromRequest(r)
+	sourceIP := clientIPFromRemoteAddr(r.RemoteAddr)
+	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP)
+
+	if s.cfg.SignerMode == approval.SignerModeLocalKey && req.AgentSignData == "" {
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "missing_agent_sign_data")
+		http.Error(w, "agent_sign_data required", http.StatusBadRequest)
+		return
+	}
+
+	if s.cfg.Env != "dev" {
+		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData); ok {
+			tx := s.store.CreateInstantApproved(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, res)
+			s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "lease_hit")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			_ = json.NewEncoder(w).Encode(signResponse{TxID: tx.ID})
+			return
+		}
+	}
+
+	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData)
+	if s.cfg.Env != "dev" {
+		if s.telegram != nil {
+			go func() {
+				_ = s.telegram.Notify(r.Context(), tx)
+			}()
+		}
 		go func() {
-			_ = s.telegram.Notify(r.Context(), tx)
+			_ = s.push.NotifyPending(r.Context(), tx)
 		}()
 	}
 	s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "accepted")
@@ -64,18 +99,33 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleWait(w http.ResponseWriter, r *http.Request) {
 	txID := r.PathValue("tx_id")
-	cert, err := s.store.Wait(r.Context(), txID)
+	cert, signature, expiresAt, leaseExpiresAt, err := s.store.Wait(r.Context(), txID)
 	if err != nil {
 		writeWaitError(w, err)
 		return
+	}
+
+	expStr := formatTimeRFC3339(expiresAt, 5*time.Minute)
+	leaseStr := ""
+	if !leaseExpiresAt.IsZero() {
+		leaseStr = leaseExpiresAt.UTC().Format(time.RFC3339)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(waitResponse{
 		SSHCertificate: cert,
-		ExpiresAt:      time.Now().Add(5 * time.Minute).UTC().Format(time.RFC3339),
+		SSHSignature:   signature,
+		ExpiresAt:      expStr,
+		LeaseExpiresAt: leaseStr,
 	})
+}
+
+func formatTimeRFC3339(t time.Time, fallbackTTL time.Duration) string {
+	if t.IsZero() {
+		return time.Now().Add(fallbackTTL).UTC().Format(time.RFC3339)
+	}
+	return t.UTC().Format(time.RFC3339)
 }
 
 func writeAuthError(w http.ResponseWriter, err error) {

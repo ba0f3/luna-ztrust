@@ -50,9 +50,24 @@ func newMockSignServer() *mockSignServer {
 
 func (m *mockSignServer) handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/capabilities", m.handleCapabilities)
 	mux.HandleFunc("POST /api/v1/ssh/sign", m.handleSign)
 	mux.HandleFunc("GET /api/v1/ssh/sign/{tx_id}/wait", m.handleWait)
 	return mux
+}
+
+func (m *mockSignServer) handleCapabilities(w http.ResponseWriter, r *http.Request) {
+	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+		http.Error(w, "client certificate required", http.StatusUnauthorized)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"signer_mode":         "local-ca",
+		"lease_supported":     true,
+		"allowed_ttl_seconds": []int{180, 300, 900},
+		"sealed":              false,
+	})
 }
 
 func (m *mockSignServer) handleSign(w http.ResponseWriter, r *http.Request) {
@@ -196,6 +211,65 @@ func TestRequestCertificateHappyPath(t *testing.T) {
 	}
 	if _, ok := signer.PublicKey().(*ssh.Certificate); !ok {
 		t.Fatalf("signer public key type = %T", signer.PublicKey())
+	}
+}
+
+func TestFetchCapabilities(t *testing.T) {
+	ts, clientTLS := startMockServer(t)
+
+	c, err := sign.NewClient(sign.Config{
+		ProxyURL:   ts.URL,
+		TLSCert:    clientTLS.Certificates[0],
+		TLSRootCAs: clientTLS.RootCAs,
+		Timeout:    10 * time.Second,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	caps, err := c.FetchCapabilities(context.Background())
+	if err != nil {
+		t.Fatalf("FetchCapabilities: %v", err)
+	}
+	if caps.SignerMode != "local-ca" {
+		t.Fatalf("signer_mode = %q", caps.SignerMode)
+	}
+	if !caps.LeaseSupported {
+		t.Fatal("expected lease_supported")
+	}
+	if len(caps.AllowedTTLSeconds) != 3 {
+		t.Fatalf("allowed_ttl_seconds = %v", caps.AllowedTTLSeconds)
+	}
+}
+
+func TestSDKClientFetchCapabilities(t *testing.T) {
+	ts, _ := startMockServer(t)
+
+	tlsCert, pool, err := sdk.LoadTLSConfig(
+		filepath.Join(testCADir(t), "client.crt"),
+		filepath.Join(testCADir(t), "client.key"),
+		filepath.Join(testCADir(t), "ca.crt"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client, err := sdk.NewClient(sdk.Config{
+		ProxyURL:   ts.URL,
+		TLSCert:    tlsCert,
+		TLSRootCAs: pool,
+		Timeout:    10 * time.Second,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	caps, err := client.FetchCapabilities(context.Background())
+	if err != nil {
+		t.Fatalf("FetchCapabilities: %v", err)
+	}
+	if caps.SignerMode != "local-ca" {
+		t.Fatalf("signer_mode = %q", caps.SignerMode)
 	}
 }
 

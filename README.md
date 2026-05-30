@@ -1,26 +1,25 @@
 # Luna Z-Trust
 
-Ephemeral SSH certificate authentication for AI agents, DevOps runners, and automation. Luna replaces long-lived SSH keys with short-lived certificates signed by a HashiCorp Vault SSH CA, gated by out-of-band human approval (Telegram) and strict client authentication (mTLS, proof-of-possession, request HMAC).
+Ephemeral SSH authentication for AI agents, DevOps runners, and automation. A self-hosted **luna-proxy** holds encrypted signing keys (manual unseal), issues short-lived SSH **certificates** (`local-ca`) or **hosted-key signatures** (`local-key`), and gates access with out-of-band approval (Telegram v1; mobile enroll/approve API on the server).
 
 ## Components
 
 | Component | Role |
 |-----------|------|
-| **luna-sdk** | Publishable Go library: ephemeral keys, PoP, mTLS + HMAC to proxy, cert lifecycle |
-| **luna-proxy** | Central gateway: authorization, Telegram OOB approval, Vault SSH CA signing |
+| **luna-sdk** | Publishable Go library: ephemeral keys, PoP, mTLS + HMAC to proxy, cert/signature lifecycle |
+| **luna-proxy** | Central gateway: auth pipeline, keystore unseal, signing, Telegram OOB, session leases |
 | **luna-agent** | OS daemon: `SSH_AUTH_SOCK` interceptor; blocking `Sign` for unmodified `ssh` |
 
-**Out of scope in this repository:** [lunacli](https://github.com/ba0f3/lunacli) (separate project; imports `luna-sdk`), `vault-agent`, Vault server provisioning, target `sshd` setup.
+**Out of scope in this repository:** [lunacli](https://github.com/ba0f3/lunacli) (separate project; imports `luna-sdk`), target `sshd` provisioning.
 
 ## Architecture
 
 ```mermaid
 graph TD
     subgraph CENTRAL["Central host"]
-        VA["vault-agent"]
-        LP["luna-proxy :443 mTLS"]
-        VA -->|"SO_PEERCRED Unix socket"| LP
-        LP --> Vault["Vault SSH CA"]
+        LP["luna-proxy :8443 mTLS"]
+        KS["encrypted key + admin unseal"]
+        KS --> LP
         LP --> TG["Telegram API"]
     end
 
@@ -41,10 +40,10 @@ graph TD
 
 1. Client generates an ephemeral Ed25519 keypair (memory only).
 2. `POST /api/v1/ssh/sign` with JSON body, `pop_signature`, mTLS, `X-Luna-Body-Mac`.
-3. Proxy validates the auth pipeline, creates `tx_id`, sends Telegram (or auto-approves in dev).
+3. Proxy validates the auth pipeline; if the keystore is sealed → `503`. Otherwise lease fast-path or new `tx_id` + Telegram (or auto-approve in dev).
 4. `GET /api/v1/ssh/sign/{tx_id}/wait` blocks until approved, denied, or timeout.
-5. Proxy obtains a Vault token via vault-agent, signs the cert with `source-address` from client IP.
-6. SDK returns `*ssh.Certificate` + private key; agent returns `ssh.Signature` to OpenSSH.
+5. Proxy signs via `local-ca` (SSH user cert + `source-address`) or `local-key` (`agent_sign_data` → `ssh_signature`).
+6. SDK returns cert + private key, or signature; agent returns `ssh.Signature` to OpenSSH.
 
 ## Repository layout
 
@@ -55,9 +54,8 @@ luna-ztrust/
   proxy/        # github.com/ba0f3/luna-ztrust/proxy
   agent/        # github.com/ba0f3/luna-ztrust/agent
   docs/
-    design-specification.md
-    superpowers/specs/2026-05-21-luna-core-design.md
-    superpowers/plans/2026-05-21-luna-core.md
+    superpowers/specs/2026-05-30-self-hosted-central-design.md
+    superpowers/plans/2026-05-30-self-hosted-central.md
 ```
 
 **Module dependency rules:**
@@ -68,11 +66,10 @@ luna-ztrust/
 
 ## Requirements
 
-- Go 1.23+
-- Linux (for `SO_PEERCRED` vault-agent token handoff on the proxy host)
-- Internal mTLS CA (client certs for SDK/agent)
-- HashiCorp Vault with SSH secrets engine
-- vault-agent on the proxy host
+- Go 1.25+ (see `go.work`)
+- Linux recommended (keystore `mlock` on unseal)
+- Internal mTLS CA (client certs for SDK/agent; admin OU for unseal API)
+- Encrypted signing key at `LUNA_KEY_PATH`
 - Telegram bot (production approval path)
 
 ## Build and test
@@ -80,34 +77,23 @@ luna-ztrust/
 ```bash
 go work sync
 make test
-```
-
-Generate test mTLS material (when `scripts/gen-test-ca.sh` is present):
-
-```bash
-make testdata
+make testdata   # mTLS + encrypted SSH keys for CI
 ```
 
 ## E2E
 
-Local end-to-end stack: Vault dev mode, SSH CA setup (`ssh-agent-signer`), and `luna-proxy` with `LUNA_ENV=dev` (auto-approve) and test mTLS certificates.
-
-**Prerequisites:** Docker, Docker Compose v2, OpenSSL (`make testdata`).
+Docker Compose runs `luna-proxy` with test mTLS and an encrypted CA key. Tests call `POST /api/v1/admin/unseal` before signing.
 
 ```bash
 make testdata
-make e2e-up          # starts vault, vault-setup, luna-proxy on :8443
-make e2e-test        # SDK sign client against https://localhost:8443
-make e2e-down        # tear down volumes
+make e2e-up
+make e2e-test
+make e2e-down
 ```
-
-Manual test run:
 
 ```bash
 LUNA_PROXY_URL=https://localhost:8443 go test -tags=e2e ./sdk/sign/... -v
 ```
-
-The `e2e` build tag skips automatically when Docker is unavailable or the stack is not running. For E2E only, `luna-proxy` accepts `LUNA_VAULT_TOKEN` (dev root token); production should use `VAULT_AGENT_SOCKET` instead.
 
 ## Configuration (overview)
 
@@ -115,20 +101,26 @@ The `e2e` build tag skips automatically when Docker is unavailable or the stack 
 
 | Variable | Purpose |
 |----------|---------|
-| `LUNA_ENV=dev` | Auto-approve (proxy only; not client-settable) |
-| `VAULT_AGENT_SOCKET` | Unix path for Vault token handoff |
+| `LUNA_KEY_PATH` | Encrypted SSH signing key (PEM, passphrase at unseal) |
+| `LUNA_SIGNER_MODE` | `local-ca` (default) or `local-key` |
+| `LUNA_ADMIN_CLIENT_OU` | Client cert OU for `/api/v1/admin/*` (default `luna-admin`) |
+| `LUNA_ENV=dev` | Auto-approve (proxy env only) |
 | `TELEGRAM_BOT_TOKEN` | Outbound Telegram API |
-| `TELEGRAM_WEBHOOK_SECRET` | Webhook validation (`X-Telegram-Bot-Api-Secret-Token`) |
+| `TELEGRAM_WEBHOOK_SECRET` | Webhook validation |
 | `TELEGRAM_CHAT_ID` | Admin chat for approval prompts |
+| `FCM_CREDENTIALS` | P5 hook for mobile push (stub until implemented) |
+
+Vault / `LUNA_VAULT_*` are removed from the runtime path; see [docs/legacy-vault-migration.md](docs/legacy-vault-migration.md).
 
 ### luna-agent
 
 | Variable | Purpose |
 |----------|---------|
 | `LUNA_PROXY_URL` | Proxy base URL |
+| `LUNA_SIGNER_MODE` | `local-ca` or `local-key` (must match proxy) |
 | `LUNA_MTLS_CERT` / `LUNA_MTLS_KEY` / `LUNA_MTLS_CA` | Client mTLS material |
 | `LUNA_TARGET_USER` | Default SSH principal |
-| `LUNA_TARGET_HOST` | Target IP/hostname for cert binding |
+| `LUNA_TARGET_HOST` | Target IP/hostname for PoP / cert binding |
 
 Agent socket: `/run/luna/agent.sock` (mode `0600`).
 
@@ -136,34 +128,36 @@ Agent socket: `/run/luna/agent.sock` (mode `0600`).
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST` | `/api/v1/admin/unseal` | Admin mTLS: load signing key |
+| `GET` | `/api/v1/admin/seal-status` | Admin mTLS: sealed state |
+| `GET` | `/api/v1/capabilities` | mTLS: signer mode, TTLs, sealed |
 | `POST` | `/api/v1/ssh/sign` | Create transaction; `202` + `tx_id` |
-| `GET` | `/api/v1/ssh/sign/{tx_id}/wait` | Block until cert or terminal error |
+| `GET` | `/api/v1/ssh/sign/{tx_id}/wait` | Block until cert/signature or error |
 | `POST` | `/api/v1/telegram/webhook` | Telegram approval callback |
-| `GET` | `/healthz` | Health check (no auth) |
+| `POST` | `/api/v1/mobile/enroll` | Admin mTLS: register device |
+| `POST` | `/api/v1/mobile/approve` | mTLS + device signature |
+| `DELETE` | `/api/v1/mobile/devices/{device_id}` | Admin mTLS: revoke device |
+| `GET` | `/healthz` | Health check (no client cert required) |
 
-Auth order on sign requests: mTLS → HMAC (`X-Luna-Body-Mac` via TLS exporter `luna-request-hmac`) → timestamp window → replay LRU → PoP signature.
+Auth order on sign requests: mTLS → HMAC → timestamp → replay LRU → PoP → tx/lease/sign.
 
 ## Security principles
 
-- **Fail-closed:** Auth failures never create transactions or Telegram prompts.
-- **Zero disk keys:** Ephemeral private keys and certs stay in memory (v1).
-- **IP binding:** Vault `source-address` from client `RemoteAddr` on the mTLS listener.
-- **No static HMAC secret:** Derived from TLS exporter after handshake.
-- **Privilege separation:** vault-agent (root) hands tokens to luna-proxy (dedicated user) via SO_PEERCRED.
+- **Fail-closed:** Auth and unseal failures never create transactions or Telegram prompts.
+- **Sealed by default:** Sign returns `503` until admin unseal.
+- **Zero disk keys on clients:** Ephemeral private keys stay in memory.
+- **IP binding:** `source-address` on user certs from mTLS `RemoteAddr`.
+- **Session leases:** Re-approval skipped for same client + target + approver within TTL.
 
 ## Documentation
 
 | Document | Contents |
 |----------|----------|
-| [docs/setup.md](docs/setup.md) | Vault SSH CA, vault-agent auto-auth, target `sshd` trust |
-| [docs/design-specification.md](docs/design-specification.md) | North-star system design (Vault phases, zero-disk keys, lunacli) |
-| [docs/superpowers/specs/2026-05-21-luna-core-design.md](docs/superpowers/specs/2026-05-21-luna-core-design.md) | Approved design for sdk, proxy, agent |
-| [docs/superpowers/plans/2026-05-21-luna-core.md](docs/superpowers/plans/2026-05-21-luna-core.md) | Phased implementation plan |
+| [docs/setup.md](docs/setup.md) | Target `sshd` trust, unseal runbook, legacy Vault notes |
+| [docs/legacy-vault-migration.md](docs/legacy-vault-migration.md) | Vault → self-hosted mapping |
+| [docs/superpowers/specs/2026-05-30-self-hosted-central-design.md](docs/superpowers/specs/2026-05-30-self-hosted-central-design.md) | Self-hosted central server design |
+| [docs/superpowers/plans/2026-05-30-self-hosted-central.md](docs/superpowers/plans/2026-05-30-self-hosted-central.md) | Implementation plan |
 | [AGENTS.md](AGENTS.md) | Guidance for AI coding agents |
-
-## Status
-
-Early scaffold: Go workspace and module stubs exist; core signing, auth pipeline, and agent protocol are specified and tracked in the implementation plan. See the plan for phase exit criteria (P0–P5).
 
 ## License
 

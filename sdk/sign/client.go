@@ -124,12 +124,15 @@ func (c *Client) RequestCertificate(ctx context.Context, req CertRequest) (*ssh.
 		return nil, nil, err
 	}
 
-	certLine, err := c.getWait(ctx, txID)
+	wait, err := c.getWait(ctx, txID)
 	if err != nil {
 		return nil, nil, err
 	}
+	if wait.SSHCertificate == "" {
+		return nil, nil, fmt.Errorf("empty ssh_certificate in wait response")
+	}
 
-	cert, err := parseCertificate(certLine)
+	cert, err := parseCertificate(wait.SSHCertificate)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -173,30 +176,27 @@ func (c *Client) postSign(ctx context.Context, body []byte) (string, error) {
 	return out.TxID, nil
 }
 
-func (c *Client) getWait(ctx context.Context, txID string) (string, error) {
+func (c *Client) getWait(ctx context.Context, txID string) (WaitResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.proxyURL+"/api/v1/ssh/sign/"+txID+"/wait", nil)
 	if err != nil {
-		return "", err
+		return WaitResponse{}, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("GET wait: %w", err)
+		return WaitResponse{}, fmt.Errorf("GET wait: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", readHTTPError(resp, "GET wait")
+		return WaitResponse{}, readHTTPError(resp, "GET wait")
 	}
 
 	var out WaitResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", fmt.Errorf("decode wait response: %w", err)
+		return WaitResponse{}, fmt.Errorf("decode wait response: %w", err)
 	}
-	if out.SSHCertificate == "" {
-		return "", fmt.Errorf("empty ssh_certificate in wait response")
-	}
-	return out.SSHCertificate, nil
+	return out, nil
 }
 
 func parseCertificate(line string) (*ssh.Certificate, error) {

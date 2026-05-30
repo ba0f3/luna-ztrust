@@ -14,9 +14,10 @@ type Config struct {
 	MTLSCert   string
 	MTLSKey    string
 	MTLSCA     string
-	TargetUser string
-	TargetHost string
-	SocketPath string
+	TargetUser  string
+	TargetHost  string
+	SocketPath  string
+	SignerMode  string
 }
 
 // LoadFromEnv reads agent configuration from process environment variables.
@@ -29,6 +30,7 @@ func LoadFromEnv() (Config, error) {
 		TargetUser: strings.TrimSpace(os.Getenv("LUNA_TARGET_USER")),
 		TargetHost: strings.TrimSpace(os.Getenv("LUNA_TARGET_HOST")),
 		SocketPath: strings.TrimSpace(os.Getenv("LUNA_AGENT_SOCKET")),
+		SignerMode: strings.TrimSpace(os.Getenv("LUNA_SIGNER_MODE")),
 	}
 	if cfg.SocketPath == "" {
 		cfg.SocketPath = defaultSocketPath

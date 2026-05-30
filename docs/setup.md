@@ -1,8 +1,26 @@
 # Luna Z-Trust — Infrastructure Setup
 
-This guide covers the HashiCorp Vault and host configuration required **before** running `luna-proxy`, `luna-sdk`, or `luna-agent`. Application build, mTLS client certificates, and Telegram approval are documented in [README.md](../README.md).
+Application build, mTLS, Telegram, and proxy env vars are in [README.md](../README.md). **Self-hosted signing** (encrypted key, admin unseal, target CA trust) is the default path — see [self-hosted central design](superpowers/specs/2026-05-30-self-hosted-central-design.md).
 
-## Overview
+## Self-hosted central (current)
+
+| Step | Action |
+|------|--------|
+| 1 | Generate or import an SSH CA (or host) key; store **encrypted PEM** at `LUNA_KEY_PATH` |
+| 2 | Set `LUNA_SIGNER_MODE=local-ca` (or `local-key` for hosted-key agent signing) |
+| 3 | Start `luna-proxy` (sealed); call `POST /api/v1/admin/unseal` with admin mTLS client (`OU=luna-admin`) |
+| 4 | On targets, set `TrustedUserCAKeys` to the CA **public** key (for `local-ca`) |
+| 5 | Issue automation client mTLS certs; configure Telegram webhook for production |
+
+Test material: `make testdata` → `testdata/ca/` (mTLS), `testdata/ssh/encrypted_ca.key` (passphrase `test-pass`).
+
+---
+
+## Legacy: HashiCorp Vault
+
+The sections below describe the **deprecated** Vault + `vault-agent` integration. New deployments should use the self-hosted path and [legacy-vault-migration.md](legacy-vault-migration.md).
+
+## Overview (Vault)
 
 
 | Layer         | Component                | Purpose                                                                       |

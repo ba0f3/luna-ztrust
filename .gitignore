@@ -1,2 +1,5 @@
 testdata/ca/*.key
+testdata/ssh/encrypted_*.key
+testdata/ssh/.*.tmp
 bin/
+*.csr

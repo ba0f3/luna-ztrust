@@ -3,13 +3,21 @@ package approval
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"sync"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
-	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/signing"
 	"github.com/oklog/ulid/v2"
+)
+
+// Signer mode constants match LUNA_SIGNER_MODE.
+const (
+	SignerModeLocalCA  = "local-ca"
+	SignerModeLocalKey = "local-key"
 )
 
 // State is the approval transaction lifecycle state.
@@ -22,37 +30,49 @@ const (
 	StateExpired  State = "expired"
 )
 
+// DefaultDevCertTTL is the credential lifetime used for LUNA_ENV=dev auto-approve.
+const DefaultDevCertTTL = 5 * time.Minute
+
 // Transaction is a pending or terminal SSH sign approval request.
 type Transaction struct {
-	ID         string
-	TargetUser string
-	TargetIP   string
-	PublicKey  string
-	State      State
-	CreatedAt  time.Time
+	ID            string
+	TargetUser    string
+	TargetIP      string
+	PublicKey     string
+	SourceIP      string
+	ClientCertFP  string
+	AgentSignData string
+	State         State
+	CreatedAt     time.Time
 }
 
 // Result is delivered to waiters when a transaction reaches a terminal state.
 type Result struct {
-	Cert string
-	Err  error
+	Cert           string
+	Signature      string
+	ExpiresAt      time.Time
+	LeaseExpiresAt time.Time
+	Err            error
 }
 
 var (
-	ErrNotFound = errors.New("transaction not found")
-	ErrDenied   = errors.New("transaction denied")
-	ErrExpired  = errors.New("transaction expired")
-	ErrTimeout  = errors.New("approval timeout")
+	ErrNotFound       = errors.New("transaction not found")
+	ErrDenied         = errors.New("transaction denied")
+	ErrExpired        = errors.New("transaction expired")
+	ErrTimeout        = errors.New("approval timeout")
+	ErrSignerNotReady = errors.New("signer not configured")
+	ErrAgentSignData  = errors.New("agent_sign_data required for local-key mode")
 )
 
 // Store holds in-flight approval transactions.
 type Store struct {
-	mu       sync.Mutex
-	cfg      config.Config
-	vaultCfg vault.SignConfig
-	tokens   vault.TokenProvider
-	timeout  time.Duration
-	txs      map[string]*txEntry
+	mu        sync.Mutex
+	cfg       config.Config
+	issuer    signing.CertIssuer
+	keySigner *signing.LocalKey
+	leases    *lease.Store
+	timeout   time.Duration
+	txs       map[string]*txEntry
 }
 
 type txEntry struct {
@@ -81,12 +101,32 @@ func (s *Store) SetConfig(cfg config.Config) {
 	}
 }
 
-// SetVault configures Vault SSH signing used when Approve is called and VaultAddr is set.
-func (s *Store) SetVault(cfg vault.SignConfig, tokens vault.TokenProvider) {
+// SetIssuer configures local CA signing used when SignerMode is local-ca.
+func (s *Store) SetIssuer(issuer signing.CertIssuer) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.vaultCfg = cfg
-	s.tokens = tokens
+	s.issuer = issuer
+}
+
+// SetKeySigner configures hosted-key signing used when SignerMode is local-key.
+func (s *Store) SetKeySigner(keySigner *signing.LocalKey) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.keySigner = keySigner
+}
+
+// SetLeases configures the session lease store used after OOB approval.
+func (s *Store) SetLeases(leases *lease.Store) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.leases = leases
+}
+
+func (s *Store) signerMode() string {
+	if s.cfg.SignerMode == SignerModeLocalKey {
+		return SignerModeLocalKey
+	}
+	return SignerModeLocalCA
 }
 
 func newTxID() string {
@@ -94,17 +134,20 @@ func newTxID() string {
 }
 
 // Create registers a pending transaction and returns its metadata and result channel.
-// When cfg.Env is "dev" and VaultAddr is unset, auto-approves with placeholder cert "dev-cert".
-func (s *Store) Create(targetUser, targetIP, publicKey string) (*Transaction, <-chan Result) {
+// When cfg.Env is "dev", auto-approves via the configured signer.
+func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData string) (*Transaction, <-chan Result) {
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
-		ID:         id,
-		TargetUser: targetUser,
-		TargetIP:   targetIP,
-		PublicKey:  publicKey,
-		State:      StatePending,
-		CreatedAt:  time.Now(),
+		ID:            id,
+		TargetUser:    targetUser,
+		TargetIP:      targetIP,
+		PublicKey:     publicKey,
+		SourceIP:      sourceIP,
+		ClientCertFP:  clientCertFP,
+		AgentSignData: agentSignData,
+		State:         StatePending,
+		CreatedAt:     time.Now(),
 	}
 	ch := make(chan Result, 1)
 	entry := &txEntry{
@@ -114,7 +157,6 @@ func (s *Store) Create(targetUser, targetIP, publicKey string) (*Transaction, <-
 	s.txs[id] = entry
 	timeout := s.timeout
 	cfg := s.cfg
-	vaultAddr := s.vaultCfg.VaultAddr
 	s.mu.Unlock()
 
 	entry.timer = time.AfterFunc(timeout, func() {
@@ -122,49 +164,147 @@ func (s *Store) Create(targetUser, targetIP, publicKey string) (*Transaction, <-
 	})
 
 	if cfg.Env == "dev" {
-		if vaultAddr != "" {
-			go s.approveViaVault(context.Background(), id)
-		} else {
-			go s.Approve(id, "dev-cert")
-		}
+		go s.approveWithIssuer(context.Background(), id, DefaultDevCertTTL, "")
 	}
 
 	return tx, ch
 }
 
-// Approve marks the transaction approved and delivers certPEM to waiters.
-// When VaultAddr is configured, certPEM is ignored and the cert is obtained from Vault.
-func (s *Store) Approve(txID, certPEM string) {
-	s.mu.Lock()
-	vaultAddr := s.vaultCfg.VaultAddr
-	s.mu.Unlock()
-	if vaultAddr != "" {
-		s.approveViaVault(context.Background(), txID)
-		return
+// Approve marks the transaction approved, issues credentials, and records a session lease.
+func (s *Store) Approve(txID string, ttl time.Duration, approverChatID string) {
+	if ttl <= 0 {
+		ttl = DefaultDevCertTTL
 	}
-	s.finish(txID, StateApproved, &Result{Cert: certPEM})
+	s.approveWithIssuer(context.Background(), txID, ttl, approverChatID)
 }
 
-func (s *Store) approveViaVault(ctx context.Context, txID string) {
+// IssueFromLease signs immediately when an active session lease matches lookup.
+func (s *Store) IssueFromLease(ctx context.Context, lookup lease.LookupKey, publicKey, agentSignData string) (Result, bool) {
+	s.mu.Lock()
+	leases := s.leases
+	s.mu.Unlock()
+	if leases == nil {
+		return Result{}, false
+	}
+	active, ok := leases.FindActive(lookup)
+	if !ok {
+		return Result{}, false
+	}
+	remaining := active.Remaining()
+	if remaining <= 0 {
+		return Result{}, false
+	}
+	tx := &Transaction{
+		PublicKey:     publicKey,
+		TargetUser:    lookup.TargetUser,
+		TargetIP:      lookup.TargetIP,
+		SourceIP:      lookup.SourceIP,
+		AgentSignData: agentSignData,
+	}
+	res, err := s.issueForTransaction(ctx, tx, time.Now().Add(remaining))
+	if err != nil {
+		return Result{Err: err}, false
+	}
+	res.LeaseExpiresAt = active.ExpiresAt
+	return res, true
+}
+
+// CreateInstantApproved registers a completed transaction for lease fast-path.
+func (s *Store) CreateInstantApproved(targetUser, targetIP, publicKey, sourceIP string, res Result) *Transaction {
+	s.mu.Lock()
+	id := newTxID()
+	tx := &Transaction{
+		ID:         id,
+		TargetUser: targetUser,
+		TargetIP:   targetIP,
+		PublicKey:  publicKey,
+		SourceIP:   sourceIP,
+		State:      StateApproved,
+		CreatedAt:  time.Now(),
+	}
+	ch := make(chan Result, 1)
+	ch <- res
+	close(ch)
+	s.txs[id] = &txEntry{
+		tx:       tx,
+		result:   &res,
+		resultCh: ch,
+	}
+	s.mu.Unlock()
+	return tx
+}
+
+func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Duration, approverChatID string) {
 	entry := s.getEntry(txID)
 	if entry == nil {
 		return
 	}
-	if s.tokens == nil {
-		s.finish(txID, StateDenied, &Result{Err: vault.ErrTokenProviderUnavailable})
-		return
-	}
-	token, err := s.tokens.Token(ctx)
+
+	until := time.Now().Add(ttl)
+	res, err := s.issueForTransaction(ctx, entry.tx, until)
 	if err != nil {
 		s.finish(txID, StateDenied, &Result{Err: err})
 		return
 	}
-	cert, err := vault.SignSSHKey(ctx, s.vaultCfg, token, entry.tx.PublicKey, entry.tx.TargetUser, entry.tx.TargetIP)
-	if err != nil {
-		s.finish(txID, StateDenied, &Result{Err: err})
-		return
+
+	s.mu.Lock()
+	leases := s.leases
+	s.mu.Unlock()
+	leaseExpires := until
+	if leases != nil && approverChatID != "" && entry.tx.ClientCertFP != "" {
+		lookup := lease.NewLookupKey(entry.tx.ClientCertFP, entry.tx.TargetUser, entry.tx.TargetIP, entry.tx.SourceIP)
+		leases.Put(lease.NewFullKey(lookup, approverChatID), until)
 	}
-	s.finish(txID, StateApproved, &Result{Cert: cert})
+	res.LeaseExpiresAt = leaseExpires
+
+	s.finish(txID, StateApproved, &res)
+}
+
+func (s *Store) issueForTransaction(ctx context.Context, tx *Transaction, until time.Time) (Result, error) {
+	s.mu.Lock()
+	mode := s.signerMode()
+	issuer := s.issuer
+	keySigner := s.keySigner
+	s.mu.Unlock()
+
+	if mode == SignerModeLocalKey {
+		if tx.AgentSignData == "" {
+			return Result{}, ErrAgentSignData
+		}
+		if keySigner == nil {
+			return Result{}, ErrSignerNotReady
+		}
+		data, err := base64.StdEncoding.DecodeString(tx.AgentSignData)
+		if err != nil {
+			return Result{}, err
+		}
+		blob, err := keySigner.SignAgent(ctx, data)
+		if err != nil {
+			return Result{}, err
+		}
+		return Result{
+			Signature: base64.StdEncoding.EncodeToString(blob),
+			ExpiresAt: until,
+		}, nil
+	}
+
+	if issuer == nil {
+		return Result{}, ErrSignerNotReady
+	}
+	res, err := issuer.IssueCert(ctx, signing.IssueRequest{
+		ClientPubKey: tx.PublicKey,
+		TargetUser:   tx.TargetUser,
+		TargetIP:     tx.TargetIP,
+		SourceIP:     tx.SourceIP,
+		ValidUntil:   until,
+	})
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{
+		Cert:      res.Certificate,
+		ExpiresAt: res.ExpiresAt,
+	}, nil
 }
 
 func (s *Store) getEntry(txID string) *txEntry {
@@ -206,23 +346,22 @@ func (s *Store) finish(txID string, state State, res *Result) {
 }
 
 // Wait blocks until the transaction is approved, denied, expires, or ctx is canceled.
-// On context cancellation the transaction is removed from the store.
-func (s *Store) Wait(ctx context.Context, txID string) (string, error) {
+func (s *Store) Wait(ctx context.Context, txID string) (cert, signature string, expiresAt, leaseExpiresAt time.Time, err error) {
 	res, ok := s.waitResult(ctx, txID)
 	if !ok {
-		return "", ErrNotFound
+		return "", "", time.Time{}, time.Time{}, ErrNotFound
 	}
 
 	select {
 	case r := <-res.ch:
 		s.remove(txID)
 		if r.Err != nil {
-			return "", r.Err
+			return "", "", time.Time{}, time.Time{}, r.Err
 		}
-		return r.Cert, nil
+		return r.Cert, r.Signature, r.ExpiresAt, r.LeaseExpiresAt, nil
 	case <-ctx.Done():
 		s.cancelWait(txID)
-		return "", ctx.Err()
+		return "", "", time.Time{}, time.Time{}, ctx.Err()
 	}
 }
 

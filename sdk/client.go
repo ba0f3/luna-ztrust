@@ -23,11 +23,13 @@ type Config struct {
 	TLSCert    tls.Certificate
 	TLSRootCAs *x509.CertPool
 	Timeout    time.Duration
+	SignerMode string
 }
 
-// Client requests ephemeral SSH certificates from luna-proxy.
+// Client requests ephemeral SSH credentials from luna-proxy.
 type Client struct {
-	inner *sign.Client
+	inner      *sign.Client
+	signerMode string
 }
 
 // NewClient creates an SDK client backed by the sign HTTP transport.
@@ -41,7 +43,15 @@ func NewClient(cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{inner: inner}, nil
+	return &Client{inner: inner, signerMode: cfg.SignerMode}, nil
+}
+
+// SignerMode returns the configured signer mode (local-ca or local-key).
+func (c *Client) SignerMode() string {
+	if c.signerMode != "" {
+		return c.signerMode
+	}
+	return sign.SignerModeLocalCA
 }
 
 // RequestCertificate obtains a signed SSH user certificate and ephemeral private key.
