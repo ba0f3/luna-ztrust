@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -116,6 +117,24 @@ func TestAdmin_UnsealAndSealStatus(t *testing.T) {
 	}
 	if status.Sealed {
 		t.Fatal("expected sealed=false")
+	}
+}
+
+func TestAdmin_UnsealRejectsOversizedBody(t *testing.T) {
+	ks := keystore.New()
+	cfg := config.Config{AdminClientOU: "luna-admin", KeyPath: "/tmp/unused"}
+	ts, adminClient, _ := startAdminServer(t, cfg, ks)
+
+	body := []byte(`{"passphrase":"` + strings.Repeat("x", 2048) + `"}`)
+	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/api/v1/admin/unseal", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := adminClient.http.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected 413, got %d", resp.StatusCode)
 	}
 }
 

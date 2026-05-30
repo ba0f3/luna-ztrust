@@ -3,8 +3,14 @@ package api
 import (
 	"crypto/x509"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
+
+	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 )
+
+const maxUnsealRequestBody = 1 << 10 // 1 KiB; ample for passphrase JSON
 
 type unsealRequest struct {
 	Passphrase string `json:"passphrase"`
@@ -15,8 +21,19 @@ type sealStatusResponse struct {
 }
 
 func (s *server) handleUnseal(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxUnsealRequestBody)
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "read body", http.StatusBadRequest)
+		return
+	}
 	var req unsealRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.Unmarshal(raw, &req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
@@ -29,6 +46,10 @@ func (s *server) handleUnseal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.keystore.Unseal(s.cfg.KeyPath, req.Passphrase); err != nil {
+		if errors.Is(err, keystore.ErrUnsealLocked) {
+			http.Error(w, "unseal locked", http.StatusTooManyRequests)
+			return
+		}
 		http.Error(w, "unseal failed", http.StatusForbidden)
 		return
 	}

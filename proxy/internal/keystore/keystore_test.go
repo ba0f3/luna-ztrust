@@ -78,6 +78,24 @@ func TestKeystore_UnsealWrongPassphrase(t *testing.T) {
 	}
 }
 
+func TestKeystore_UnsealLockoutAfterFailures(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "encrypted.key")
+	writeEncryptedKeyFile(t, path)
+
+	ks := keystore.New()
+	for i := 0; i < 5; i++ {
+		_ = ks.Unseal(path, "wrong")
+	}
+	err := ks.Unseal(path, "wrong")
+	if !errors.Is(err, keystore.ErrUnsealLocked) {
+		t.Fatalf("attempt 6: got %v, want ErrUnsealLocked", err)
+	}
+	if err := ks.Unseal(path, testPassphrase); !errors.Is(err, keystore.ErrUnsealLocked) {
+		t.Fatalf("correct passphrase during lockout: got %v", err)
+	}
+}
+
 func TestKeystore_UnsealMissingFile(t *testing.T) {
 	ks := keystore.New()
 	err := ks.Unseal(filepath.Join(t.TempDir(), "missing.key"), testPassphrase)
