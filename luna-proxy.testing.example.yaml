@@ -2,7 +2,7 @@
 #
 # Setup:
 #   make testdata
-#   cp luna-proxy.testing.example.yaml luna-proxy.yaml
+#   cp luna-proxy.testing.example.yaml proxy.yml
 #   ./bin/luna-proxy
 #
 # Or point at this file explicitly:

@@ -19,17 +19,21 @@ const (
 
 var defaultAllowedTTLSeconds = []int{180, 300, 900}
 
-// Load reads configuration from defaults, optional config file, .env, and environment variables.
-// Set LUNA_CONFIG to an explicit file path, or place luna-proxy.yaml in . or /etc/luna.
+// Load reads configuration from defaults, optional config files, .env, and environment variables.
+// Config files are merged in order (later overrides earlier):
+//
+//	./proxy.yml, ~/.config/luna/proxy.yml, /etc/luna/proxy.yml
+//
+// Set LUNA_CONFIG to load a single explicit file instead.
 func Load() (Config, error) {
-	v, err := newViper("luna-proxy")
+	v, err := newViper()
 	if err != nil {
 		return Config{}, err
 	}
 	return configFromViper(v)
 }
 
-func newViper(name string) (*viper.Viper, error) {
+func newViper() (*viper.Viper, error) {
 	_ = gotenv.Load()
 
 	v := viper.New()
@@ -43,16 +47,8 @@ func newViper(name string) (*viper.Viper, error) {
 		if err := v.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("read config %q: %w", path, err)
 		}
-	} else {
-		v.SetConfigName(name)
-		v.SetConfigType("yaml")
-		v.AddConfigPath(".")
-		v.AddConfigPath("/etc/luna")
-		if err := v.ReadInConfig(); err != nil {
-			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-				return nil, fmt.Errorf("read config: %w", err)
-			}
-		}
+	} else if err := mergeConfigFiles(v, proxyConfigPaths()); err != nil {
+		return nil, err
 	}
 
 	bindEnv := func(key, envKey string) {

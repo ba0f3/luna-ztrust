@@ -1,7 +1,7 @@
 # Luna Z-Trust — local testing config (luna-agent)
 #
 # Setup (with proxy running and unsealed):
-#   cp luna-agent.testing.example.yaml luna-agent.yaml
+#   cp luna-agent.testing.example.yaml agent.yml
 #   ./bin/luna-agent
 #
 # Or:

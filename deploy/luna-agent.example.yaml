@@ -1,12 +1,11 @@
 # Luna Z-Trust — luna-agent on a client/automation host
 #
 # Setup:
-#   cp deploy/luna-agent.example.yaml /etc/luna/luna-agent.yaml
-#   chmod 600 /etc/luna/luna-agent.yaml
+#   cp deploy/luna-agent.example.yaml /etc/luna/agent.yml
+#   chmod 600 /etc/luna/agent.yml
 #
 # Or from repo root for local testing:
-#   cp deploy/luna-agent.example.yaml luna-agent.yaml
-#   LUNA_CONFIG=./luna-agent.yaml ./bin/luna-agent
+#   cp deploy/luna-agent.example.yaml agent.yml
 #
 # signer_mode must match the central luna-proxy configuration.
 # target_host is used for PoP binding (OpenSSH does not pass remote host to Sign).

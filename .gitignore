@@ -7,8 +7,9 @@ bin/
 .env.*
 !.env.example
 !.env.*.example
-luna-proxy.yaml
-luna-agent.yaml
+proxy.yml
+agent.yml
+!*.example.yml
 !luna-*.example.yaml
 deploy/.env.*
 !deploy/.env.*.example

@@ -9,8 +9,12 @@ import (
 	"github.com/subosito/gotenv"
 )
 
-// Load reads configuration from defaults, optional config file, .env, and environment variables.
-// Set LUNA_CONFIG to an explicit file path, or place luna-agent.yaml in . or /etc/luna.
+// Load reads configuration from defaults, optional config files, .env, and environment variables.
+// Config files are merged in order (later overrides earlier):
+//
+//	./agent.yml, ~/.config/luna/agent.yml, /etc/luna/agent.yml
+//
+// Set LUNA_CONFIG to load a single explicit file instead.
 func Load() (Config, error) {
 	v, err := newAgentViper()
 	if err != nil {
@@ -36,16 +40,8 @@ func newAgentViper() (*viper.Viper, error) {
 		if err := v.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("read config %q: %w", path, err)
 		}
-	} else {
-		v.SetConfigName("luna-agent")
-		v.SetConfigType("yaml")
-		v.AddConfigPath(".")
-		v.AddConfigPath("/etc/luna")
-		if err := v.ReadInConfig(); err != nil {
-			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-				return nil, fmt.Errorf("read config: %w", err)
-			}
-		}
+	} else if err := mergeConfigFiles(v, agentConfigPaths()); err != nil {
+		return nil, err
 	}
 
 	bindEnv := func(key, envKey string) {

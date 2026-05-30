@@ -1,15 +1,15 @@
 # Luna Z-Trust — production central server (luna-proxy)
 #
 # Setup:
-#   cp deploy/luna-proxy.production.example.yaml /etc/luna/luna-proxy.yaml
-#   chmod 600 /etc/luna/luna-proxy.yaml
+#   cp deploy/luna-proxy.production.example.yaml /etc/luna/proxy.yml
+#   chmod 600 /etc/luna/proxy.yml
 #   Edit paths and Telegram values; do NOT put the key passphrase here.
 #
 # After start, unseal via admin mTLS:
 #   POST /api/v1/admin/unseal  {"passphrase":"..."}
 #
 # systemd example:
-#   Environment=LUNA_CONFIG=/etc/luna/luna-proxy.yaml
+#   Environment=LUNA_CONFIG=/etc/luna/proxy.yml
 #   ExecStart=/usr/local/bin/luna-proxy
 #
 # Environment variables override values in this file.
