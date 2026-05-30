@@ -30,7 +30,7 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, store *approval.Store, 
 		replay:   replay,
 		telegram: telegram,
 		mobile:   mobile.NewStore(),
-		push:     mobile.NewPushNotifier(os.Getenv("FCM_CREDENTIALS")),
+		push:     mobile.NewPushNotifier(cfg.FCMCredentials),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
@@ -85,7 +85,7 @@ func tlsConnFromContext(ctx context.Context) (*tls.Conn, bool) {
 	return tc, ok
 }
 
-// TLSConfigFromEnv builds a server TLS config from env or default testdata paths.
+// TLSConfigFromEnv builds a server TLS config from environment (deprecated: use LoadTLSConfig with config.Load).
 func TLSConfigFromEnv() (*tls.Config, error) {
 	certFile := envOr("LUNA_MTLS_SERVER_CERT", defaultCertPath("server.crt"))
 	keyFile := envOr("LUNA_MTLS_SERVER_KEY", defaultCertPath("server.key"))

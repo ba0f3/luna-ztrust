@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	cfg, err := agent.LoadFromEnv()
+	cfg, err := agent.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
@@ -25,9 +25,6 @@ func main() {
 	}
 
 	signerMode := cfg.SignerMode
-	if signerMode == "" {
-		signerMode = agent.SignerModeLocalCA
-	}
 
 	client, err := sdk.NewClient(sdk.Config{
 		ProxyURL:   cfg.ProxyURL,

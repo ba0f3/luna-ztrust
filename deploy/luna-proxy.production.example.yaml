@@ -1,0 +1,42 @@
+# Luna Z-Trust — production central server (luna-proxy)
+#
+# Setup:
+#   cp deploy/luna-proxy.production.example.yaml /etc/luna/luna-proxy.yaml
+#   chmod 600 /etc/luna/luna-proxy.yaml
+#   Edit paths and Telegram values; do NOT put the key passphrase here.
+#
+# After start, unseal via admin mTLS:
+#   POST /api/v1/admin/unseal  {"passphrase":"..."}
+#
+# systemd example:
+#   Environment=LUNA_CONFIG=/etc/luna/luna-proxy.yaml
+#   ExecStart=/usr/local/bin/luna-proxy
+#
+# Environment variables override values in this file.
+
+# Never set env=dev in production
+# env: production
+
+listen_addr: ":8443"
+
+# Encrypted OpenSSH PEM; chmod 400; owner root or dedicated luna user
+key_path: /etc/luna/ssh/encrypted_ca.key
+signer_mode: local-ca
+# signer_mode: local-key
+# key_path: /etc/luna/ssh/encrypted_host.key
+
+admin_client_ou: luna-admin
+approval_timeout: 60s
+
+# mTLS server + client CA (issue automation certs separately)
+mtls_server_cert: /etc/luna/certs/server.crt
+mtls_server_key: /etc/luna/certs/server.key
+mtls_client_ca: /etc/luna/certs/ca.crt
+
+# Telegram OOB approval (required when env is not dev)
+telegram_bot_token: ""
+telegram_webhook_secret: ""
+telegram_chat_id: ""
+
+# Mobile push (P5 — stub until implemented)
+# fcm_credentials: ""

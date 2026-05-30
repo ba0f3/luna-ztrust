@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
@@ -15,23 +14,9 @@ import (
 )
 
 func main() {
-	cfg := config.Config{
-		Env:                   os.Getenv("LUNA_ENV"),
-		ApprovalTimeout:       60 * time.Second,
-		TelegramBotToken:      os.Getenv("TELEGRAM_BOT_TOKEN"),
-		TelegramWebhookSecret: os.Getenv("TELEGRAM_WEBHOOK_SECRET"),
-		TelegramChatID:        os.Getenv("TELEGRAM_CHAT_ID"),
-		AdminClientOU:         envOrDefault("LUNA_ADMIN_CLIENT_OU", "luna-admin"),
-		KeyPath:               os.Getenv("LUNA_KEY_PATH"),
-		SignerMode:            envOrDefault("LUNA_SIGNER_MODE", "local-ca"),
-		AllowedTTLSeconds:     []int{180, 300, 900},
-	}
-	if v := os.Getenv("LUNA_APPROVAL_TIMEOUT"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			log.Fatalf("LUNA_APPROVAL_TIMEOUT: %v", err)
-		}
-		cfg.ApprovalTimeout = d
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("config: %v", err)
 	}
 
 	store := approval.NewStore(cfg.ApprovalTimeout)
@@ -46,14 +31,9 @@ func main() {
 	}
 	store.SetLeases(lease.NewStore())
 
-	tlsCfg, err := api.TLSConfigFromEnv()
+	tlsCfg, err := api.LoadTLSConfig(cfg.MTLSServerCert, cfg.MTLSServerKey, cfg.MTLSClientCA)
 	if err != nil {
 		log.Fatalf("tls config: %v", err)
-	}
-
-	addr := ":8443"
-	if v := os.Getenv("LUNA_LISTEN_ADDR"); v != "" {
-		addr = v
 	}
 
 	telegram := approval.NewNotifier(approval.NotifierConfig{
@@ -62,16 +42,9 @@ func main() {
 		AllowedTTLSeconds: cfg.AllowedTTLSeconds,
 	})
 	handler := api.NewServer(cfg, ks, store, replay, telegram)
-	srv := api.NewHTTPServer(addr, handler, tlsCfg)
-	log.Printf("luna-proxy listening on %s (signer=%s)", addr, cfg.SignerMode)
+	srv := api.NewHTTPServer(cfg.ListenAddr, handler, tlsCfg)
+	log.Printf("luna-proxy listening on %s (signer=%s)", cfg.ListenAddr, cfg.SignerMode)
 	if err := srv.ListenAndServeTLS("", ""); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func envOrDefault(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }

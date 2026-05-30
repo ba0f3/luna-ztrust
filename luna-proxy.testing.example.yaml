@@ -1,0 +1,44 @@
+# Luna Z-Trust — local testing config (luna-proxy)
+#
+# Setup:
+#   make testdata
+#   cp luna-proxy.testing.example.yaml luna-proxy.yaml
+#   ./bin/luna-proxy
+#
+# Or point at this file explicitly:
+#   LUNA_CONFIG=./luna-proxy.testing.example.yaml ./bin/luna-proxy
+#
+# Unseal (admin mTLS; testdata passphrase: test-pass):
+#   curl -sk --cert testdata/ca/admin-client.crt --key testdata/ca/admin-client.key \
+#     --cacert testdata/ca/ca.crt \
+#     -H 'Content-Type: application/json' \
+#     -d '{"passphrase":"test-pass"}' \
+#     https://localhost:8443/api/v1/admin/unseal
+#
+# With env=dev the proxy auto-approves sign requests (no Telegram).
+# Environment variables override values in this file.
+
+env: dev
+listen_addr: ":8443"
+
+# Encrypted signing key (from make testdata; passphrase: test-pass)
+key_path: ./testdata/ssh/encrypted_ca.key
+signer_mode: local-ca
+# signer_mode: local-key
+# key_path: ./testdata/ssh/encrypted_host.key
+
+admin_client_ou: luna-admin
+approval_timeout: 60s
+
+# Server mTLS (testdata CA)
+mtls_server_cert: ./testdata/ca/server.crt
+mtls_server_key: ./testdata/ca/server.key
+mtls_client_ca: ./testdata/ca/ca.crt
+
+# Telegram OOB approval (optional when env=dev)
+# telegram_bot_token: ""
+# telegram_webhook_secret: ""
+# telegram_chat_id: ""
+
+# Mobile push stub (optional)
+# fcm_credentials: ""

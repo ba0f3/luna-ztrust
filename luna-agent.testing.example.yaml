@@ -1,0 +1,26 @@
+# Luna Z-Trust — local testing config (luna-agent)
+#
+# Setup (with proxy running and unsealed):
+#   cp luna-agent.testing.example.yaml luna-agent.yaml
+#   ./bin/luna-agent
+#
+# Or:
+#   LUNA_CONFIG=./luna-agent.testing.example.yaml ./bin/luna-agent
+#
+# Use with SSH_AUTH_SOCK:
+#   export SSH_AUTH_SOCK=/tmp/luna-agent.sock
+#   ssh deploy@127.0.0.1
+#
+# Environment variables override values in this file.
+
+proxy_url: https://localhost:8443
+signer_mode: local-ca
+
+mtls_cert: ./testdata/ca/client.crt
+mtls_key: ./testdata/ca/client.key
+mtls_ca: ./testdata/ca/ca.crt
+
+target_user: deploy
+target_host: 127.0.0.1
+
+agent_socket: /tmp/luna-agent.sock

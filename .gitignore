@@ -3,3 +3,13 @@ testdata/ssh/encrypted_*.key
 testdata/ssh/.*.tmp
 bin/
 *.csr
+.env
+.env.*
+!.env.example
+!.env.*.example
+luna-proxy.yaml
+luna-agent.yaml
+!luna-*.example.yaml
+deploy/.env.*
+!deploy/.env.*.example
+!deploy/luna-*.example.yaml
