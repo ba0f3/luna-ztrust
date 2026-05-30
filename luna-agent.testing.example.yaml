@@ -7,9 +7,12 @@
 # Or:
 #   LUNA_CONFIG=./luna-agent.testing.example.yaml ./bin/luna-agent
 #
-# Use with SSH_AUTH_SOCK:
+# Use with SSH_AUTH_SOCK (target_host must match the host you ssh to for PoP):
 #   export SSH_AUTH_SOCK=/tmp/luna-agent.sock
+#   export LUNA_AGENT_DEBUG=1
 #   ssh deploy@127.0.0.1
+#
+# local-key: proxy must have host keys loaded (luna-proxy key load) and unsealed.
 #
 # Environment variables override values in this file.
 
@@ -24,3 +27,6 @@ target_user: deploy
 target_host: 127.0.0.1
 
 agent_socket: /tmp/luna-agent.sock
+
+# Until luna-proxy returns public_key in /api/v1/capabilities, point at the matching .pub:
+# hosted_public_key: ./testdata/ssh/host.pub

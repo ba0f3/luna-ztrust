@@ -56,6 +56,7 @@ func newAgentViper() (*viper.Viper, error) {
 	bindEnv("agent_socket", "LUNA_AGENT_SOCKET")
 	bindEnv("signer_mode", "LUNA_SIGNER_MODE")
 	bindEnv("host_key_fingerprint", "LUNA_HOST_KEY_FINGERPRINT")
+	bindEnv("hosted_public_key", "LUNA_HOSTED_PUBLIC_KEY")
 
 	v.AutomaticEnv()
 	return v, nil
@@ -72,6 +73,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		SocketPath:         strings.TrimSpace(v.GetString("agent_socket")),
 		SignerMode:         strings.TrimSpace(v.GetString("signer_mode")),
 		HostKeyFingerprint: strings.TrimSpace(v.GetString("host_key_fingerprint")),
+		HostedPublicKey:    strings.TrimSpace(v.GetString("hosted_public_key")),
 	}
 	if cfg.SocketPath == "" {
 		cfg.SocketPath = defaultSocketPath

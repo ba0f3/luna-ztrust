@@ -15,6 +15,7 @@ var (
 // SignerInfo describes a loaded host key (public metadata only).
 type SignerInfo struct {
 	Fingerprint string `json:"fingerprint"`
+	PublicKey   string `json:"public_key,omitempty"`
 	Comment     string `json:"comment,omitempty"`
 }
 
@@ -79,7 +80,11 @@ func (p *LocalKeyPool) List() []SignerInfo {
 	defer p.mu.RUnlock()
 	out := make([]SignerInfo, 0, len(p.signers))
 	for fp, entry := range p.signers {
-		out = append(out, SignerInfo{Fingerprint: fp, Comment: entry.comment})
+		out = append(out, SignerInfo{
+			Fingerprint: fp,
+			PublicKey:   string(ssh.MarshalAuthorizedKey(entry.signer.PublicKey())),
+			Comment:     entry.comment,
+		})
 	}
 	return out
 }

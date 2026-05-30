@@ -117,8 +117,10 @@ func (k *Keystore) ListSigners() []SignerInfo {
 		if k.caSigner == nil {
 			return nil
 		}
+		pub := k.caSigner.PublicKey()
 		return []SignerInfo{{
-			Fingerprint: Fingerprint(k.caSigner.PublicKey()),
+			Fingerprint: Fingerprint(pub),
+			PublicKey:   string(ssh.MarshalAuthorizedKey(pub)),
 			Comment:     "ca",
 		}}
 	}

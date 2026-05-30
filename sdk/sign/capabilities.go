@@ -15,6 +15,7 @@ const (
 // LoadedSigner is a host signing key currently available on the proxy.
 type LoadedSigner struct {
 	Fingerprint string `json:"fingerprint"`
+	PublicKey   string `json:"public_key,omitempty"`
 	Comment     string `json:"comment,omitempty"`
 }
 
