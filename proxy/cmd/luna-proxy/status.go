@@ -1,10 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control/client"
 	"github.com/spf13/cobra"
@@ -29,14 +25,7 @@ func runStatus(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	var pretty interface{}
-	if err := json.Unmarshal(data, &pretty); err != nil {
-		_, _ = fmt.Fprintln(os.Stdout, string(data))
-		return nil
-	}
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(pretty)
+	return printStatusResult(data)
 }
 
 func resolveSocket() (string, error) {
@@ -50,5 +39,5 @@ func resolveSocket() (string, error) {
 	if cfg.ControlSocket != "" {
 		return cfg.ControlSocket, nil
 	}
-	return "/run/luna/control.sock", nil
+	return config.DefaultControlSocket(), nil
 }

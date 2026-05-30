@@ -69,7 +69,7 @@ func runServe(_ *cobra.Command, _ []string) error {
 		ctrlPath = cfg.ControlSocket
 	}
 	if ctrlPath == "" {
-		ctrlPath = "/run/luna/control.sock"
+		ctrlPath = config.DefaultControlSocket()
 	}
 	ctrl := control.NewServer(control.ServerDeps{
 		Config:   cfg,

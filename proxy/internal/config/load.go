@@ -41,7 +41,7 @@ func newViper() (*viper.Viper, error) {
 	v.SetDefault("admin_client_ou", defaultAdminClientOU)
 	v.SetDefault("signer_mode", defaultSignerMode)
 	v.SetDefault("approval_timeout", defaultApprovalPeriod.String())
-	v.SetDefault("control_socket", "/run/luna/control.sock")
+	v.SetDefault("control_socket", DefaultControlSocket())
 	v.SetDefault("control_socket_group", "luna-admin")
 
 	if path := os.Getenv("LUNA_CONFIG"); path != "" {
@@ -117,6 +117,9 @@ func configFromViper(v *viper.Viper) (Config, error) {
 	}
 	if cfg.MTLSClientCA == "" {
 		cfg.MTLSClientCA = defaultCertPath("ca.crt")
+	}
+	if cfg.ControlSocket == "" {
+		cfg.ControlSocket = DefaultControlSocket()
 	}
 	return cfg, nil
 }

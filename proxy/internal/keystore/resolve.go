@@ -2,7 +2,6 @@ package keystore
 
 import (
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -11,8 +10,9 @@ import (
 
 var ErrAmbiguousSigner = errors.New("host key fingerprint required")
 
-// ResolveHostKeyFingerprint returns a hex fingerprint from wire key and/or hex hint.
-func ResolveHostKeyFingerprint(hostPubB64, fpHex string) (string, error) {
+// ResolveHostKeyFingerprint returns an OpenSSH-style fingerprint from wire key and/or hint.
+func ResolveHostKeyFingerprint(hostPubB64, fpHint string) (string, error) {
+	fpHint = NormalizeFingerprintInput(fpHint)
 	if hostPubB64 != "" {
 		raw, err := base64.StdEncoding.DecodeString(hostPubB64)
 		if err != nil {
@@ -23,16 +23,13 @@ func ResolveHostKeyFingerprint(hostPubB64, fpHex string) (string, error) {
 			return "", fmt.Errorf("parse host_public_key: %w", err)
 		}
 		fp := Fingerprint(pub)
-		if fpHex != "" && fpHex != fp {
+		if fpHint != "" && fpHint != fp {
 			return "", errors.New("host_key_fingerprint does not match host_public_key")
 		}
 		return fp, nil
 	}
-	if fpHex != "" {
-		if _, err := hex.DecodeString(fpHex); err != nil || len(fpHex) != 64 {
-			return "", errors.New("invalid host_key_fingerprint")
-		}
-		return fpHex, nil
+	if fpHint != "" {
+		return ParseFingerprintHint(fpHint)
 	}
 	return "", ErrAmbiguousSigner
 }

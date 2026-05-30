@@ -5,6 +5,7 @@ package control
 import (
 	"fmt"
 	"net"
+	"os"
 	"os/user"
 	"syscall"
 )
@@ -21,6 +22,9 @@ func peerAllowed(conn *net.UnixConn, groupName string) error {
 		return fmt.Errorf("peer cred: %w", err)
 	}
 	if ucred.Uid == 0 {
+		return nil
+	}
+	if ucred.Uid == uint32(os.Geteuid()) {
 		return nil
 	}
 	if groupName == "" {

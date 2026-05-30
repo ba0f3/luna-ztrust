@@ -8,6 +8,7 @@ import (
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control/client"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var passphraseStdin bool
@@ -74,8 +75,7 @@ func runKeyLoad(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(data))
-	return nil
+	return printKeyLoadResult(data)
 }
 
 func runKeyList(_ *cobra.Command, _ []string) error {
@@ -87,8 +87,7 @@ func runKeyList(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(data))
-	return nil
+	return printKeyListResult(data)
 }
 
 func runKeyRemove(_ *cobra.Command, args []string) error {
@@ -116,8 +115,7 @@ func runKeyConfirm(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(data))
-	return nil
+	return printKeyLoadResult(data)
 }
 
 func runKeyReject(_ *cobra.Command, args []string) error {
@@ -138,9 +136,17 @@ func readPassphrase() (string, error) {
 		return "", sc.Err()
 	}
 	fmt.Fprint(os.Stderr, "Passphrase: ")
-	var pass string
-	if _, err := fmt.Fscanln(os.Stdin, &pass); err != nil {
-		return "", err
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		pass, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		if err != nil {
+			return "", err
+		}
+		return string(pass), nil
 	}
-	return pass, nil
+	sc := bufio.NewScanner(os.Stdin)
+	if sc.Scan() {
+		return strings.TrimSpace(sc.Text()), nil
+	}
+	return "", sc.Err()
 }

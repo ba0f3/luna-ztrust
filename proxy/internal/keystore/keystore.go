@@ -186,6 +186,7 @@ func (k *Keystore) LoadPEMBytes(pemBytes []byte, passphrase string, comment stri
 
 // RemoveSigner removes a signer by fingerprint (local-key) or clears CA.
 func (k *Keystore) RemoveSigner(fingerprint string) error {
+	fingerprint = NormalizeFingerprintInput(fingerprint)
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	switch k.mode {

@@ -48,6 +48,7 @@ func (p *LocalKeyPool) Add(signer ssh.Signer, comment string) (string, error) {
 
 // Remove deletes a signer by fingerprint.
 func (p *LocalKeyPool) Remove(fingerprint string) error {
+	fingerprint = NormalizeFingerprintInput(fingerprint)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if _, ok := p.signers[fingerprint]; !ok {
@@ -59,6 +60,7 @@ func (p *LocalKeyPool) Remove(fingerprint string) error {
 
 // Get returns a signer by fingerprint.
 func (p *LocalKeyPool) Get(fingerprint string) (ssh.Signer, error) {
+	fingerprint = NormalizeFingerprintInput(fingerprint)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	entry, ok := p.signers[fingerprint]

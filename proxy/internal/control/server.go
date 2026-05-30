@@ -6,12 +6,21 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/user"
 	"path/filepath"
 )
 
 // ServeUnix listens on path and handles one request per connection.
 func (s *Server) ServeUnix(path, group string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil && !os.IsExist(err) {
+	dirMode := os.FileMode(0o700)
+	sockMode := os.FileMode(0o600)
+	if group != "" {
+		if _, err := user.LookupGroup(group); err == nil {
+			dirMode = 0o750
+			sockMode = 0o660
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(path), dirMode); err != nil && !os.IsExist(err) {
 		return err
 	}
 	_ = os.Remove(path)
@@ -20,7 +29,7 @@ func (s *Server) ServeUnix(path, group string) error {
 		return fmt.Errorf("listen unix %s: %w", path, err)
 	}
 	// Best-effort permissions; production should set group via systemd.
-	_ = os.Chmod(path, 0o660)
+	_ = os.Chmod(path, sockMode)
 
 	uLn, ok := ln.(*net.UnixListener)
 	if !ok {
