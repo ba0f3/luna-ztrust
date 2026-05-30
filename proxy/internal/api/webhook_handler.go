@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
+
+	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 )
 
 type telegramUpdate struct {
@@ -13,8 +14,17 @@ type telegramUpdate struct {
 }
 
 type telegramCallbackQuery struct {
-	ID   string `json:"id"`
-	Data string `json:"data"`
+	ID      string          `json:"id"`
+	Data    string          `json:"data"`
+	Message *telegramMessage `json:"message"`
+}
+
+type telegramMessage struct {
+	Chat telegramChat `json:"chat"`
+}
+
+type telegramChat struct {
+	ID int64 `json:"id"`
 }
 
 func (s *server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +57,7 @@ func (s *server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	action, txID, ok := ParseCallbackData(upd.CallbackQuery.Data)
+	action, txID, ttl, ok := ParseCallbackData(upd.CallbackQuery.Data, s.cfg.AllowedTTLSeconds)
 	if !ok {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -55,29 +65,17 @@ func (s *server) handleTelegramWebhook(w http.ResponseWriter, r *http.Request) {
 
 	switch action {
 	case "approve":
-		s.store.Approve(txID, "")
+		if ttl <= 0 {
+			ttl = DefaultTTLFromAllowed(s.cfg.AllowedTTLSeconds)
+		}
+		approver := ""
+		if upd.CallbackQuery.Message != nil {
+			approver = lease.FormatApproverChatID(upd.CallbackQuery.Message.Chat.ID)
+		}
+		s.store.Approve(txID, ttl, approver)
 	case "deny":
 		s.store.Deny(txID)
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-// ParseCallbackData parses Telegram inline keyboard callback_data (approve:tx_… / deny:tx_…).
-func ParseCallbackData(data string) (action, txID string, ok bool) {
-	idx := strings.IndexByte(data, ':')
-	if idx <= 0 || idx >= len(data)-1 {
-		return "", "", false
-	}
-	action = data[:idx]
-	txID = data[idx+1:]
-	if !strings.HasPrefix(txID, "tx_") {
-		return "", "", false
-	}
-	switch action {
-	case "approve", "deny":
-		return action, txID, true
-	default:
-		return "", "", false
-	}
 }

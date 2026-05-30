@@ -24,17 +24,23 @@ func main() {
 		log.Fatalf("tls: %v", err)
 	}
 
+	signerMode := cfg.SignerMode
+	if signerMode == "" {
+		signerMode = agent.SignerModeLocalCA
+	}
+
 	client, err := sdk.NewClient(sdk.Config{
 		ProxyURL:   cfg.ProxyURL,
 		TLSCert:    tlsCert,
 		TLSRootCAs: tlsCA,
 		Timeout:    90 * time.Second,
+		SignerMode: signerMode,
 	})
 	if err != nil {
 		log.Fatalf("sdk client: %v", err)
 	}
 
-	la := agent.NewLunaAgent(client, cfg.TargetUser, cfg.TargetHost)
+	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost)
 
 	if err := os.Remove(cfg.SocketPath); err != nil && !os.IsNotExist(err) {
 		log.Fatalf("remove socket: %v", err)

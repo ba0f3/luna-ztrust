@@ -1,5 +1,7 @@
 # Luna Core Design: luna-proxy, luna-sdk, luna-agent
 
+> **Deprecation notice:** Vault SSH signing and `vault-agent` token handoff described here are superseded for self-hosted deployments by [`2026-05-30-self-hosted-central-design.md`](2026-05-30-self-hosted-central-design.md) (encrypted keystore, `local-ca` / `local-key`, admin unseal). This document remains the reference for mTLS, HMAC, PoP, tx/wait, Telegram, and agent protocol.
+
 **Status:** Approved via brainstorming (2026-05-21)  
 **Supersedes:** Partial sketches in `docs/design-specification.md` for these three components  
 **Out of scope:** `lunacli` (separate repository; consumes `luna-sdk`), `vault-agent`, HashiCorp Vault server, target `sshd` provisioning

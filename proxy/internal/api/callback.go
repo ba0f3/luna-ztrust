@@ -1,0 +1,56 @@
+package api
+
+import (
+	"strconv"
+	"strings"
+	"time"
+)
+
+// ParseCallbackData parses Telegram inline keyboard callback_data.
+// Forms: deny:tx_… | approve:tx_…:ttl_seconds
+func ParseCallbackData(data string, allowedTTLs []int) (action, txID string, ttl time.Duration, ok bool) {
+	parts := strings.Split(data, ":")
+	if len(parts) < 2 {
+		return "", "", 0, false
+	}
+	action = parts[0]
+	switch action {
+	case "deny":
+		if len(parts) != 2 || !strings.HasPrefix(parts[1], "tx_") {
+			return "", "", 0, false
+		}
+		return action, parts[1], 0, true
+	case "approve":
+		if len(parts) < 2 || !strings.HasPrefix(parts[1], "tx_") {
+			return "", "", 0, false
+		}
+		txID = parts[1]
+		if len(parts) >= 3 {
+			sec, err := strconv.Atoi(parts[2])
+			if err != nil || !ttlAllowed(sec, allowedTTLs) {
+				return "", "", 0, false
+			}
+			return action, txID, time.Duration(sec) * time.Second, true
+		}
+		return action, txID, 0, true
+	default:
+		return "", "", 0, false
+	}
+}
+
+func ttlAllowed(sec int, allowed []int) bool {
+	for _, a := range allowed {
+		if a == sec {
+			return true
+		}
+	}
+	return false
+}
+
+// DefaultTTLFromAllowed picks the first configured TTL or 5 minutes.
+func DefaultTTLFromAllowed(allowed []int) time.Duration {
+	if len(allowed) > 0 {
+		return time.Duration(allowed[0]) * time.Second
+	}
+	return 5 * time.Minute
+}

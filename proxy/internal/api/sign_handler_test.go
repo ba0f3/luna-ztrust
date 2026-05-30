@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -24,7 +25,9 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
-	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/signing"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -137,12 +140,24 @@ type testEnv struct {
 	client *mtlsClient
 }
 
-func startTestServer(t *testing.T, cfg config.Config, vaultCfg vault.SignConfig, tokens vault.TokenProvider) *testEnv {
+func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *testEnv {
 	t.Helper()
+	if ks == nil {
+		ks = keystore.New()
+	}
+	if cfg.Env != "production" {
+		unsealTestKeystore(t, ks)
+	}
 	store := approval.NewStore(cfg.ApprovalTimeout)
 	store.SetConfig(cfg)
+	if cfg.SignerMode == approval.SignerModeLocalKey {
+		store.SetKeySigner(signing.NewLocalKey(ks))
+	} else {
+		store.SetIssuer(signing.NewLocalCA(ks))
+	}
+	store.SetLeases(lease.NewStore())
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, store, replay, vaultCfg, tokens, nil)
+	handler := api.NewServer(cfg, ks, store, replay, nil)
 
 	serverTLS, clientTLS := loadTestTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)
@@ -232,9 +247,30 @@ func postSign(t *testing.T, env *testEnv, rawBody []byte) string {
 	return out.TxID
 }
 
+func unsealTestKeystore(t *testing.T, ks *keystore.Keystore) {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.key")
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, err := ssh.MarshalPrivateKeyWithPassphrase(priv, "luna-test", []byte("test-pass"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pemBytes := pem.EncodeToMemory(block)
+	if err := os.WriteFile(path, pemBytes, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	if err := ks.Unseal(path, "test-pass"); err != nil {
+		t.Fatalf("unseal test keystore: %v", err)
+	}
+}
+
 func startTestServerDefault(t *testing.T, cfg config.Config) *testEnv {
 	t.Helper()
-	return startTestServer(t, cfg, vault.SignConfig{}, nil)
+	return startTestServer(t, cfg, nil)
 }
 
 func TestPostSignReturns202(t *testing.T) {
@@ -247,7 +283,7 @@ func TestGetWaitReturns200AfterApprove(t *testing.T) {
 	env := startTestServerDefault(t, config.Config{ApprovalTimeout: 60 * time.Second})
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
 
-	env.store.Approve(txID, "ssh-ed25519-cert-v01@openssh.com AAAAtest")
+	env.store.Approve(txID, 5*time.Minute, "telegram:1")
 
 	resp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
 	if err != nil {
@@ -267,8 +303,8 @@ func TestGetWaitReturns200AfterApprove(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
-	if out.SSHCertificate != "ssh-ed25519-cert-v01@openssh.com AAAAtest" {
-		t.Fatalf("cert = %q", out.SSHCertificate)
+	if !strings.Contains(out.SSHCertificate, "ssh-ed25519-cert-v01@openssh.com") {
+		t.Fatalf("cert = %q, want OpenSSH user certificate", out.SSHCertificate)
 	}
 	if out.ExpiresAt == "" {
 		t.Fatal("missing expires_at")
@@ -362,24 +398,11 @@ func TestPostSignReplay409(t *testing.T) {
 	}
 }
 
-func TestApproveUsesVaultWhenConfigured(t *testing.T) {
-	const signed = "ssh-ed25519-cert-v01@openssh.com AAAAvaultsigned"
-	vaultSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Vault-Token") != "test-token" {
-			t.Errorf("token = %q", r.Header.Get("X-Vault-Token"))
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"data": map[string]string{"signed_key": signed},
-		})
-	}))
-	defer vaultSrv.Close()
-
-	env := startTestServer(t, config.Config{ApprovalTimeout: 60 * time.Second}, vault.SignConfig{
-		VaultAddr: vaultSrv.URL,
-	}, vault.StaticTokenProvider{Value: "test-token"})
+func TestApproveIssuesLocalCACert(t *testing.T) {
+	env := startTestServer(t, config.Config{ApprovalTimeout: 60 * time.Second}, nil)
 
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
-	env.store.Approve(txID, "ignored-placeholder")
+	env.store.Approve(txID, 5*time.Minute, "telegram:1")
 
 	resp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
 	if err != nil {
@@ -396,24 +419,16 @@ func TestApproveUsesVaultWhenConfigured(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
-	if out.SSHCertificate != signed {
-		t.Fatalf("cert = %q, want %q", out.SSHCertificate, signed)
+	if !strings.Contains(out.SSHCertificate, "ssh-ed25519-cert-v01@openssh.com") {
+		t.Fatalf("cert = %q, want OpenSSH user certificate", out.SSHCertificate)
 	}
 }
 
-func TestDevBypassUsesVaultWhenConfigured(t *testing.T) {
-	const signed = "ssh-ed25519-cert-v01@openssh.com AAAAutodev"
-	vaultSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"data": map[string]string{"signed_key": signed},
-		})
-	}))
-	defer vaultSrv.Close()
-
+func TestDevBypassIssuesLocalCACert(t *testing.T) {
 	env := startTestServer(t, config.Config{
 		Env:             "dev",
 		ApprovalTimeout: 60 * time.Second,
-	}, vault.SignConfig{VaultAddr: vaultSrv.URL}, vault.StaticTokenProvider{Value: "test-token"})
+	}, nil)
 
 	txID := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
 
@@ -431,13 +446,13 @@ func TestDevBypassUsesVaultWhenConfigured(t *testing.T) {
 				t.Fatal(err)
 			}
 			resp.Body.Close()
-			if out.SSHCertificate != signed {
-				t.Fatalf("cert = %q, want %q", out.SSHCertificate, signed)
+			if !strings.Contains(out.SSHCertificate, "ssh-ed25519-cert-v01@openssh.com") {
+				t.Fatalf("cert = %q, want OpenSSH user certificate", out.SSHCertificate)
 			}
 			return
 		}
 		resp.Body.Close()
 		time.Sleep(20 * time.Millisecond)
 	}
-	t.Fatal("dev vault auto-approve did not complete")
+	t.Fatal("dev auto-approve did not complete")
 }

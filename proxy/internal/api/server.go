@@ -14,37 +14,46 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
-	"github.com/ba0f3/luna-ztrust/proxy/internal/vault"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/mobile"
 )
-
-// TokenProvider supplies a Vault API token for SSH CA signing.
-type TokenProvider = vault.TokenProvider
 
 type tlsConnKey struct{}
 
 // NewServer returns an HTTP handler for sign, wait, webhook, and health routes.
 // GET /healthz is registered without the mTLS gate: probes may use TLS without a client certificate.
-func NewServer(cfg config.Config, store *approval.Store, replay *auth.ReplayLRU, vaultCfg vault.SignConfig, tokens TokenProvider, telegram *approval.Notifier) http.Handler {
-	store.SetVault(vaultCfg, tokens)
+func NewServer(cfg config.Config, ks *keystore.Keystore, store *approval.Store, replay *auth.ReplayLRU, telegram *approval.Notifier) http.Handler {
 	s := &server{
 		cfg:      cfg,
+		keystore: ks,
 		store:    store,
 		replay:   replay,
 		telegram: telegram,
+		mobile:   mobile.NewStore(),
+		push:     mobile.NewPushNotifier(os.Getenv("FCM_CREDENTIALS")),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
+	mux.HandleFunc("POST /api/v1/admin/unseal", s.withAdminMTLS(s.handleUnseal))
+	mux.HandleFunc("GET /api/v1/admin/seal-status", s.withAdminMTLS(s.handleSealStatus))
+	mux.HandleFunc("GET /api/v1/capabilities", s.withMTLS(s.handleCapabilities))
 	mux.HandleFunc("POST /api/v1/ssh/sign", s.withMTLS(s.handleSign))
 	mux.HandleFunc("GET /api/v1/ssh/sign/{tx_id}/wait", s.withMTLS(s.handleWait))
 	mux.HandleFunc("POST /api/v1/telegram/webhook", s.handleTelegramWebhook)
+	mux.HandleFunc("POST /api/v1/mobile/enroll", s.withAdminMTLS(s.handleMobileEnroll))
+	mux.HandleFunc("DELETE /api/v1/mobile/devices/{device_id}", s.withAdminMTLS(s.handleMobileDeleteDevice))
+	mux.HandleFunc("POST /api/v1/mobile/approve", s.withMTLS(s.handleMobileApprove))
 	return mux
 }
 
 type server struct {
 	cfg      config.Config
+	keystore *keystore.Keystore
 	store    *approval.Store
 	replay   *auth.ReplayLRU
 	telegram *approval.Notifier
+	mobile   *mobile.Store
+	push     mobile.Notifier
 }
 
 func (s *server) withMTLS(next http.HandlerFunc) http.HandlerFunc {

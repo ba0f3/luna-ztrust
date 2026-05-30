@@ -1,0 +1,16 @@
+package sdk
+
+import (
+	"context"
+
+	"github.com/ba0f3/luna-ztrust/sdk/sign"
+	"golang.org/x/crypto/ssh"
+)
+
+// SignatureRequest identifies the SSH session for hosted-key signing.
+type SignatureRequest = sign.SignatureRequest
+
+// RequestSignature obtains a hosted-key SSH signature for signData (local-key mode).
+func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, signData []byte) (*ssh.Signature, error) {
+	return c.inner.RequestSignature(ctx, req, signData)
+}

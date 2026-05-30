@@ -58,4 +58,18 @@ openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
     'keyUsage=digitalSignature' \
     'extendedKeyUsage=clientAuth')
 
+# Admin client (OU=luna-admin for /api/v1/admin/*)
+if [[ ! -f admin-client.key ]]; then
+  openssl genrsa -out admin-client.key 2048
+fi
+openssl req -new -key admin-client.key -sha256 \
+  -subj "/CN=Luna Test Admin/OU=luna-admin/O=Luna Z-Trust Test" \
+  -out admin-client.csr
+openssl x509 -req -in admin-client.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out admin-client.crt -days "${DAYS}" -sha256 \
+  -extfile <(printf '%s\n' \
+    'basicConstraints=CA:FALSE' \
+    'keyUsage=digitalSignature' \
+    'extendedKeyUsage=clientAuth')
+
 echo "Wrote mTLS test material under ${OUT}"

@@ -15,20 +15,22 @@ const telegramAPIBase = "https://api.telegram.org"
 
 // Notifier sends one Telegram approval prompt per transaction (idempotent by tx_id).
 type Notifier struct {
-	token   string
-	chatID  string
-	baseURL string
-	client  *http.Client
-	mu      sync.Mutex
-	sent    map[string]struct{}
+	token       string
+	chatID      string
+	allowedTTLs []int
+	baseURL     string
+	client      *http.Client
+	mu          sync.Mutex
+	sent        map[string]struct{}
 }
 
 // NotifierConfig configures the Telegram Bot API client.
 type NotifierConfig struct {
-	BotToken string
-	ChatID   string
-	BaseURL  string // optional; defaults to telegramAPIBase
-	Client   *http.Client
+	BotToken          string
+	ChatID            string
+	AllowedTTLSeconds []int
+	BaseURL           string // optional; defaults to telegramAPIBase
+	Client            *http.Client
 }
 
 // NewNotifier returns a notifier. When BotToken or ChatID is empty, Notify is a no-op.
@@ -42,11 +44,12 @@ func NewNotifier(cfg NotifierConfig) *Notifier {
 		client = &http.Client{Timeout: 15 * time.Second}
 	}
 	return &Notifier{
-		token:   cfg.BotToken,
-		chatID:  cfg.ChatID,
-		baseURL: base,
-		client:  client,
-		sent:    make(map[string]struct{}),
+		token:       cfg.BotToken,
+		chatID:      cfg.ChatID,
+		allowedTTLs: cfg.AllowedTTLSeconds,
+		baseURL:     base,
+		client:      client,
+		sent:        make(map[string]struct{}),
 	}
 }
 
@@ -73,12 +76,7 @@ func (n *Notifier) Notify(ctx context.Context, tx *Transaction) error {
 		"chat_id": n.chatID,
 		"text":    text,
 		"reply_markup": map[string]any{
-			"inline_keyboard": [][]map[string]string{
-				{
-					{"text": "Approve", "callback_data": "approve:" + tx.ID},
-					{"text": "Deny", "callback_data": "deny:" + tx.ID},
-				},
-			},
+			"inline_keyboard": approvalKeyboard(tx.ID, n.allowedTTLs),
 		},
 	}
 	raw, err := json.Marshal(body)
@@ -105,6 +103,35 @@ func (n *Notifier) Notify(ctx context.Context, tx *Transaction) error {
 		return fmt.Errorf("telegram sendMessage: %s: %s", resp.Status, slurp)
 	}
 	return nil
+}
+
+func approvalKeyboard(txID string, allowedTTLs []int) [][]map[string]string {
+	ttls := allowedTTLs
+	if len(ttls) == 0 {
+		ttls = []int{180, 300, 900}
+	}
+	row := make([]map[string]string, 0, len(ttls)+1)
+	for _, sec := range ttls {
+		label := formatTTLLabel(sec)
+		row = append(row, map[string]string{
+			"text":          label,
+			"callback_data": fmt.Sprintf("approve:%s:%d", txID, sec),
+		})
+	}
+	row = append(row, map[string]string{
+		"text":          "Deny",
+		"callback_data": "deny:" + txID,
+	})
+	return [][]map[string]string{row}
+}
+
+func formatTTLLabel(sec int) string {
+	switch {
+	case sec%60 == 0 && sec >= 60:
+		return fmt.Sprintf("Approve %dm", sec/60)
+	default:
+		return fmt.Sprintf("Approve %ds", sec)
+	}
 }
 
 func (n *Notifier) forgetSent(txID string) {
