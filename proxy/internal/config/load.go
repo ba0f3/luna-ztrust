@@ -13,7 +13,7 @@ import (
 const (
 	defaultListenAddr     = ":8443"
 	defaultAdminClientOU  = "luna-admin"
-	defaultSignerMode     = "local-ca"
+	defaultSignerMode     = "local-key"
 	defaultApprovalPeriod = 60 * time.Second
 )
 
