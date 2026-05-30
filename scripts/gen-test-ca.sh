@@ -15,19 +15,39 @@ if ! command -v openssl >/dev/null 2>&1; then
 fi
 
 cleanup() {
-  rm -f ca.srl server.csr client.csr
+  rm -f ca.srl server.csr client.csr admin-client.csr
 }
 trap cleanup EXIT
 
-# CA
-if [[ ! -f ca.key ]]; then
+ca_key_matches_cert() {
+  [[ -f ca.key && -f ca.crt ]] || return 1
+  local cert_mod key_mod
+  cert_mod="$(openssl x509 -noout -modulus -in ca.crt 2>/dev/null)" || return 1
+  key_mod="$(openssl rsa -noout -modulus -in ca.key 2>/dev/null)" || return 1
+  [[ "${cert_mod}" == "${key_mod}" ]]
+}
+
+wipe_ca_material() {
+  rm -f \
+    ca.key ca.crt ca.srl \
+    server.key server.crt server.csr \
+    client.key client.crt client.csr \
+    admin-client.key admin-client.crt admin-client.csr
+}
+
+ensure_ca() {
+  if ca_key_matches_cert; then
+    return 0
+  fi
+  echo "Regenerating mTLS CA (missing or mismatched ca.key / ca.crt)" >&2
+  wipe_ca_material
   openssl genrsa -out ca.key 4096
-fi
-if [[ ! -f ca.crt ]]; then
   openssl req -x509 -new -nodes -key ca.key -sha256 -days "${DAYS}" \
     -subj "/CN=Luna Test mTLS CA/O=Luna Z-Trust Test" \
     -out ca.crt
-fi
+}
+
+ensure_ca
 
 # Server (SAN DNS:localhost, serverAuth)
 if [[ ! -f server.key ]]; then
