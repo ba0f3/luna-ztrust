@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ba0f3/luna-ztrust/proxy/internal/control"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control/client"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -64,6 +65,7 @@ func runKeyLoad(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer control.ZeroString(&pass)
 	path, err := resolveSocket()
 	if err != nil {
 		return err
@@ -104,6 +106,7 @@ func runKeyConfirm(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer control.ZeroString(&pass)
 	path, err := resolveSocket()
 	if err != nil {
 		return err

@@ -8,7 +8,10 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"time"
 )
+
+const controlReadTimeout = 30 * time.Second
 
 // ServeUnix listens on path and handles one request per connection.
 func (s *Server) ServeUnix(path, group string) error {
@@ -50,6 +53,7 @@ func (s *Server) serveConn(conn *net.UnixConn, group string) {
 	if err := peerAllowed(conn, group); err != nil {
 		return
 	}
+	_ = conn.SetReadDeadline(time.Now().Add(controlReadTimeout))
 	sc := bufio.NewScanner(conn)
 	if !sc.Scan() {
 		return

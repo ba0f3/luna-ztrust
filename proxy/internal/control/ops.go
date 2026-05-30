@@ -84,7 +84,9 @@ func (s *Server) handleKeyLoad(req Request) Response {
 	if in.Path == "" || in.Passphrase == "" {
 		return s.fail(req.ID, "path and passphrase required", "BAD_REQUEST")
 	}
-	fp, err := s.deps.Keystore.LoadPEMFile(in.Path, in.Passphrase, in.Comment)
+	pass := []byte(in.Passphrase)
+	defer ZeroBytes(pass)
+	fp, err := s.deps.Keystore.LoadPEMFile(in.Path, string(pass), in.Comment)
 	if err != nil {
 		if errors.Is(err, keystore.ErrUnsealLocked) {
 			return s.fail(req.ID, err.Error(), "LOCKED")
@@ -134,7 +136,9 @@ func (s *Server) handleKeyConfirm(req Request) Response {
 	if err != nil {
 		return s.fail(req.ID, err.Error(), "NOT_FOUND")
 	}
-	fp, err := s.deps.Keystore.LoadPEMBytes(p.Blob, in.Passphrase, p.Label)
+	pass := []byte(in.Passphrase)
+	defer ZeroBytes(pass)
+	fp, err := s.deps.Keystore.LoadPEMBytes(p.Blob, string(pass), p.Label)
 	if err != nil {
 		if errors.Is(err, keystore.ErrUnsealLocked) {
 			return s.fail(req.ID, err.Error(), "LOCKED")
