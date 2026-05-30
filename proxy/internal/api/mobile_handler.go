@@ -1,8 +1,6 @@
 package api
 
 import (
-	"crypto/ed25519"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -84,12 +82,6 @@ func (s *server) handleMobileApprove(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing fields", http.StatusBadRequest)
 		return
 	}
-	now := time.Now().Unix()
-	if req.Timestamp < now-30 || req.Timestamp > now+30 {
-		http.Error(w, "timestamp out of range", http.StatusBadRequest)
-		return
-	}
-
 	dev, ok := s.mobile.Get(req.DeviceID)
 	if !ok {
 		http.Error(w, "unknown device", http.StatusForbidden)
@@ -108,14 +100,8 @@ func (s *server) handleMobileApprove(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "payload encode", http.StatusInternalServerError)
 		return
 	}
-
-	sig, err := hex.DecodeString(req.Signature)
-	if err != nil || len(sig) != ed25519.SignatureSize {
-		http.Error(w, "invalid signature", http.StatusBadRequest)
-		return
-	}
-	if !ed25519.Verify(dev.PubKey, payloadBytes, sig) {
-		http.Error(w, "signature verification failed", http.StatusForbidden)
+	if err := verifyDeviceSignature(dev.PubKey, payloadBytes, req.Signature, time.Now(), req.Timestamp); err != nil {
+		writeDeviceAuthError(w, err)
 		return
 	}
 

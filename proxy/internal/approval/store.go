@@ -258,7 +258,13 @@ func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Dur
 	s.mu.Unlock()
 	leaseExpires := until
 	if leases != nil && approverChatID != "" && entry.tx.ClientCertFP != "" {
-		lookup := lease.NewLookupKey(entry.tx.ClientCertFP, entry.tx.TargetUser, entry.tx.TargetIP, entry.tx.SourceIP)
+		lookup := lease.NewLookupKey(
+			entry.tx.ClientCertFP,
+			entry.tx.TargetUser,
+			entry.tx.TargetIP,
+			entry.tx.SourceIP,
+			entry.tx.HostKeyFingerprint,
+		)
 		leases.Put(lease.NewFullKey(lookup, approverChatID), until)
 	}
 	res.LeaseExpiresAt = leaseExpires

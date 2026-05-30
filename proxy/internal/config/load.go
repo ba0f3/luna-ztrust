@@ -109,17 +109,22 @@ func configFromViper(v *viper.Viper) (Config, error) {
 	if cfg.SignerMode == "" {
 		cfg.SignerMode = defaultSignerMode
 	}
-	if cfg.MTLSServerCert == "" {
-		cfg.MTLSServerCert = defaultCertPath("server.crt")
-	}
-	if cfg.MTLSServerKey == "" {
-		cfg.MTLSServerKey = defaultCertPath("server.key")
-	}
-	if cfg.MTLSClientCA == "" {
-		cfg.MTLSClientCA = defaultCertPath("ca.crt")
+	if isDevOrTestEnv(cfg.Env) {
+		if cfg.MTLSServerCert == "" {
+			cfg.MTLSServerCert = defaultCertPath("server.crt")
+		}
+		if cfg.MTLSServerKey == "" {
+			cfg.MTLSServerKey = defaultCertPath("server.key")
+		}
+		if cfg.MTLSClientCA == "" {
+			cfg.MTLSClientCA = defaultCertPath("ca.crt")
+		}
 	}
 	if cfg.ControlSocket == "" {
 		cfg.ControlSocket = DefaultControlSocket()
+	}
+	if err := validateMTLS(cfg); err != nil {
+		return Config{}, err
 	}
 	return cfg, nil
 }

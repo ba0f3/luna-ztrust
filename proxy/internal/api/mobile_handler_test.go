@@ -137,3 +137,82 @@ func TestMobileDeleteDevice(t *testing.T) {
 		t.Fatalf("delete status %d", resp.StatusCode)
 	}
 }
+
+func TestMobileKeysPendingRequiresDeviceSignature(t *testing.T) {
+	cfg := config.Config{
+		ApprovalTimeout: 60 * time.Second,
+		AdminClientOU:   "luna-admin",
+	}
+	env := startTestServerDefault(t, cfg)
+
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, adminTLS, _ := loadAdminTLSConfigs(t)
+	admin := newMTLSClient(t, env.ts, adminTLS)
+	enrollBody, _ := json.Marshal(map[string]string{
+		"label":         "upload-phone",
+		"device_pubkey": base64.StdEncoding.EncodeToString(pub),
+	})
+	resp, err := admin.http.Post(env.ts.URL+"/api/v1/mobile/enroll", "application/json", bytes.NewReader(enrollBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var enrollOut struct {
+		DeviceID string `json:"device_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&enrollOut); err != nil {
+		t.Fatal(err)
+	}
+
+	postPending := func(body []byte) (int, []byte) {
+		t.Helper()
+		resp, err := env.client.http.Post(env.ts.URL+"/api/v1/mobile/keys/pending", "application/json", bytes.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, b
+	}
+
+	unsigned, _ := json.Marshal(map[string]any{
+		"device_id":     enrollOut.DeviceID,
+		"encrypted_pem": base64.StdEncoding.EncodeToString([]byte("blob")),
+		"label":         "k1",
+	})
+	if st, _ := postPending(unsigned); st != http.StatusBadRequest {
+		t.Fatalf("unsigned status = %d, want 400", st)
+	}
+
+	now := time.Now().Unix()
+	enc := base64.StdEncoding.EncodeToString([]byte("blob"))
+	type signPayload struct {
+		DeviceID     string `json:"device_id"`
+		EncryptedPEM string `json:"encrypted_pem"`
+		Label        string `json:"label"`
+		Timestamp    int64  `json:"timestamp"`
+	}
+	sp := signPayload{
+		DeviceID:     enrollOut.DeviceID,
+		EncryptedPEM: enc,
+		Label:        "k1",
+		Timestamp:    now,
+	}
+	payloadBytes, err := json.Marshal(sp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sig := ed25519.Sign(priv, payloadBytes)
+	signed, _ := json.Marshal(struct {
+		signPayload
+		Signature string `json:"signature"`
+	}{sp, hex.EncodeToString(sig)})
+
+	st, body := postPending(signed)
+	if st != http.StatusAccepted {
+		t.Fatalf("signed status = %d, body = %s", st, body)
+	}
+}

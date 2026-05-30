@@ -10,6 +10,7 @@ import (
 
 func TestLoadMergesYAMLExtension(t *testing.T) {
 	clearProxyEnv(t)
+	t.Setenv("LUNA_ENV", "dev")
 	t.Setenv("LUNA_CONFIG", "")
 
 	dir := t.TempDir()
@@ -37,6 +38,7 @@ func TestLoadMergesYAMLExtension(t *testing.T) {
 
 func TestLoadMergesConfigFilesInOrder(t *testing.T) {
 	clearProxyEnv(t)
+	t.Setenv("LUNA_ENV", "dev")
 	t.Setenv("LUNA_CONFIG", "")
 
 	dir := t.TempDir()

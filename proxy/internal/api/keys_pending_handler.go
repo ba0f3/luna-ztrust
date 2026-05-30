@@ -5,17 +5,24 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 )
 
 const maxPendingKeyBody = 64 << 10
 
-type mobileKeysPendingRequest struct {
+type mobileKeysPendingSignPayload struct {
 	DeviceID     string `json:"device_id"`
 	EncryptedPEM string `json:"encrypted_pem"`
 	Label        string `json:"label"`
 	Comment      string `json:"comment,omitempty"`
+	Timestamp    int64  `json:"timestamp"`
+}
+
+type mobileKeysPendingRequest struct {
+	mobileKeysPendingSignPayload
+	Signature string `json:"signature"`
 }
 
 type mobileKeysPendingResponse struct {
@@ -40,14 +47,38 @@ func (s *server) handleMobileKeysPending(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
-	if req.DeviceID == "" || req.EncryptedPEM == "" || req.Label == "" {
-		http.Error(w, "device_id, encrypted_pem, and label required", http.StatusBadRequest)
+	if req.DeviceID == "" || req.EncryptedPEM == "" || req.Label == "" || req.Signature == "" {
+		http.Error(w, "device_id, encrypted_pem, label, and signature required", http.StatusBadRequest)
 		return
 	}
-	if _, ok := s.mobile.Get(req.DeviceID); !ok {
+	if req.Timestamp == 0 {
+		http.Error(w, "timestamp required", http.StatusBadRequest)
+		return
+	}
+
+	dev, ok := s.mobile.Get(req.DeviceID)
+	if !ok {
 		http.Error(w, "unknown device", http.StatusForbidden)
 		return
 	}
+
+	payload := mobileKeysPendingSignPayload{
+		DeviceID:     req.DeviceID,
+		EncryptedPEM: req.EncryptedPEM,
+		Label:        req.Label,
+		Comment:      req.Comment,
+		Timestamp:    req.Timestamp,
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, "payload encode", http.StatusInternalServerError)
+		return
+	}
+	if err := verifyDeviceSignature(dev.PubKey, payloadBytes, req.Signature, time.Now(), req.Timestamp); err != nil {
+		writeDeviceAuthError(w, err)
+		return
+	}
+
 	blob, err := base64.StdEncoding.DecodeString(req.EncryptedPEM)
 	if err != nil {
 		http.Error(w, "invalid encrypted_pem", http.StatusBadRequest)

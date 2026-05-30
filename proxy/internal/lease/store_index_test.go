@@ -9,8 +9,8 @@ import (
 
 func TestFindActive_UsesLookupIndex(t *testing.T) {
 	s := lease.NewStore()
-	target := lease.NewLookupKey("fp-target", "deploy", "10.0.0.1", "203.0.113.1")
-	other := lease.NewLookupKey("fp-other", "root", "10.0.0.2", "203.0.113.2")
+	target := lease.NewLookupKey("fp-target", "deploy", "10.0.0.1", "203.0.113.1", "")
+	other := lease.NewLookupKey("fp-other", "root", "10.0.0.2", "203.0.113.2", "")
 	until := time.Now().Add(5 * time.Minute)
 
 	for i := 0; i < 200; i++ {

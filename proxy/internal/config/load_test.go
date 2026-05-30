@@ -27,6 +27,7 @@ func chdirIsolated(t *testing.T) {
 func TestLoadDefaults(t *testing.T) {
 	clearProxyEnv(t)
 	chdirIsolated(t)
+	t.Setenv("LUNA_ENV", "dev")
 
 	cfg, err := config.Load()
 	if err != nil {

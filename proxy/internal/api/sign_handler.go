@@ -75,7 +75,6 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 	clientFP := clientCertFPFromRequest(r)
 	sourceIP := clientIPFromRemoteAddr(r.RemoteAddr)
-	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP)
 
 	if s.cfg.SignerMode == approval.SignerModeLocalKey && req.AgentSignData == "" {
 		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "missing_agent_sign_data")
@@ -94,6 +93,8 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP, hostKeyFP)
 
 	if s.cfg.Env != "dev" {
 		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData, hostKeyFP); ok {

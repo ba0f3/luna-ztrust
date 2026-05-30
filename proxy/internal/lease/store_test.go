@@ -9,7 +9,7 @@ import (
 
 func TestLeaseKey_DifferentApproverSeparate(t *testing.T) {
 	s := lease.NewStore()
-	lookup := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10")
+	lookup := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10", "")
 	until := time.Now().Add(5 * time.Minute)
 
 	s.Put(lease.NewFullKey(lookup, "telegram:1"), until)
@@ -29,16 +29,28 @@ func TestLeaseKey_DifferentApproverSeparate(t *testing.T) {
 }
 
 func TestLeaseKey_DeterministicLookup(t *testing.T) {
-	k1 := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10")
-	k2 := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.99")
+	k1 := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10", "")
+	k2 := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.99", "")
 	if k1 == k2 {
 		t.Fatal("different source IP must not match")
 	}
 }
 
+func TestLeaseKey_DifferentHostKeySeparate(t *testing.T) {
+	s := lease.NewStore()
+	base := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10", "host-a")
+	other := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10", "host-b")
+	until := time.Now().Add(5 * time.Minute)
+
+	s.Put(lease.NewFullKey(base, "telegram:1"), until)
+	if _, ok := s.FindActive(other); ok {
+		t.Fatal("lease for host-a must not match host-b lookup")
+	}
+}
+
 func TestFindActive_ExpiredIgnored(t *testing.T) {
 	s := lease.NewStore()
-	lookup := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10")
+	lookup := lease.NewLookupKey("fp1", "deploy", "10.0.1.5", "203.0.113.10", "")
 	s.Put(lease.NewFullKey(lookup, "telegram:1"), time.Now().Add(-time.Second))
 	if _, ok := s.FindActive(lookup); ok {
 		t.Fatal("expired lease should not match")
