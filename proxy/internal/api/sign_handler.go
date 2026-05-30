@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,6 +11,11 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
+)
+
+const (
+	maxSignRequestBody  = 64 << 10 // 64 KiB JSON body
+	maxAgentSignDataB64 = 12 << 10 // base64 agent challenge cap
 )
 
 type signResponse struct {
@@ -25,8 +31,15 @@ type waitResponse struct {
 
 func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
+	r.Body = http.MaxBytesReader(w, r.Body, maxSignRequestBody)
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			s.logSignRequest(r, start, "", "", "", "body_too_large")
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		s.logSignRequest(r, start, "", "", "", "read_body_error")
 		http.Error(w, "read body", http.StatusBadRequest)
 		return
@@ -68,6 +81,11 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "agent_sign_data required", http.StatusBadRequest)
 		return
 	}
+	if len(req.AgentSignData) > maxAgentSignDataB64 {
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "agent_sign_data_too_large")
+		http.Error(w, "agent_sign_data too large", http.StatusRequestEntityTooLarge)
+		return
+	}
 
 	if s.cfg.Env != "dev" {
 		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData); ok {
@@ -84,11 +102,11 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.Env != "dev" {
 		if s.telegram != nil {
 			go func() {
-				_ = s.telegram.Notify(r.Context(), tx)
+				_ = s.telegram.Notify(context.Background(), tx)
 			}()
 		}
 		go func() {
-			_ = s.push.NotifyPending(r.Context(), tx)
+			_ = s.push.NotifyPending(context.Background(), tx)
 		}()
 	}
 	s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "accepted")

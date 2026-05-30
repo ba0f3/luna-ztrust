@@ -18,7 +18,7 @@ func TestLeaseKey_DifferentApproverSeparate(t *testing.T) {
 		t.Fatal("expected active lease")
 	}
 
-	s.Put(lease.NewFullKey(lookup, "telegram:2"), until)
+	s.Put(lease.NewFullKey(lookup, "telegram:2"), until.Add(time.Minute))
 	l, ok := s.FindActive(lookup)
 	if !ok {
 		t.Fatal("expected lease from second approver")

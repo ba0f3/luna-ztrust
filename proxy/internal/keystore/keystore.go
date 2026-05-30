@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
@@ -47,11 +48,17 @@ func (k *Keystore) Unseal(path string, passphrase string) error {
 		return fmt.Errorf("read key file: %w", err)
 	}
 	mlockBytes(pemBytes)
-	defer zeroBytes(pemBytes)
+	defer func() {
+		zeroBytes(pemBytes)
+		runtime.KeepAlive(pemBytes)
+	}()
 
 	pass := []byte(passphrase)
 	mlockBytes(pass)
-	defer zeroBytes(pass)
+	defer func() {
+		zeroBytes(pass)
+		runtime.KeepAlive(pass)
+	}()
 
 	signer, err := ssh.ParsePrivateKeyWithPassphrase(pemBytes, pass)
 	if err != nil {

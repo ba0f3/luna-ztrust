@@ -6,7 +6,7 @@ import "net"
 func clientIPFromRemoteAddr(addr string) string {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
-		return addr
+		return ""
 	}
 	return host
 }

@@ -13,21 +13,12 @@ type capabilitiesResponse struct {
 }
 
 func (s *server) handleCapabilities(w http.ResponseWriter, r *http.Request) {
-	mode := s.cfg.SignerMode
-	if mode == "" {
-		mode = "local-ca"
-	}
-	allowed := s.cfg.AllowedTTLSeconds
-	if len(allowed) == 0 {
-		allowed = []int{180, 300, 900}
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(capabilitiesResponse{
-		SignerMode:        mode,
+		SignerMode:        s.cfg.SignerMode,
 		LeaseSupported:    true,
-		AllowedTTLSeconds: allowed,
+		AllowedTTLSeconds: s.cfg.AllowedTTLSeconds,
 		Sealed:            !s.keystore.Available(),
 	})
 }
