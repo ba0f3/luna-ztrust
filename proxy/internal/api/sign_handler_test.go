@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
-	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
@@ -116,8 +116,8 @@ func (s *sharedTLSConn) transport() *http.Transport {
 }
 
 type mtlsClient struct {
-	http    *http.Client
-	shared  *sharedTLSConn
+	http   *http.Client
+	shared *sharedTLSConn
 }
 
 func newMTLSClient(t *testing.T, ts *httptest.Server, clientTLS *tls.Config) *mtlsClient {

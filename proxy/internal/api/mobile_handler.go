@@ -13,8 +13,8 @@ import (
 )
 
 type mobileEnrollRequest struct {
-	Label         string `json:"label"`
-	DevicePubKey  string `json:"device_pubkey"`
+	Label        string `json:"label"`
+	DevicePubKey string `json:"device_pubkey"`
 }
 
 type mobileEnrollResponse struct {

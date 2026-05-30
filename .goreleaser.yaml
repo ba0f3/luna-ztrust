@@ -1,0 +1,67 @@
+version: 2
+
+project_name: luna-ztrust
+
+before:
+  hooks:
+    - go work sync
+
+builds:
+  - id: luna-proxy
+    dir: proxy
+    main: ./cmd/luna-proxy
+    binary: luna-proxy
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+  - id: luna-agent
+    dir: agent
+    main: ./cmd/luna-agent
+    binary: luna-agent
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    builds:
+      - luna-proxy
+      - luna-agent
+    files:
+      - LICENSE*
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+
+release:
+  github:
+    owner: ba0f3
+    name: luna-ztrust
+  draft: false
+  prerelease: auto

@@ -16,8 +16,8 @@ type telegramUpdate struct {
 }
 
 type telegramCallbackQuery struct {
-	ID      string          `json:"id"`
-	Data    string          `json:"data"`
+	ID      string           `json:"id"`
+	Data    string           `json:"data"`
 	Message *telegramMessage `json:"message"`
 }
 

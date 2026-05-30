@@ -30,8 +30,8 @@ func TestMobileEnrollAndApprove(t *testing.T) {
 	}
 
 	enrollBody, _ := json.Marshal(map[string]string{
-		"label":          "test-phone",
-		"device_pubkey":  base64.StdEncoding.EncodeToString(pub),
+		"label":         "test-phone",
+		"device_pubkey": base64.StdEncoding.EncodeToString(pub),
 	})
 	_, adminTLS, _ := loadAdminTLSConfigs(t)
 	admin := newMTLSClient(t, env.ts, adminTLS)

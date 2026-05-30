@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	ErrNotFound    = errors.New("device not found")
-	ErrInvalidKey  = errors.New("invalid device public key")
-	ErrEmptyLabel  = errors.New("device label required")
+	ErrNotFound   = errors.New("device not found")
+	ErrInvalidKey = errors.New("invalid device public key")
+	ErrEmptyLabel = errors.New("device label required")
 )
 
 // Device is an enrolled mobile approver.

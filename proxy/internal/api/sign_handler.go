@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 )
 

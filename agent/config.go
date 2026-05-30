@@ -14,10 +14,10 @@ type Config struct {
 	MTLSCert   string
 	MTLSKey    string
 	MTLSCA     string
-	TargetUser  string
-	TargetHost  string
-	SocketPath  string
-	SignerMode  string
+	TargetUser string
+	TargetHost string
+	SocketPath string
+	SignerMode string
 }
 
 // LoadFromEnv reads agent configuration from process environment variables.

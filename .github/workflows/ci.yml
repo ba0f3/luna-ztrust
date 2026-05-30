@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache-dependency-path: |
+            agent/go.sum
+            proxy/go.sum
+            sdk/go.sum
+
+      - name: Install testdata tooling
+        run: sudo apt-get update && sudo apt-get install -y openssl openssh-client
+
+      - name: Generate testdata
+        run: make testdata
+
+      - name: Check formatting
+        run: make fmt-check
+
+      - name: Lint
+        run: make lint
+
+      - name: Unit tests
+        run: make test
+
+      - name: Build binaries
+        run: make build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache-dependency-path: |
+            agent/go.sum
+            proxy/go.sum
+            sdk/go.sum
+
+      - name: Install testdata tooling
+        run: sudo apt-get update && sudo apt-get install -y openssl openssh-client
+
+      - name: Generate testdata
+        run: make testdata
+
+      - name: Start E2E stack
+        run: make e2e-up
+
+      - name: Wait for proxy
+        run: make e2e-wait
+
+      - name: E2E tests
+        run: make e2e-test
+
+      - name: Stop E2E stack
+        if: always()
+        run: make e2e-down

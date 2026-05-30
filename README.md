@@ -78,7 +78,13 @@ luna-ztrust/
 go work sync
 make test
 make testdata   # mTLS + encrypted SSH keys for CI
+make build      # bin/luna-proxy, bin/luna-agent
+make ci         # fmt-check, lint, test, build (local CI parity)
 ```
+
+**CI:** GitHub Actions runs `make ci` on push/PR and Docker E2E (`make e2e-up`, `e2e-wait`, `e2e-test`) in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+**Releases:** Tag `v*` (e.g. `v0.1.0`) triggers [GoReleaser](.goreleaser.yaml) via [`.github/workflows/release.yml`](.github/workflows/release.yml) — cross-platform `luna-proxy` and `luna-agent` archives plus checksums on GitHub Releases.
 
 ## E2E
 
