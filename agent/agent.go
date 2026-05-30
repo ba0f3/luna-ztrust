@@ -26,9 +26,9 @@ type AccessProvider interface {
 
 // LunaAgent implements the OpenSSH ssh-agent protocol by blocking Sign until credentials are ready.
 type LunaAgent struct {
-	provider   AccessProvider
-	signerMode string
-	targetUser string
+	provider           AccessProvider
+	signerMode         string
+	targetUser         string
 	targetHost         string
 	hostKeyFingerprint string
 

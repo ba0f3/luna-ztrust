@@ -63,13 +63,13 @@ func newAgentViper() (*viper.Viper, error) {
 
 func configFromViper(v *viper.Viper) (Config, error) {
 	cfg := Config{
-		ProxyURL:   strings.TrimSpace(v.GetString("proxy_url")),
-		MTLSCert:   strings.TrimSpace(v.GetString("mtls_cert")),
-		MTLSKey:    strings.TrimSpace(v.GetString("mtls_key")),
-		MTLSCA:     strings.TrimSpace(v.GetString("mtls_ca")),
-		TargetUser: strings.TrimSpace(v.GetString("target_user")),
-		TargetHost: strings.TrimSpace(v.GetString("target_host")),
-		SocketPath: strings.TrimSpace(v.GetString("agent_socket")),
+		ProxyURL:           strings.TrimSpace(v.GetString("proxy_url")),
+		MTLSCert:           strings.TrimSpace(v.GetString("mtls_cert")),
+		MTLSKey:            strings.TrimSpace(v.GetString("mtls_key")),
+		MTLSCA:             strings.TrimSpace(v.GetString("mtls_ca")),
+		TargetUser:         strings.TrimSpace(v.GetString("target_user")),
+		TargetHost:         strings.TrimSpace(v.GetString("target_host")),
+		SocketPath:         strings.TrimSpace(v.GetString("agent_socket")),
 		SignerMode:         strings.TrimSpace(v.GetString("signer_mode")),
 		HostKeyFingerprint: strings.TrimSpace(v.GetString("host_key_fingerprint")),
 	}

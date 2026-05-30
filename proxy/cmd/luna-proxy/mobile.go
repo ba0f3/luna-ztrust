@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	mobileLabel   string
-	mobilePubKey  string
+	mobileLabel  string
+	mobilePubKey string
 )
 
 var mobileCmd = &cobra.Command{

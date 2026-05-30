@@ -2,11 +2,11 @@ package sign
 
 // Request is the JSON body for POST /api/v1/ssh/sign.
 type Request struct {
-	PublicKey     string `json:"public_key"`
-	TargetUser    string `json:"target_user"`
-	TargetIP      string `json:"target_ip"`
-	Timestamp     int64  `json:"timestamp"`
-	PopSignature  string `json:"pop_signature"`
+	PublicKey          string `json:"public_key"`
+	TargetUser         string `json:"target_user"`
+	TargetIP           string `json:"target_ip"`
+	Timestamp          int64  `json:"timestamp"`
+	PopSignature       string `json:"pop_signature"`
 	AgentSignData      string `json:"agent_sign_data,omitempty"`
 	HostKeyFingerprint string `json:"host_key_fingerprint,omitempty"`
 }

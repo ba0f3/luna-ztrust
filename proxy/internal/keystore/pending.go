@@ -15,9 +15,9 @@ var (
 )
 
 const (
-	defaultPendingTTL     = 15 * time.Minute
-	maxPendingGlobal      = 32
-	maxPendingPerDevice   = 4
+	defaultPendingTTL   = 15 * time.Minute
+	maxPendingGlobal    = 32
+	maxPendingPerDevice = 4
 )
 
 // PendingKey is an encrypted key blob awaiting operator confirm.

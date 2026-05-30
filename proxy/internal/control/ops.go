@@ -186,8 +186,8 @@ func (s *Server) pendingListData() json.RawMessage {
 }
 
 type mobileEnrollData struct {
-	Label         string `json:"label"`
-	DevicePubKey  string `json:"device_pubkey"`
+	Label        string `json:"label"`
+	DevicePubKey string `json:"device_pubkey"`
 }
 
 func (s *Server) handleMobileEnroll(req Request) Response {

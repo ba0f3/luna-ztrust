@@ -6,11 +6,11 @@ import (
 )
 
 type capabilitiesResponse struct {
-	SignerMode        string                `json:"signer_mode"`
-	LeaseSupported    bool                  `json:"lease_supported"`
-	AllowedTTLSeconds []int                 `json:"allowed_ttl_seconds"`
-	Sealed            bool                  `json:"sealed"`
-	LoadedSigners     []loadedSignerEntry   `json:"loaded_signers,omitempty"`
+	SignerMode        string              `json:"signer_mode"`
+	LeaseSupported    bool                `json:"lease_supported"`
+	AllowedTTLSeconds []int               `json:"allowed_ttl_seconds"`
+	Sealed            bool                `json:"sealed"`
+	LoadedSigners     []loadedSignerEntry `json:"loaded_signers,omitempty"`
 }
 
 type loadedSignerEntry struct {

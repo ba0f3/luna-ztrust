@@ -36,16 +36,16 @@ const DefaultDevCertTTL = 5 * time.Minute
 
 // Transaction is a pending or terminal SSH sign approval request.
 type Transaction struct {
-	ID            string
-	TargetUser    string
-	TargetIP      string
-	PublicKey     string
-	SourceIP      string
-	ClientCertFP  string
+	ID                 string
+	TargetUser         string
+	TargetIP           string
+	PublicKey          string
+	SourceIP           string
+	ClientCertFP       string
 	AgentSignData      string
 	HostKeyFingerprint string
 	State              State
-	CreatedAt     time.Time
+	CreatedAt          time.Time
 }
 
 // Result is delivered to waiters when a transaction reaches a terminal state.
@@ -142,16 +142,16 @@ func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, 
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
-		ID:            id,
-		TargetUser:    targetUser,
-		TargetIP:      targetIP,
-		PublicKey:     publicKey,
-		SourceIP:      sourceIP,
-		ClientCertFP:  clientCertFP,
+		ID:                 id,
+		TargetUser:         targetUser,
+		TargetIP:           targetIP,
+		PublicKey:          publicKey,
+		SourceIP:           sourceIP,
+		ClientCertFP:       clientCertFP,
 		AgentSignData:      agentSignData,
 		HostKeyFingerprint: hostKeyFP,
 		State:              StatePending,
-		CreatedAt:     time.Now(),
+		CreatedAt:          time.Now(),
 	}
 	ch := make(chan Result, 1)
 	entry := &txEntry{
