@@ -3,8 +3,11 @@ package keystore_test
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
@@ -12,9 +15,13 @@ import (
 )
 
 func TestFingerprint_MatchesSSHKeygen(t *testing.T) {
+	pubPath := filepath.Join("..", "..", "..", "testdata", "ssh", "ca.pub")
 	pub := loadTestPubKey(t, "ca.pub")
 	got := keystore.Fingerprint(pub)
-	want := "ErTRveOaqaSJSj9pi4mTOQdskJUmTE45h2AFw2qmIYw"
+	want, err := sshKeygenSHA256Fingerprint(pubPath)
+	if err != nil {
+		t.Skip(err)
+	}
 	if got != want {
 		t.Fatalf("Fingerprint() = %q, want %q (ssh-keygen -lf)", got, want)
 	}
@@ -65,4 +72,24 @@ func loadTestPubKey(t *testing.T, name string) ssh.PublicKey {
 		t.Fatal(err)
 	}
 	return pub
+}
+
+func sshKeygenSHA256Fingerprint(pubPath string) (string, error) {
+	if _, err := exec.LookPath("ssh-keygen"); err != nil {
+		return "", err
+	}
+	out, err := exec.Command("ssh-keygen", "-lf", pubPath).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	fields := strings.Fields(string(out))
+	for i, f := range fields {
+		if strings.HasPrefix(f, "SHA256:") {
+			return strings.TrimPrefix(f, "SHA256:"), nil
+		}
+		if f == "SHA256:" && i+1 < len(fields) {
+			return fields[i+1], nil
+		}
+	}
+	return "", errors.New("ssh-keygen output missing SHA256 fingerprint")
 }

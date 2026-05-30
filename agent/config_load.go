@@ -33,7 +33,7 @@ func newAgentViper() (*viper.Viper, error) {
 
 	v := viper.New()
 	v.SetDefault("agent_socket", defaultSocketPath)
-	v.SetDefault("signer_mode", SignerModeLocalCA)
+	v.SetDefault("signer_mode", SignerModeLocalKey)
 
 	if path := os.Getenv("LUNA_CONFIG"); path != "" {
 		v.SetConfigFile(path)
@@ -77,7 +77,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		cfg.SocketPath = defaultSocketPath
 	}
 	if cfg.SignerMode == "" {
-		cfg.SignerMode = SignerModeLocalCA
+		cfg.SignerMode = SignerModeLocalKey
 	}
 
 	var missing []string
