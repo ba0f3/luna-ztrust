@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control/client"
@@ -65,14 +65,14 @@ func runKeyLoad(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer control.ZeroString(&pass)
+	defer control.ZeroBytes(pass)
 	path, err := resolveSocket()
 	if err != nil {
 		return err
 	}
 	data, err := client.Call(path, "key.load", map[string]string{
 		"path":       args[0],
-		"passphrase": pass,
+		"passphrase": string(pass),
 	})
 	if err != nil {
 		return err
@@ -106,14 +106,14 @@ func runKeyConfirm(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer control.ZeroString(&pass)
+	defer control.ZeroBytes(pass)
 	path, err := resolveSocket()
 	if err != nil {
 		return err
 	}
 	data, err := client.Call(path, "key.confirm", map[string]string{
 		"pending_id": args[0],
-		"passphrase": pass,
+		"passphrase": string(pass),
 	})
 	if err != nil {
 		return err
@@ -130,26 +130,26 @@ func runKeyReject(_ *cobra.Command, args []string) error {
 	return err
 }
 
-func readPassphrase() (string, error) {
+func readPassphrase() ([]byte, error) {
 	if passphraseStdin {
 		sc := bufio.NewScanner(os.Stdin)
 		if sc.Scan() {
-			return strings.TrimSpace(sc.Text()), nil
+			return bytes.TrimSpace(sc.Bytes()), nil
 		}
-		return "", sc.Err()
+		return nil, sc.Err()
 	}
 	fmt.Fprint(os.Stderr, "Passphrase: ")
 	if term.IsTerminal(int(os.Stdin.Fd())) {
 		pass, err := term.ReadPassword(int(os.Stdin.Fd()))
 		fmt.Fprintln(os.Stderr)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return string(pass), nil
+		return pass, nil
 	}
 	sc := bufio.NewScanner(os.Stdin)
 	if sc.Scan() {
-		return strings.TrimSpace(sc.Text()), nil
+		return bytes.TrimSpace(sc.Bytes()), nil
 	}
-	return "", sc.Err()
+	return nil, sc.Err()
 }

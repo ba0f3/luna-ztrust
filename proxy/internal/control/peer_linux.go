@@ -21,14 +21,18 @@ func peerAllowed(conn *net.UnixConn, groupName string) error {
 	if err != nil {
 		return fmt.Errorf("peer cred: %w", err)
 	}
-	if ucred.Uid == 0 {
+	return credAllowed(ucred.Uid, ucred.Gid, groupName)
+}
+
+func credAllowed(peerUID, peerGID uint32, groupName string) error {
+	if peerUID == 0 {
 		return nil
 	}
-	if ucred.Uid == uint32(os.Geteuid()) {
+	if peerUID == uint32(os.Geteuid()) {
 		return nil
 	}
 	if groupName == "" {
-		return fmt.Errorf("peer uid %d not allowed", ucred.Uid)
+		return fmt.Errorf("peer uid %d not allowed", peerUID)
 	}
 	g, err := user.LookupGroup(groupName)
 	if err != nil {
@@ -38,8 +42,8 @@ func peerAllowed(conn *net.UnixConn, groupName string) error {
 	if _, err := fmt.Sscanf(g.Gid, "%d", &wantGID); err != nil {
 		return fmt.Errorf("parse gid: %w", err)
 	}
-	if uint32(ucred.Gid) == wantGID {
+	if peerGID == wantGID {
 		return nil
 	}
-	return fmt.Errorf("peer uid %d gid %d not in group %s", ucred.Uid, ucred.Gid, groupName)
+	return fmt.Errorf("peer uid %d gid %d not in group %s", peerUID, peerGID, groupName)
 }

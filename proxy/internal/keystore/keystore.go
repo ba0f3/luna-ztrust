@@ -230,13 +230,21 @@ func parseEncryptedPEM(pemBytes, pass []byte) (ssh.Signer, error) {
 	switch key := raw.(type) {
 	case ed25519.PrivateKey:
 		mlockBytes(key)
-		defer func() {
-			zeroBytes(key)
-			runtime.KeepAlive(key)
-		}()
+		runtime.KeepAlive(key)
 		signer, err = ssh.NewSignerFromKey(key)
+	case *ed25519.PrivateKey:
+		if key == nil {
+			return nil, fmt.Errorf("nil ed25519 private key")
+		}
+		owned := make(ed25519.PrivateKey, ed25519.PrivateKeySize)
+		copy(owned, *key)
+		mlockBytes(*key)
+		zeroBytes(*key)
+		mlockBytes(owned)
+		runtime.KeepAlive(owned)
+		signer, err = ssh.NewSignerFromKey(owned)
 	default:
-		signer, err = ssh.NewSignerFromKey(raw)
+		return nil, fmt.Errorf("unsupported private key type %T (ed25519 only)", raw)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("load signer: %w", err)

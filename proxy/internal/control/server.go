@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/user"
@@ -51,6 +52,7 @@ func (s *Server) ServeUnix(path, group string) error {
 func (s *Server) serveConn(conn *net.UnixConn, group string) {
 	defer conn.Close()
 	if err := peerAllowed(conn, group); err != nil {
+		log.Printf("control: peer denied: %v", err)
 		return
 	}
 	_ = conn.SetReadDeadline(time.Now().Add(controlReadTimeout))
