@@ -88,7 +88,9 @@ make ci         # fmt-check, lint, test, build (local CI parity)
 
 **CI:** GitHub Actions runs `make ci` on push/PR and Docker E2E (`make e2e-up`, `e2e-wait`, `e2e-test`) in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-**Releases:** Tag `v*` (e.g. `v0.1.0`) triggers [GoReleaser](.goreleaser.yaml) via [`.github/workflows/release.yml`](.github/workflows/release.yml) — cross-platform `luna-proxy` and `luna-agent` archives plus checksums on GitHub Releases.
+**Releases:** Tag `v*` (e.g. `v0.1.0`) triggers [GoReleaser](.goreleaser.yaml) and a [GHCR](https://github.com/ba0f3/luna-ztrust/pkgs/container/luna-ztrust%2Fluna-proxy) image via [`.github/workflows/release.yml`](.github/workflows/release.yml) — cross-platform `luna-proxy` and `luna-agent` archives plus `ghcr.io/ba0f3/luna-ztrust/luna-proxy:<tag>`.
+
+**Deployment:** [docs/deploy.md](docs/deploy.md) — GitHub release binaries, systemd (`luna-proxy install systemd`, `luna-agent install systemd`), Docker Compose.
 
 ## E2E
 
@@ -136,6 +138,12 @@ Run the server explicitly:
 
 ```bash
 luna-proxy serve
+```
+
+Install a systemd unit (Linux, root):
+
+```bash
+sudo luna-proxy install systemd --enable
 ```
 
 Operator commands use the Unix control socket on the central host:
@@ -208,6 +216,13 @@ See [docs/superpowers/specs/2026-05-31-cli-remote-key-load-design.md](docs/super
 
 Agent socket: `/run/luna/agent.sock` (mode `0600`).
 
+Persistent daemon (Linux, root):
+
+```bash
+sudo luna-agent install systemd --enable
+export SSH_AUTH_SOCK=/run/luna/agent.sock
+```
+
 ## HTTP API
 
 | Method | Path | Description |
@@ -243,6 +258,7 @@ Auth order on sign requests: mTLS → HMAC → timestamp → replay LRU → PoP 
 
 | Document | Contents |
 |----------|----------|
+| [docs/deploy.md](docs/deploy.md) | Install proxy/agent, systemd, Docker Compose, GHCR |
 | [docs/setup.md](docs/setup.md) | Target `sshd` trust, operator runbooks, legacy Vault notes |
 | [docs/legacy-vault-migration.md](docs/legacy-vault-migration.md) | Vault → self-hosted mapping |
 | [docs/superpowers/specs/2026-05-30-self-hosted-central-design.md](docs/superpowers/specs/2026-05-30-self-hosted-central-design.md) | Self-hosted central server design |

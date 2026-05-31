@@ -1,0 +1,32 @@
+# Production-oriented luna-proxy (pull from GHCR after a release).
+#
+# Prerequisites:
+#   - mTLS certs under ./certs (server.crt, server.key, ca.crt)
+#   - encrypted signing key under ./ssh (not committed)
+#   - copy deploy/luna-proxy.production.example.yaml to ./proxy.yml and edit
+#
+# Start:
+#   docker compose -f deploy/docker-compose.yml up -d
+#
+# Unseal (on host with control socket access, or docker exec):
+#   docker compose -f deploy/docker-compose.yml exec luna-proxy \
+#     luna-proxy --socket /run/luna/control.sock key load /etc/luna/ssh/encrypted_ca.key --passphrase-stdin
+services:
+  luna-proxy:
+    image: ghcr.io/ba0f3/luna-ztrust/luna-proxy:${LUNA_PROXY_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${LUNA_LISTEN_PORT:-8443}:8443"
+    environment:
+      LUNA_CONFIG: /etc/luna/proxy.yml
+    volumes:
+      - ./proxy.yml:/etc/luna/proxy.yml:ro
+      - ./certs:/etc/luna/certs:ro
+      - ./ssh:/etc/luna/ssh:ro
+    # Control socket lives in the container; use docker exec for key load / status.
+    healthcheck:
+      test: ["CMD", "curl", "-sfk", "https://127.0.0.1:8443/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

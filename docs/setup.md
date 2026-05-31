@@ -8,7 +8,7 @@ Application build, mTLS, Telegram, and proxy env vars are in [README.md](../READ
 |------|--------|
 | 1 | Generate or import an SSH CA (or host) key; store **encrypted PEM** at `LUNA_KEY_PATH` |
 | 2 | Set `LUNA_SIGNER_MODE=local-ca` (or `local-key` for hosted-key agent signing) |
-| 3 | Start `luna-proxy` (sealed); call `POST /api/v1/admin/unseal` with admin mTLS client (`OU=luna-admin`) |
+| 3 | Start `luna-proxy serve` (sealed); load key via control socket (`luna-proxy key load`) — see [deploy.md](deploy.md) |
 | 4 | On targets, set `TrustedUserCAKeys` to the CA **public** key (for `local-ca`) |
 | 5 | Issue automation client mTLS certs; configure Telegram webhook for production |
 

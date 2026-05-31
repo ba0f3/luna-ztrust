@@ -5,12 +5,13 @@
 #   chmod 600 /etc/luna/proxy.yml
 #   Edit paths and Telegram values; do NOT put the key passphrase here.
 #
-# After start, unseal via admin mTLS:
-#   POST /api/v1/admin/unseal  {"passphrase":"..."}
+# After start, load signing key via control socket:
+#   luna-proxy --socket /run/luna/control.sock key load /etc/luna/ssh/encrypted_ca.key --passphrase-stdin
 #
-# systemd example:
+# systemd:
+#   sudo luna-proxy install systemd --enable
 #   Environment=LUNA_CONFIG=/etc/luna/proxy.yml
-#   ExecStart=/usr/local/bin/luna-proxy
+#   ExecStart=/usr/local/bin/luna-proxy serve
 #
 # Environment variables override values in this file.
 
@@ -18,6 +19,8 @@
 # env: production
 
 listen_addr: ":8443"
+control_socket: /run/luna/control.sock
+control_socket_group: luna-admin
 
 # Encrypted OpenSSH PEM; chmod 400; owner root or dedicated luna user
 key_path: /etc/luna/ssh/encrypted_ca.key

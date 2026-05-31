@@ -170,6 +170,7 @@ PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed w
 | Change type | Update |
 |-------------|--------|
 | User-facing behavior, env vars, API | `README.md` |
+| Install, systemd, Docker/GHCR deploy | `docs/deploy.md`, `deploy/*.example*` |
 | Vault / vault-agent / target `sshd` setup | `docs/setup.md` |
 | Agent architecture, security, build | `AGENTS.md` |
 | Approved component design | `docs/superpowers/specs/2026-05-31-proxy-cli-keystore-design.md` or affected spec |
