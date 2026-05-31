@@ -58,16 +58,37 @@ sudo useradd --system --home-dir /var/lib/luna --shell /usr/sbin/nologin luna
 sudo install -d -o luna -g luna -m 0750 /etc/luna /etc/luna/certs /etc/luna/ssh
 ```
 
-Place material:
+### 3. First-time mTLS CA (built-in)
+
+Generate CA, server, and sample client certificates (no OpenSSL required):
+
+```bash
+sudo luna-proxy setup mtls --dir /etc/luna/certs \
+  --san luna.example.com --san localhost
+```
+
+| File | Purpose |
+|------|---------|
+| `ca.crt` / `ca.key` | Issuing CA (`mtls_ca_*` for CLI enroll; `mtls_client_ca` for client auth) |
+| `server.crt` / `server.key` | Proxy listener (`mtls_server_*`) |
+| `client.crt` / `client.key` | Sample automation client (copy paths into agent config) |
+| `admin-client.crt` / `.key` | Sample admin client (`OU=luna-admin`) for control-socket enroll |
+
+Use `--skip-samples` for CA + server only. Re-run with `--force` to replace. **`luna-proxy serve` uses `/etc/luna/certs/` by default** when mTLS paths are unset (same layout as `setup mtls`).
+
+For development/CI, `make testdata` still uses `scripts/gen-test-ca.sh` under `testdata/ca/` (`LUNA_ENV=dev`).
+
+### 4. Place signing key and adjust ownership
 
 | Path | Mode | Owner |
 |------|------|-------|
 | `/etc/luna/certs/server.crt` | 0644 | root:luna |
 | `/etc/luna/certs/server.key` | 0640 | root:luna |
 | `/etc/luna/certs/ca.crt` | 0644 | root:luna |
+| `/etc/luna/certs/ca.key` | 0400 | root:luna |
 | `/etc/luna/ssh/encrypted_ca.key` | 0400 | root:luna |
 
-### 3. Configuration
+### 5. Configuration
 
 ```bash
 sudo cp deploy/luna-proxy.production.example.yaml /etc/luna/proxy.yml
@@ -75,7 +96,7 @@ sudo chmod 600 /etc/luna/proxy.yml
 sudo chown luna:luna /etc/luna/proxy.yml
 ```
 
-Edit `listen_addr`, `signer_mode`, Telegram fields, and cert paths. Set the control socket for systemd:
+Edit `listen_addr`, `signer_mode`, and Telegram fields. mTLS paths default to `/etc/luna/certs/` after `setup mtls` — override in YAML only for a non-default cert directory. Set the control socket for systemd:
 
 ```yaml
 control_socket: /run/luna/control.sock
@@ -84,7 +105,7 @@ control_socket_group: luna-admin
 
 Environment variables override YAML (see [README.md](../README.md)). Do **not** set `env: dev` in production.
 
-### 4. systemd (recommended)
+### 6. systemd (recommended)
 
 Install the unit (as root):
 
@@ -103,7 +124,7 @@ sudo groupadd -f luna-admin
 sudo usermod -aG luna-admin deploy
 ```
 
-### 5. Start and unseal
+### 7. Start and unseal
 
 ```bash
 sudo systemctl status luna-proxy
@@ -118,7 +139,7 @@ sudo luna-proxy --socket /run/luna/control.sock status
 
 `POST /api/v1/admin/unseal` returns `410 Gone`; use the control socket only.
 
-### 6. Firewall and ingress
+### 8. Firewall and ingress
 
 - Listen on `:8443` or terminate TLS at an ingress that preserves client source IP for `source-address` on certs.
 - Do not trust `X-Forwarded-For` on the mTLS listener unless documented otherwise.
@@ -229,6 +250,7 @@ LUNA_DEBUG=1 journalctl -u luna-agent -f
 | Task | Command |
 |------|---------|
 | Binary version | `luna-proxy version` / `luna-agent version` (or `-v` / `--version`) |
+| Generate mTLS PKI | `sudo luna-proxy setup mtls --dir /etc/luna/certs` |
 | Install proxy unit | `sudo luna-proxy install systemd --enable` |
 | Install agent unit | `sudo luna-agent install systemd --enable` |
 | Proxy status | `luna-proxy --socket /run/luna/control.sock status` |

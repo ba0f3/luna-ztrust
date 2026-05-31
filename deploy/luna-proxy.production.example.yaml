@@ -31,10 +31,13 @@ signer_mode: local-ca
 admin_client_ou: luna-admin
 approval_timeout: 60s
 
-# mTLS server + client CA (issue automation certs separately)
-mtls_server_cert: /etc/luna/certs/server.crt
-mtls_server_key: /etc/luna/certs/server.key
-mtls_client_ca: /etc/luna/certs/ca.crt
+# mTLS: first-time PKI — sudo luna-proxy setup mtls (defaults to /etc/luna/certs; serve uses these paths automatically)
+# Optional overrides:
+# mtls_server_cert: /etc/luna/certs/server.crt
+# mtls_server_key: /etc/luna/certs/server.key
+# mtls_client_ca: /etc/luna/certs/ca.crt
+# mtls_ca_cert_path: /etc/luna/certs/ca.crt
+# mtls_ca_key_path: /etc/luna/certs/ca.key
 
 # Telegram OOB approval (required when env is not dev)
 telegram_bot_token: ""

@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
@@ -13,7 +14,10 @@ func TestLoadRequiresMTLSOutsideDev(t *testing.T) {
 
 	_, err := config.Load()
 	if err == nil {
-		t.Fatal("expected error without explicit mTLS paths in production")
+		t.Fatal("expected error when default cert files are missing")
+	}
+	if !strings.Contains(err.Error(), config.DefaultCertsDir) {
+		t.Fatalf("expected default cert dir in error, got %v", err)
 	}
 }
 

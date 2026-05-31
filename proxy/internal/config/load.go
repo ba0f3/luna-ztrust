@@ -116,17 +116,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 	if cfg.SignerMode == "" {
 		cfg.SignerMode = defaultSignerMode
 	}
-	if isDevOrTestEnv(cfg.Env) {
-		if cfg.MTLSServerCert == "" {
-			cfg.MTLSServerCert = defaultCertPath("server.crt")
-		}
-		if cfg.MTLSServerKey == "" {
-			cfg.MTLSServerKey = defaultCertPath("server.key")
-		}
-		if cfg.MTLSClientCA == "" {
-			cfg.MTLSClientCA = defaultCertPath("ca.crt")
-		}
-	}
+	applyMTLSDefaults(&cfg)
 	if cfg.ControlSocket == "" {
 		cfg.ControlSocket = DefaultControlSocket()
 	}

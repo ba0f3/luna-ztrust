@@ -120,8 +120,9 @@ LUNA_PROXY_URL=https://localhost:8443 go test -tags=e2e ./sdk/sign/... -v
 | `LUNA_CONTROL_SOCKET_GROUP` | Group allowed to use the control socket (default `luna-admin`) |
 | `LUNA_ADMIN_CLIENT_OU` | Client cert OU for `/api/v1/admin/*` (default `luna-admin`) |
 | `LUNA_CLI_CLIENT_OU` | Client cert OU for enrolled CLI devices (default `luna-cli`) |
-| `LUNA_MTLS_CA_CERT` | mTLS issuing CA cert path (CSR enrollment for CLI devices) |
-| `LUNA_MTLS_CA_KEY` | mTLS issuing CA key path (0400; required for `cli enroll`) |
+| `LUNA_MTLS_SERVER_CERT` / `KEY` / `LUNA_MTLS_CLIENT_CA` | mTLS listener material; default `/etc/luna/certs/{server.crt,server.key,ca.crt}` (same as `setup mtls`) |
+| `LUNA_MTLS_CA_CERT` | mTLS issuing CA cert path (default `/etc/luna/certs/ca.crt`; CSR enrollment for CLI devices) |
+| `LUNA_MTLS_CA_KEY` | mTLS issuing CA key path (default `/etc/luna/certs/ca.key`; required for `cli enroll`) |
 | `LUNA_ENV=dev` | Auto-approve (proxy env only) |
 | `TELEGRAM_BOT_TOKEN` | Outbound Telegram API |
 | `TELEGRAM_WEBHOOK_SECRET` | Webhook validation |
@@ -138,6 +139,12 @@ Run the server explicitly:
 
 ```bash
 luna-proxy serve
+```
+
+First-time mTLS CA and server certs (Linux, root):
+
+```bash
+sudo luna-proxy setup mtls --dir /etc/luna/certs --san luna.example.com
 ```
 
 Install a systemd unit (Linux, root):

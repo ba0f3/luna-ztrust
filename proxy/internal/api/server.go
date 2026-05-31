@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
@@ -136,9 +135,9 @@ func tlsConnFromContext(ctx context.Context) (*tls.Conn, bool) {
 
 // TLSConfigFromEnv builds a server TLS config from environment (deprecated: use LoadTLSConfig with config.Load).
 func TLSConfigFromEnv() (*tls.Config, error) {
-	certFile := envOr("LUNA_MTLS_SERVER_CERT", defaultCertPath("server.crt"))
-	keyFile := envOr("LUNA_MTLS_SERVER_KEY", defaultCertPath("server.key"))
-	caFile := envOr("LUNA_MTLS_CLIENT_CA", defaultCertPath("ca.crt"))
+	certFile := envOr("LUNA_MTLS_SERVER_CERT", config.ProductionCertPath("server.crt"))
+	keyFile := envOr("LUNA_MTLS_SERVER_KEY", config.ProductionCertPath("server.key"))
+	caFile := envOr("LUNA_MTLS_CLIENT_CA", config.ProductionCertPath("ca.crt"))
 	return LoadTLSConfig(certFile, keyFile, caFile)
 }
 
@@ -147,19 +146,6 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
-}
-
-func defaultCertPath(name string) string {
-	for _, base := range []string{
-		"testdata/ca",
-		filepath.Join("..", "..", "testdata", "ca"),
-	} {
-		p := filepath.Join(base, name)
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-	}
-	return filepath.Join("testdata", "ca", name)
 }
 
 // LoadTLSConfig loads server certificate and client CA for mutual TLS.
