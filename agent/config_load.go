@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/subosito/gotenv"
@@ -34,6 +35,7 @@ func newAgentViper() (*viper.Viper, error) {
 	v := viper.New()
 	v.SetDefault("agent_socket", defaultSocketPath)
 	v.SetDefault("signer_mode", SignerModeLocalKey)
+	v.SetDefault("approval_timeout", defaultApprovalTimeout.String())
 
 	if path := os.Getenv("LUNA_CONFIG"); path != "" {
 		v.SetConfigFile(path)
@@ -57,12 +59,21 @@ func newAgentViper() (*viper.Viper, error) {
 	bindEnv("signer_mode", "LUNA_SIGNER_MODE")
 	bindEnv("host_key_fingerprint", "LUNA_HOST_KEY_FINGERPRINT")
 	bindEnv("hosted_public_key", "LUNA_HOSTED_PUBLIC_KEY")
+	bindEnv("approval_timeout", "LUNA_APPROVAL_TIMEOUT")
 
 	v.AutomaticEnv()
 	return v, nil
 }
 
 func configFromViper(v *viper.Viper) (Config, error) {
+	approvalTimeout, err := time.ParseDuration(v.GetString("approval_timeout"))
+	if err != nil {
+		return Config{}, fmt.Errorf("approval_timeout: %w", err)
+	}
+	if approvalTimeout <= 0 {
+		approvalTimeout = defaultApprovalTimeout
+	}
+
 	cfg := Config{
 		ProxyURL:           strings.TrimSpace(v.GetString("proxy_url")),
 		MTLSCert:           strings.TrimSpace(v.GetString("mtls_cert")),
@@ -72,6 +83,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		TargetHost:         strings.TrimSpace(v.GetString("target_host")),
 		SocketPath:         strings.TrimSpace(v.GetString("agent_socket")),
 		SignerMode:         strings.TrimSpace(v.GetString("signer_mode")),
+		ApprovalTimeout:    approvalTimeout,
 		HostKeyFingerprint: strings.TrimSpace(v.GetString("host_key_fingerprint")),
 		HostedPublicKey:    strings.TrimSpace(v.GetString("hosted_public_key")),
 	}

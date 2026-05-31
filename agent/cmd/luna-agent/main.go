@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/ba0f3/luna-ztrust/agent"
 	"github.com/ba0f3/luna-ztrust/sdk"
@@ -30,7 +29,7 @@ func main() {
 		ProxyURL:   cfg.ProxyURL,
 		TLSCert:    tlsCert,
 		TLSRootCAs: tlsCA,
-		Timeout:    90 * time.Second,
+		Timeout:    cfg.ApprovalTimeout,
 		SignerMode: signerMode,
 	})
 	if err != nil {
@@ -42,7 +41,7 @@ func main() {
 		log.Fatalf("identities: %v", err)
 	}
 
-	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost, cfg.HostKeyFingerprint, identities)
+	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost, cfg.HostKeyFingerprint, identities, cfg.ApprovalTimeout)
 
 	if agent.DebugEnabled() {
 		log.Printf("luna-agent: signer_mode=%s target=%s@%s identities=%d",

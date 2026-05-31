@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/ba0f3/luna-ztrust/sdk"
 	"golang.org/x/crypto/ssh"
@@ -32,6 +33,7 @@ type LunaAgent struct {
 	targetUser         string
 	targetHost         string
 	hostKeyFingerprint string
+	approvalTimeout    time.Duration
 	identities         []*agent.Key
 
 	mu     sync.Mutex
@@ -40,9 +42,12 @@ type LunaAgent struct {
 
 // NewLunaAgent returns an agent that signs via provider using the configured target identity.
 // identities must be non-empty for OpenSSH to use the agent (see ResolveIdentities).
-func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost, hostKeyFingerprint string, identities []*agent.Key) *LunaAgent {
+func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost, hostKeyFingerprint string, identities []*agent.Key, approvalTimeout time.Duration) *LunaAgent {
 	if signerMode == "" {
 		signerMode = SignerModeLocalCA
+	}
+	if approvalTimeout <= 0 {
+		approvalTimeout = defaultApprovalTimeout
 	}
 	return &LunaAgent{
 		provider:           provider,
@@ -50,6 +55,7 @@ func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost, h
 		targetUser:         targetUser,
 		targetHost:         targetHost,
 		hostKeyFingerprint: hostKeyFingerprint,
+		approvalTimeout:    approvalTimeout,
 		identities:         identities,
 	}
 }
@@ -82,6 +88,9 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 		mode = p
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), a.approvalTimeout)
+	defer cancel()
+
 	if mode == SignerModeLocalKey {
 		fp := a.hostKeyFingerprint
 		if pub != nil {
@@ -90,7 +99,7 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 		if DebugEnabled() {
 			log.Printf("luna-agent: SIGN local-key user=%s host=%s fp=%s", a.targetUser, a.targetHost, fp)
 		}
-		return a.provider.RequestSignature(context.Background(), sdk.SignatureRequest{
+		return a.provider.RequestSignature(ctx, sdk.SignatureRequest{
 			TargetUser:         a.targetUser,
 			TargetIP:           a.targetHost,
 			HostKeyFingerprint: fp,
@@ -100,7 +109,7 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 	if DebugEnabled() {
 		log.Printf("luna-agent: SIGN local-ca user=%s host=%s", a.targetUser, a.targetHost)
 	}
-	cert, priv, err := a.provider.RequestCertificate(context.Background(), sdk.CertRequest{
+	cert, priv, err := a.provider.RequestCertificate(ctx, sdk.CertRequest{
 		TargetUser: a.targetUser,
 		TargetIP:   a.targetHost,
 	})
