@@ -31,6 +31,21 @@ type SignRequest struct {
 	BodyMAC            string `json:"-"` // X-Luna-Body-Mac header, set by handler
 }
 
+// ValidateCLIKeysLoad runs HMAC, timestamp, and replay checks for POST /api/v1/cli/keys/load.
+func ValidateCLIKeysLoad(conn *tls.Conn, rawBody []byte, bodyMAC string, timestamp int64, now time.Time, replay *ReplayLRU) error {
+	if err := VerifyBodyHMAC(conn, rawBody, bodyMAC); err != nil {
+		return err
+	}
+	if err := ValidateTimestampAt(timestamp, now, timestampWindowSec); err != nil {
+		return err
+	}
+	sum := sha256.Sum256(rawBody)
+	if !replay.AddIfNew(sum[:]) {
+		return ErrReplay
+	}
+	return nil
+}
+
 // ValidateSignRequest runs HMAC, timestamp, replay, and PoP checks in that order.
 func ValidateSignRequest(conn *tls.Conn, rawBody []byte, req *SignRequest, now time.Time, replay *ReplayLRU) error {
 	if err := VerifyBodyHMAC(conn, rawBody, req.BodyMAC); err != nil {

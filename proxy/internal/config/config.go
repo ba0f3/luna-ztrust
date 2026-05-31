@@ -11,12 +11,15 @@ type Config struct {
 	TelegramWebhookSecret string
 	TelegramChatID        string
 	AdminClientOU         string
+	CliClientOU           string
 	KeyPath               string
 	SignerMode            string
 	AllowedTTLSeconds     []int
 	MTLSServerCert        string
 	MTLSServerKey         string
 	MTLSClientCA          string
+	MTLSCACertPath        string
+	MTLSCAKeyPath         string
 	FCMCredentials        string
 	ControlSocket         string
 	ControlSocketGroup    string

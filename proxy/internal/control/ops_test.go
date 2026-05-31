@@ -1,8 +1,12 @@
 package control
 
 import (
+	"crypto"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -10,8 +14,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/mobile"
@@ -277,5 +283,145 @@ func TestHandleUnknownOp(t *testing.T) {
 	resp := s.handle(Request{Op: "nope", ID: "z"})
 	if resp.OK || resp.Code != "UNKNOWN" {
 		t.Fatalf("resp: %+v", resp)
+	}
+}
+
+func testCLIServer(t *testing.T) *Server {
+	t.Helper()
+	caCert, caKey := loadControlTestCA(t)
+	signer := cli.NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)
+	return NewServer(ServerDeps{
+		Config:    config.Config{SignerMode: approval.SignerModeLocalCA},
+		Keystore:  keystore.New(),
+		Mobile:    mobile.NewStore(),
+		Pending:   keystore.NewPendingStore(),
+		Cli:       cli.NewStore(),
+		CSRSigner: signer,
+	})
+}
+
+func loadControlTestCA(t *testing.T) (*x509.Certificate, crypto.PrivateKey) {
+	t.Helper()
+	dir := filepath.Join("..", "..", "..", "testdata", "ca")
+
+	certPEM, err := os.ReadFile(filepath.Join(dir, "ca.crt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, _ := pem.Decode(certPEM)
+	if block == nil || block.Type != "CERTIFICATE" {
+		t.Fatal("no certificate block in ca.crt")
+	}
+	caCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	keyPEM, err := os.ReadFile(filepath.Join(dir, "ca.key"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyBlock, _ := pem.Decode(keyPEM)
+	if keyBlock == nil {
+		t.Fatal("no key block in ca.key")
+	}
+	caKey, err := x509.ParsePKCS8PrivateKey(keyBlock.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return caCert, caKey
+}
+
+func generateControlTestCSR(t *testing.T, ou string) []byte {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	template := x509.CertificateRequest{
+		Subject: pkix.Name{
+			OrganizationalUnit: []string{ou},
+			CommonName:         "Luna CLI Test",
+		},
+	}
+	csrDER, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+}
+
+func TestHandleCLIEnrollListDelete(t *testing.T) {
+	s := testCLIServer(t)
+	csrPEM := generateControlTestCSR(t, "luna-cli")
+
+	enroll := s.handle(Request{
+		Op:   "cli.enroll",
+		ID:   "c1",
+		Data: reqData(t, map[string]string{"label": "laptop", "csr_pem": string(csrPEM)}),
+	})
+	if !enroll.OK {
+		t.Fatalf("cli.enroll: %+v", enroll)
+	}
+	var enrolled struct {
+		DeviceID       string `json:"device_id"`
+		CertificatePEM string `json:"certificate_pem"`
+	}
+	if err := json.Unmarshal(enroll.Data, &enrolled); err != nil {
+		t.Fatal(err)
+	}
+	if enrolled.DeviceID == "" || enrolled.CertificatePEM == "" {
+		t.Fatalf("enroll data: %+v", enrolled)
+	}
+
+	list := s.handle(Request{Op: "cli.list", ID: "c2"})
+	if !list.OK {
+		t.Fatalf("cli.list: %+v", list)
+	}
+	var listed struct {
+		Devices []struct {
+			DeviceID string `json:"device_id"`
+		} `json:"devices"`
+	}
+	if err := json.Unmarshal(list.Data, &listed); err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Devices) != 1 || listed.Devices[0].DeviceID != enrolled.DeviceID {
+		t.Fatalf("devices = %+v", listed.Devices)
+	}
+
+	del := s.handle(Request{
+		Op:   "cli.delete",
+		ID:   "c3",
+		Data: reqData(t, map[string]string{"device_id": enrolled.DeviceID}),
+	})
+	if !del.OK {
+		t.Fatalf("cli.delete: %+v", del)
+	}
+
+	listAfter := s.handle(Request{Op: "cli.list", ID: "c4"})
+	var after struct {
+		Devices []any `json:"devices"`
+	}
+	_ = json.Unmarshal(listAfter.Data, &after)
+	if len(after.Devices) != 0 {
+		t.Fatalf("devices after delete = %d", len(after.Devices))
+	}
+}
+
+func TestHandleCLIEnrollRequiresCSRSigner(t *testing.T) {
+	s := NewServer(ServerDeps{
+		Config:   config.Config{SignerMode: approval.SignerModeLocalCA},
+		Keystore: keystore.New(),
+		Mobile:   mobile.NewStore(),
+		Pending:  keystore.NewPendingStore(),
+		Cli:      cli.NewStore(),
+	})
+	resp := s.handle(Request{
+		Op:   "cli.enroll",
+		Data: reqData(t, map[string]string{"label": "x", "csr_pem": "pem"}),
+	})
+	if resp.OK || resp.Code != "UNAVAILABLE" {
+		t.Fatalf("enroll without signer: %+v", resp)
 	}
 }

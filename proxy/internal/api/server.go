@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/mobile"
@@ -20,24 +22,55 @@ import (
 
 type tlsConnKey struct{}
 
+// ServerDeps holds shared services for the HTTP API handler.
+type ServerDeps struct {
+	Config      config.Config
+	Keystore    *keystore.Keystore
+	Pending     *keystore.PendingStore
+	Store       *approval.Store
+	Replay      *auth.ReplayLRU
+	Telegram    *approval.Notifier
+	Mobile      *mobile.Store
+	CLI         *cli.Store
+	CSRSigner   *cli.CSRSigner
+	LoadLimiter *cli.LoadRateLimiter
+}
+
 // NewServer returns an HTTP handler for sign, wait, webhook, and health routes.
 // GET /healthz is registered without the mTLS gate: probes may use TLS without a client certificate.
-func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.PendingStore, store *approval.Store, replay *auth.ReplayLRU, telegram *approval.Notifier, mob *mobile.Store) http.Handler {
-	if pending == nil {
-		pending = keystore.NewPendingStore()
+func NewServer(deps ServerDeps) http.Handler {
+	cfg := deps.Config
+	if deps.Pending == nil {
+		deps.Pending = keystore.NewPendingStore()
 	}
-	if mob == nil {
-		mob = mobile.NewStore()
+	if deps.Mobile == nil {
+		deps.Mobile = mobile.NewStore()
+	}
+	if deps.CLI == nil {
+		deps.CLI = cli.NewStore()
+	}
+	if deps.CSRSigner == nil {
+		var err error
+		deps.CSRSigner, err = cli.NewCSRSignerFromConfig(cfg)
+		if err != nil {
+			log.Printf("api: CLI CSR signer config: %v", err)
+		}
+	}
+	if deps.LoadLimiter == nil {
+		deps.LoadLimiter = cli.NewLoadRateLimiter()
 	}
 	s := &server{
-		cfg:      cfg,
-		keystore: ks,
-		pending:  pending,
-		store:    store,
-		replay:   replay,
-		telegram: telegram,
-		mobile:   mob,
-		push:     mobile.NewPushNotifier(cfg.FCMCredentials),
+		cfg:         cfg,
+		keystore:    deps.Keystore,
+		pending:     deps.Pending,
+		store:       deps.Store,
+		replay:      deps.Replay,
+		telegram:    deps.Telegram,
+		mobile:      deps.Mobile,
+		push:        mobile.NewPushNotifier(cfg.FCMCredentials),
+		cli:         deps.CLI,
+		csrSigner:   deps.CSRSigner,
+		loadLimiter: deps.LoadLimiter,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
@@ -51,18 +84,25 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.Pendi
 	mux.HandleFunc("DELETE /api/v1/mobile/devices/{device_id}", s.withAdminMTLS(s.handleMobileDeleteDevice))
 	mux.HandleFunc("POST /api/v1/mobile/approve", s.withMTLS(s.handleMobileApprove))
 	mux.HandleFunc("POST /api/v1/mobile/keys/pending", s.withMTLS(s.handleMobileKeysPending))
+	mux.HandleFunc("POST /api/v1/cli/enroll", s.withAdminMTLS(s.handleCLIEnroll))
+	mux.HandleFunc("GET /api/v1/cli/devices", s.withAdminMTLS(s.handleCLIListDevices))
+	mux.HandleFunc("DELETE /api/v1/cli/devices/{device_id}", s.withAdminMTLS(s.handleCLIDeleteDevice))
+	mux.HandleFunc("POST /api/v1/cli/keys/load", s.withMTLS(s.handleCLIKeysLoad))
 	return mux
 }
 
 type server struct {
-	cfg      config.Config
-	keystore *keystore.Keystore
-	store    *approval.Store
-	replay   *auth.ReplayLRU
-	telegram *approval.Notifier
-	mobile   *mobile.Store
-	pending  *keystore.PendingStore
-	push     mobile.Notifier
+	cfg         config.Config
+	keystore    *keystore.Keystore
+	store       *approval.Store
+	replay      *auth.ReplayLRU
+	telegram    *approval.Notifier
+	mobile      *mobile.Store
+	pending     *keystore.PendingStore
+	push        mobile.Notifier
+	cli         *cli.Store
+	csrSigner   *cli.CSRSigner
+	loadLimiter *cli.LoadRateLimiter
 }
 
 func (s *server) withMTLS(next http.HandlerFunc) http.HandlerFunc {

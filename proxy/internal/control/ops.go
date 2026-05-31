@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/mobile"
@@ -13,10 +15,13 @@ import (
 
 // ServerDeps are shared services for control operations.
 type ServerDeps struct {
-	Config   config.Config
-	Keystore *keystore.Keystore
-	Mobile   *mobile.Store
-	Pending  *keystore.PendingStore
+	Config      config.Config
+	Keystore    *keystore.Keystore
+	Mobile      *mobile.Store
+	Pending     *keystore.PendingStore
+	Cli         *cli.Store
+	CSRSigner   *cli.CSRSigner
+	LoadLimiter *cli.LoadRateLimiter
 }
 
 // Server handles control socket requests.
@@ -28,6 +33,9 @@ type Server struct {
 func NewServer(deps ServerDeps) *Server {
 	if deps.Pending == nil {
 		deps.Pending = keystore.NewPendingStore()
+	}
+	if deps.Cli == nil {
+		deps.Cli = cli.NewStore()
 	}
 	return &Server{deps: deps}
 }
@@ -54,6 +62,12 @@ func (s *Server) handle(req Request) Response {
 		return s.ok(req.ID, s.mobileListData())
 	case "mobile.delete":
 		return s.handleMobileDelete(req)
+	case "cli.enroll":
+		return s.handleCLIEnroll(req)
+	case "cli.list":
+		return s.ok(req.ID, s.cliListData())
+	case "cli.delete":
+		return s.handleCLIDelete(req)
 	default:
 		return s.fail(req.ID, "unknown op", "UNKNOWN")
 	}
@@ -225,6 +239,96 @@ func (s *Server) handleMobileDelete(req Request) Response {
 	if err := s.deps.Mobile.Delete(in.DeviceID); err != nil {
 		return s.fail(req.ID, err.Error(), "NOT_FOUND")
 	}
+	return s.ok(req.ID, nil)
+}
+
+type cliEnrollData struct {
+	Label  string `json:"label"`
+	CSRPEM string `json:"csr_pem"`
+}
+
+func (s *Server) handleCLIEnroll(req Request) Response {
+	if s.deps.CSRSigner == nil {
+		return s.fail(req.ID, "CLI CSR signing not configured", "UNAVAILABLE")
+	}
+	var in cliEnrollData
+	if err := json.Unmarshal(req.Data, &in); err != nil {
+		return s.fail(req.ID, "invalid json", "BAD_REQUEST")
+	}
+	if in.Label == "" || in.CSRPEM == "" {
+		return s.fail(req.ID, "label and csr_pem required", "BAD_REQUEST")
+	}
+	if err := cli.ValidateLabel(in.Label); err != nil {
+		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
+			return s.fail(req.ID, err.Error(), "BAD_REQUEST")
+		}
+		return s.fail(req.ID, "invalid label", "BAD_REQUEST")
+	}
+
+	certPEM, fp, err := s.deps.CSRSigner.Sign([]byte(in.CSRPEM))
+	if err != nil {
+		if errors.Is(err, cli.ErrCSRInvalid) {
+			return s.fail(req.ID, err.Error(), "BAD_REQUEST")
+		}
+		return s.fail(req.ID, "sign failed", "FORBIDDEN")
+	}
+
+	dev, err := s.deps.Cli.Enroll(in.Label, fp)
+	if err != nil {
+		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
+			return s.fail(req.ID, err.Error(), "BAD_REQUEST")
+		}
+		if errors.Is(err, cli.ErrDuplicateFingerprint) {
+			return s.fail(req.ID, err.Error(), "CONFLICT")
+		}
+		return s.fail(req.ID, "enroll failed", "FORBIDDEN")
+	}
+
+	log.Printf("control: cli_enroll device_id=%s", dev.ID)
+	b, _ := json.Marshal(map[string]string{
+		"device_id":       dev.ID,
+		"certificate_pem": string(certPEM),
+	})
+	return s.ok(req.ID, b)
+}
+
+func (s *Server) cliListData() json.RawMessage {
+	devices := s.deps.Cli.List()
+	type deviceJSON struct {
+		DeviceID        string `json:"device_id"`
+		Label           string `json:"label"`
+		CertFingerprint string `json:"cert_fingerprint"`
+		EnrolledAt      string `json:"enrolled_at"`
+	}
+	out := make([]deviceJSON, 0, len(devices))
+	for _, d := range devices {
+		out = append(out, deviceJSON{
+			DeviceID:        d.ID,
+			Label:           d.Label,
+			CertFingerprint: d.CertFingerprint,
+			EnrolledAt:      d.EnrolledAt.UTC().Format(time.RFC3339),
+		})
+	}
+	b, _ := json.Marshal(map[string]any{"devices": out})
+	return b
+}
+
+type cliDeleteData struct {
+	DeviceID string `json:"device_id"`
+}
+
+func (s *Server) handleCLIDelete(req Request) Response {
+	var in cliDeleteData
+	if err := json.Unmarshal(req.Data, &in); err != nil {
+		return s.fail(req.ID, "invalid json", "BAD_REQUEST")
+	}
+	if err := s.deps.Cli.Delete(in.DeviceID); err != nil {
+		return s.fail(req.ID, err.Error(), "NOT_FOUND")
+	}
+	if s.deps.LoadLimiter != nil {
+		s.deps.LoadLimiter.Forget(in.DeviceID)
+	}
+	log.Printf("control: cli_delete device_id=%s", in.DeviceID)
 	return s.ok(req.ID, nil)
 }
 

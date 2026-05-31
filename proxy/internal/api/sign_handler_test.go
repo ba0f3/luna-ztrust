@@ -24,6 +24,7 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
@@ -158,7 +159,13 @@ func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *te
 	}
 	store.SetLeases(lease.NewStore())
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil)
+	handler := api.NewServer(api.ServerDeps{
+		Config:   cfg,
+		Keystore: ks,
+		Store:    store,
+		Replay:   replay,
+		CLI:      cli.NewStore(),
+	})
 
 	serverTLS, clientTLS := loadTestTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)

@@ -3,16 +3,28 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli/httpclient"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control/client"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
 
-var passphraseStdin bool
+var (
+	passphraseStdin bool
+	keyLoadProxyURL string
+	keyLoadCliCert  string
+	keyLoadCliKey   string
+	keyLoadCA       string
+	keyLoadLabel    string
+)
 
 var keyCmd = &cobra.Command{
 	Use:   "key",
@@ -55,29 +67,71 @@ var keyRejectCmd = &cobra.Command{
 
 func init() {
 	keyLoadCmd.Flags().BoolVar(&passphraseStdin, "passphrase-stdin", false, "read passphrase from stdin")
+	keyLoadCmd.Flags().StringVar(&keyLoadProxyURL, "proxy-url", "", "proxy HTTPS base URL for remote key load")
+	keyLoadCmd.Flags().StringVar(&keyLoadCliCert, "cli-cert", "", "enrolled CLI client certificate (mTLS)")
+	keyLoadCmd.Flags().StringVar(&keyLoadCliKey, "cli-key", "", "CLI client private key (mTLS)")
+	keyLoadCmd.Flags().StringVar(&keyLoadCA, "ca", "", "mTLS CA certificate for the proxy")
+	keyLoadCmd.Flags().StringVar(&keyLoadLabel, "label", "", "signer label (required for remote key load)")
 	keyConfirmCmd.Flags().BoolVar(&passphraseStdin, "passphrase-stdin", false, "read passphrase from stdin")
 	keyCmd.AddCommand(keyLoadCmd, keyListCmd, keyRemoveCmd, keyConfirmCmd, keyRejectCmd)
 	rootCmd.AddCommand(keyCmd)
 }
 
-func runKeyLoad(_ *cobra.Command, args []string) error {
+func runKeyLoad(cmd *cobra.Command, args []string) error {
 	pass, err := readPassphrase()
 	if err != nil {
 		return err
 	}
 	defer control.ZeroBytes(pass)
-	path, err := resolveSocket()
+
+	prof, err := resolveCLIProfile(cmd)
 	if err != nil {
 		return err
+	}
+	if prof != nil {
+		if err := prof.validate(); err != nil {
+			return err
+		}
+		label := keyLoadLabel
+		if label == "" {
+			return fmt.Errorf("--label is required for remote key load")
+		}
+		fp, err := httpclient.Load(context.Background(), httpclient.Config{
+			ProxyURL: prof.ProxyURL,
+			CliCert:  prof.CliCert,
+			CliKey:   prof.CliKey,
+			CA:       prof.CA,
+		}, args[0], pass, label)
+		if err != nil {
+			return err
+		}
+		data, err := json.Marshal(map[string]string{"fingerprint": fp})
+		if err != nil {
+			return err
+		}
+		return printKeyLoadResult(data)
+	}
+
+	path, err := resolveSocket()
+	if err != nil {
+		return fmt.Errorf("configure %s or use --socket for on-host key load: %w", cliProfilePath(), err)
 	}
 	data, err := client.Call(path, "key.load", map[string]string{
 		"path":       args[0],
 		"passphrase": string(pass),
 	})
 	if err != nil {
+		if isSocketUnavailable(err) {
+			return fmt.Errorf("configure %s for remote key load or run on the central host with control socket access", cliProfilePath())
+		}
 		return err
 	}
 	return printKeyLoadResult(data)
+}
+
+func isSocketUnavailable(err error) bool {
+	var opErr *net.OpError
+	return errors.As(err, &opErr)
 }
 
 func runKeyList(_ *cobra.Command, _ []string) error {

@@ -109,3 +109,40 @@ func printStatusResult(data json.RawMessage) error {
 	_, err = os.Stdout.WriteString(out)
 	return err
 }
+
+type cliDeviceRow struct {
+	DeviceID        string `json:"device_id"`
+	Label           string `json:"label"`
+	CertFingerprint string `json:"cert_fingerprint"`
+	EnrolledAt      string `json:"enrolled_at"`
+}
+
+func formatCLIListResult(data json.RawMessage) (string, error) {
+	var out struct {
+		Devices []cliDeviceRow `json:"devices"`
+	}
+	if err := json.Unmarshal(data, &out); err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if len(out.Devices) == 0 {
+		fmt.Fprintln(&buf, "(none)")
+		return buf.String(), nil
+	}
+	sort.Slice(out.Devices, func(i, j int) bool {
+		return out.Devices[i].DeviceID < out.Devices[j].DeviceID
+	})
+	for _, d := range out.Devices {
+		fmt.Fprintf(&buf, "%s  %s  %s  %s\n", d.DeviceID, d.Label, d.CertFingerprint, d.EnrolledAt)
+	}
+	return buf.String(), nil
+}
+
+func printCLIListResult(data json.RawMessage) error {
+	out, err := formatCLIListResult(data)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.WriteString(out)
+	return err
+}

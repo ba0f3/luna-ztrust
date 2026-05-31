@@ -81,6 +81,20 @@ func TestLoadEnvOverride(t *testing.T) {
 	}
 }
 
+func TestLoad_CliClientOUDefaults(t *testing.T) {
+	clearProxyEnv(t)
+	chdirIsolated(t)
+	t.Setenv("LUNA_ENV", "dev")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.CliClientOU != "luna-cli" {
+		t.Fatalf("CliClientOU = %q, want luna-cli", cfg.CliClientOU)
+	}
+}
+
 func TestLoadInvalidApprovalTimeout(t *testing.T) {
 	clearProxyEnv(t)
 	chdirIsolated(t)
@@ -101,10 +115,13 @@ func clearProxyEnv(t *testing.T) {
 		"LUNA_SIGNER_MODE",
 		"LUNA_APPROVAL_TIMEOUT",
 		"LUNA_ADMIN_CLIENT_OU",
+		"LUNA_CLI_CLIENT_OU",
 		"LUNA_KEY_PATH",
 		"LUNA_MTLS_SERVER_CERT",
 		"LUNA_MTLS_SERVER_KEY",
 		"LUNA_MTLS_CLIENT_CA",
+		"LUNA_MTLS_CA_CERT",
+		"LUNA_MTLS_CA_KEY",
 		"TELEGRAM_BOT_TOKEN",
 		"TELEGRAM_WEBHOOK_SECRET",
 		"TELEGRAM_CHAT_ID",
