@@ -28,7 +28,7 @@ Operators running **`luna-proxy key load`** from a **laptop** can upload a **pas
 | mTLS identity | CSR signed by existing mTLS CA; `OU=luna-cli` |
 | Socket `key.load` | **Retained** for on-host path-based load |
 | Mobile key upload | **Unchanged** (pending + socket confirm) |
-| Request signing | mTLS + device registry only in v1 (no ed25519 payload) |
+| Request signing | mTLS + device registry + TLS-exporter HMAC, timestamp, replay LRU (no PoP) |
 
 ---
 
@@ -55,7 +55,7 @@ Operators running **`luna-proxy key load`** from a **laptop** can upload a **pas
 - CLI two-step pending / second-person confirm.
 - Delegated (non-admin) CLI enrollment.
 - Cert renewal API (re-enroll via admin).
-- PoP/HMAC on CLI key-load body (mTLS client auth only).
+- PoP on CLI key-load body (HMAC + timestamp + replay required; same TLS exporter as sign API).
 
 ---
 
@@ -203,7 +203,7 @@ If CA key is not configured, `cli.enroll` / `POST /cli/enroll` return **`503`** 
 
 ### 6.4 `POST /api/v1/cli/keys/load`
 
-**Auth:** Enrolled CLI mTLS (`luna-cli`).
+**Auth:** Enrolled CLI mTLS (`luna-cli`). Body includes `timestamp`; `X-Luna-Body-Mac` (TLS exporter HMAC) and replay LRU required.
 
 **Precondition:** `signer_mode == local-key`; else `400`.
 
@@ -214,7 +214,8 @@ If CA key is not configured, `cli.enroll` / `POST /cli/enroll` return **`503`** 
   "encrypted_pem": "<base64 OpenSSH encrypted private key>",
   "passphrase": "<string>",
   "label": "deploy-prod",
-  "comment": "optional"
+  "comment": "optional",
+  "timestamp": 1717132800
 }
 ```
 

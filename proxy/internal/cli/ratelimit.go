@@ -11,7 +11,6 @@ const (
 )
 
 // LoadRateLimiter limits successful remote key loads per enrolled device.
-// The limit is approximate under concurrent requests (best-effort abuse deterrent).
 type LoadRateLimiter struct {
 	mu    sync.Mutex
 	loads map[string][]time.Time
@@ -22,8 +21,19 @@ func NewLoadRateLimiter() *LoadRateLimiter {
 	return &LoadRateLimiter{loads: make(map[string][]time.Time)}
 }
 
-// Allow reports whether another successful load is permitted for deviceID.
-func (l *LoadRateLimiter) Allow(deviceID string) bool {
+// Allowed reports whether deviceID is under the success limit (read-only).
+func (l *LoadRateLimiter) Allowed(deviceID string) bool {
+	if deviceID == "" {
+		return false
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	times := l.pruneLocked(deviceID, time.Now().Add(-loadRateLimitWindow))
+	return len(times) < loadRateLimitCount
+}
+
+// TryRecordSuccess atomically records a successful load if under the hourly limit.
+func (l *LoadRateLimiter) TryRecordSuccess(deviceID string) bool {
 	if deviceID == "" {
 		return false
 	}
@@ -34,23 +44,11 @@ func (l *LoadRateLimiter) Allow(deviceID string) bool {
 	defer l.mu.Unlock()
 
 	times := l.pruneLocked(deviceID, cutoff)
-	return len(times) < loadRateLimitCount
-}
-
-// RecordSuccess records a completed load for deviceID.
-func (l *LoadRateLimiter) RecordSuccess(deviceID string) {
-	if deviceID == "" {
-		return
+	if len(times) >= loadRateLimitCount {
+		return false
 	}
-	now := time.Now()
-	cutoff := now.Add(-loadRateLimitWindow)
-
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	times := l.pruneLocked(deviceID, cutoff)
-	times = append(times, now)
-	l.loads[deviceID] = times
+	l.loads[deviceID] = append(times, now)
+	return true
 }
 
 func (l *LoadRateLimiter) pruneLocked(deviceID string, cutoff time.Time) []time.Time {

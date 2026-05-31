@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrNotFound            = errors.New("device not found")
-	ErrEmptyLabel          = errors.New("device label required")
+	ErrNotFound             = errors.New("device not found")
+	ErrEmptyLabel           = errors.New("device label required")
 	ErrDuplicateFingerprint = errors.New("certificate fingerprint already enrolled")
 )
 
@@ -36,8 +36,8 @@ func NewStore() *Store {
 
 // Enroll registers a device and returns its server-assigned ID.
 func (s *Store) Enroll(label, certFingerprint string) (*Device, error) {
-	if label == "" {
-		return nil, ErrEmptyLabel
+	if err := ValidateLabel(label); err != nil {
+		return nil, err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

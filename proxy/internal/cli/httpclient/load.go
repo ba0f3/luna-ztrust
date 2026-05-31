@@ -6,14 +6,19 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 )
 
 // Config holds mTLS settings for remote CLI key load.
@@ -28,6 +33,7 @@ type loadRequest struct {
 	EncryptedPEM string `json:"encrypted_pem"`
 	Passphrase   string `json:"passphrase"`
 	Label        string `json:"label"`
+	Timestamp    int64  `json:"timestamp"`
 }
 
 type loadResponse struct {
@@ -46,18 +52,29 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 		return "", err
 	}
 
-	client, err := newMTLSClient(cfg)
+	client, shared, err := newMTLSClient(cfg)
 	if err != nil {
 		return "", err
 	}
 
+	ts := time.Now().Unix()
 	body, err := json.Marshal(loadRequest{
 		EncryptedPEM: base64.StdEncoding.EncodeToString(pemBytes),
 		Passphrase:   string(passphrase),
 		Label:        label,
+		Timestamp:    ts,
 	})
 	if err != nil {
 		return "", err
+	}
+
+	conn, err := shared.dial(ctx)
+	if err != nil {
+		return "", fmt.Errorf("tls dial: %w", err)
+	}
+	mac, err := auth.ComputeBodyHMAC(conn, body)
+	if err != nil {
+		return "", fmt.Errorf("body HMAC: %w", err)
 	}
 
 	endpoint := strings.TrimRight(cfg.ProxyURL, "/") + "/api/v1/cli/keys/load"
@@ -66,6 +83,7 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Luna-Body-Mac", hex.EncodeToString(mac))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -92,38 +110,85 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 	return out.Fingerprint, nil
 }
 
-func newMTLSClient(cfg Config) (*http.Client, error) {
+func newMTLSClient(cfg Config) (*http.Client, *sharedTLSConn, error) {
 	cert, err := tls.LoadX509KeyPair(cfg.CliCert, cfg.CliKey)
 	if err != nil {
-		return nil, fmt.Errorf("load cli cert/key: %w", err)
+		return nil, nil, fmt.Errorf("load cli cert/key: %w", err)
 	}
 
 	caPEM, err := os.ReadFile(cfg.CA)
 	if err != nil {
-		return nil, fmt.Errorf("read CA: %w", err)
+		return nil, nil, fmt.Errorf("read CA: %w", err)
 	}
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(caPEM) {
-		return nil, fmt.Errorf("parse CA certificate")
+		return nil, nil, fmt.Errorf("parse CA certificate")
+	}
+
+	serverName := "localhost"
+	if u, err := url.Parse(cfg.ProxyURL); err == nil {
+		if host := u.Hostname(); host != "" {
+			serverName = host
+		}
+	}
+	if serverName == "127.0.0.1" || serverName == "::1" {
+		serverName = "localhost"
 	}
 
 	tlsCfg := &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		RootCAs:      pool,
+		ServerName:   serverName,
 		MinVersion:   tls.VersionTLS12,
 	}
-	if u, err := url.Parse(cfg.ProxyURL); err == nil {
-		if host := u.Hostname(); host != "" {
-			tlsCfg.ServerName = host
-		}
+
+	host := serverName
+	if u, err := url.Parse(cfg.ProxyURL); err == nil && u.Host != "" {
+		host = u.Host
+	}
+	if !strings.Contains(host, ":") {
+		host = net.JoinHostPort(host, "443")
+	}
+
+	shared := &sharedTLSConn{cfg: tlsCfg, addr: host}
+	tr := &http.Transport{
+		TLSClientConfig: tlsCfg,
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return shared.dial(ctx)
+		},
 	}
 
 	return &http.Client{
-		Timeout: 2 * time.Minute,
-		Transport: &http.Transport{
-			TLSClientConfig: tlsCfg,
-		},
-	}, nil
+		Timeout:   2 * time.Minute,
+		Transport: tr,
+	}, shared, nil
+}
+
+type sharedTLSConn struct {
+	once sync.Once
+	conn *tls.Conn
+	err  error
+	cfg  *tls.Config
+	addr string
+}
+
+func (s *sharedTLSConn) dial(ctx context.Context) (*tls.Conn, error) {
+	s.once.Do(func() {
+		var d net.Dialer
+		raw, err := d.DialContext(ctx, "tcp", s.addr)
+		if err != nil {
+			s.err = err
+			return
+		}
+		tc := tls.Client(raw, s.cfg)
+		if err := tc.Handshake(); err != nil {
+			raw.Close()
+			s.err = err
+			return
+		}
+		s.conn = tc
+	})
+	return s.conn, s.err
 }
 
 func loadHTTPError(status int, body []byte) error {

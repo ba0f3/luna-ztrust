@@ -188,7 +188,7 @@ Flags override the file: `--proxy-url`, `--cli-cert`, `--cli-key`, `--ca`.
 luna-proxy key load ./encrypted-host.key --label deploy-prod
 ```
 
-Uploads base64 encrypted PEM + passphrase over `POST /api/v1/cli/keys/load` inside mTLS. Requires `--label` for remote load and `signer_mode=local-key`.
+Uploads base64 encrypted PEM + passphrase over `POST /api/v1/cli/keys/load` inside mTLS with `X-Luna-Body-Mac` and `timestamp` (same auth binding as sign API). Requires `--label` for remote load and `signer_mode=local-key`.
 
 **v1 notes:** CLI device registry is in-memory; proxy restart drops enrollments (re-enroll and re-load). Mobile pending upload + `key confirm` is unchanged.
 

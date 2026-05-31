@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
@@ -36,31 +37,36 @@ type cliListDevicesResponse struct {
 	Devices []cliDeviceJSON `json:"devices"`
 }
 
-type cliKeysLoadRequest struct {
-	EncryptedPEM string `json:"encrypted_pem"`
-	Passphrase   string `json:"passphrase"`
-	Label        string `json:"label"`
-	Comment      string `json:"comment,omitempty"`
-}
-
 type cliKeysLoadResponse struct {
 	Fingerprint string `json:"fingerprint"`
 }
 
-const maxCLIKeyLoadBody = 64 << 10
+const (
+	maxCLIEnrollBody  = 64 << 10
+	maxCLIKeyLoadBody = 64 << 10
+)
 
 func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 	if s.csrSigner == nil {
 		http.Error(w, "CLI CSR signing not configured", http.StatusServiceUnavailable)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxCLIEnrollBody)
 	var req cliEnrollRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
-	if req.Label == "" || req.CSRPEM == "" {
-		http.Error(w, "label and csr_pem required", http.StatusBadRequest)
+	if req.CSRPEM == "" {
+		http.Error(w, "csr_pem required", http.StatusBadRequest)
+		return
+	}
+	if err := cli.ValidateLabel(req.Label); err != nil {
+		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "invalid label", http.StatusBadRequest)
 		return
 	}
 
@@ -80,7 +86,7 @@ func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 
 	dev, err := s.cli.Enroll(req.Label, fp)
 	if err != nil {
-		if errors.Is(err, cli.ErrEmptyLabel) {
+		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -137,77 +143,99 @@ func (s *server) handleCLIDeleteDevice(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
-		http.Error(w, "client certificate required", http.StatusUnauthorized)
+		writeCLIKeysLoadError(w, http.StatusUnauthorized, "CLIENT_CERT_REQUIRED", "client certificate required")
 		return
 	}
 	peer := r.TLS.PeerCertificates[0]
 	if adminClientAllowed(s.cfg.AdminClientOU, peer) {
-		http.Error(w, "automation/admin cert cannot upload keys", http.StatusForbidden)
+		writeCLIKeysLoadError(w, http.StatusForbidden, "FORBIDDEN_ADMIN", "automation/admin cert cannot upload keys")
 		return
 	}
 	if !cliClientAllowed(s.cfg.CliClientOU, peer) {
-		http.Error(w, "cli client certificate required", http.StatusForbidden)
+		writeCLIKeysLoadError(w, http.StatusForbidden, "FORBIDDEN_CLI_CERT", "cli client certificate required")
 		return
 	}
 	dev, ok := s.cliDeviceFromPeer(peer)
 	if !ok {
-		http.Error(w, "unknown cli device", http.StatusForbidden)
+		writeCLIKeysLoadError(w, http.StatusForbidden, "UNKNOWN_DEVICE", "unknown cli device")
 		return
 	}
 	if s.cfg.SignerMode != approval.SignerModeLocalKey {
-		http.Error(w, "local-key mode required", http.StatusBadRequest)
-		return
-	}
-	if s.loadLimiter != nil && !s.loadLimiter.Allow(dev.ID) {
-		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "SIGNER_MODE", "local-key mode required")
 		return
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxCLIKeyLoadBody)
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "read body", http.StatusBadRequest)
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "READ_BODY", "read body")
 		return
 	}
-	var req cliKeysLoadRequest
-	if err := json.Unmarshal(raw, &req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-	if req.EncryptedPEM == "" || req.Passphrase == "" || req.Label == "" {
-		http.Error(w, "encrypted_pem, passphrase, and label required", http.StatusBadRequest)
+	defer control.ZeroBytes(raw)
+
+	conn, ok := tlsConnFromContext(r.Context())
+	if !ok {
+		writeCLIKeysLoadError(w, http.StatusUnauthorized, "TLS_REQUIRED", "tls connection required")
 		return
 	}
 
-	blob, err := base64.StdEncoding.DecodeString(req.EncryptedPEM)
+	parsed, err := parseCLIKeysLoadBody(raw)
 	if err != nil {
-		http.Error(w, "invalid encrypted_pem", http.StatusBadRequest)
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "INVALID_JSON", "invalid json")
+		return
+	}
+	defer control.ZeroBytes(parsed.Passphrase)
+
+	if err := auth.ValidateCLIKeysLoad(conn, raw, r.Header.Get("X-Luna-Body-Mac"), parsed.Timestamp, time.Now(), s.replay); err != nil {
+		writeCLIKeysLoadAuthError(w, err)
 		return
 	}
 
-	pass := []byte(req.Passphrase)
-	defer control.ZeroBytes(pass)
+	if parsed.EncryptedPEM == "" || len(parsed.Passphrase) == 0 || parsed.Label == "" {
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "MISSING_FIELDS", "encrypted_pem, passphrase, and label required")
+		return
+	}
+	if err := cli.ValidateLabel(parsed.Label); err != nil {
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "INVALID_LABEL", err.Error())
+		return
+	}
 
-	fp, err := s.keystore.LoadPEMBytes(blob, string(pass), req.Label)
+	if s.loadLimiter != nil && !s.loadLimiter.TryRecordSuccess(dev.ID) {
+		writeCLIKeysLoadError(w, http.StatusTooManyRequests, "RATE_LIMIT", "rate limit exceeded")
+		return
+	}
+
+	blob, err := base64.StdEncoding.DecodeString(parsed.EncryptedPEM)
+	if err != nil {
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "INVALID_PEM", "invalid encrypted_pem")
+		return
+	}
+
+	fp, err := s.keystore.LoadPEMBytes(blob, string(parsed.Passphrase), parsed.Label)
 	if err != nil {
 		if errors.Is(err, keystore.ErrUnsealLocked) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			_ = json.NewEncoder(w).Encode(map[string]string{
-				"error": err.Error(),
-				"code":  "LOCKED",
-			})
+			writeCLIKeysLoadError(w, http.StatusForbidden, "LOCKED", err.Error())
 			return
 		}
-		http.Error(w, "load failed", http.StatusForbidden)
+		writeCLIKeysLoadError(w, http.StatusForbidden, "LOAD_FAILED", "load failed")
 		return
 	}
 
-	if s.loadLimiter != nil {
-		s.loadLimiter.RecordSuccess(dev.ID)
-	}
 	log.Printf("control: cli_key_loaded fp=%s device_id=%s", fp, dev.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(cliKeysLoadResponse{Fingerprint: fp})
+}
+
+func writeCLIKeysLoadAuthError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, auth.ErrReplay):
+		writeCLIKeysLoadError(w, http.StatusConflict, "REPLAY", err.Error())
+	case errors.Is(err, auth.ErrInvalidHMAC):
+		writeCLIKeysLoadError(w, http.StatusUnauthorized, "INVALID_HMAC", err.Error())
+	case errors.Is(err, auth.ErrTimestampOutsideWindow):
+		writeCLIKeysLoadError(w, http.StatusUnauthorized, "TIMESTAMP", err.Error())
+	default:
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "AUTH", err.Error())
+	}
 }

@@ -2,12 +2,14 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"io"
@@ -19,6 +21,7 @@ import (
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
@@ -184,12 +187,30 @@ func makeEncryptedHostPEM(t *testing.T) []byte {
 
 func postCLIKeysLoad(t *testing.T, cli *mtlsClient, baseURL string, pemBytes []byte, label string) *http.Response {
 	t.Helper()
-	body, _ := json.Marshal(map[string]string{
+	body, err := json.Marshal(map[string]any{
 		"encrypted_pem": base64.StdEncoding.EncodeToString(pemBytes),
 		"passphrase":    "test-pass",
 		"label":         label,
+		"timestamp":     time.Now().Unix(),
 	})
-	resp, err := cli.http.Post(baseURL+"/api/v1/cli/keys/load", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := cli.shared.dial(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mac, err := auth.ComputeBodyHMAC(conn, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest(http.MethodPost, baseURL+"/api/v1/cli/keys/load", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Luna-Body-Mac", hex.EncodeToString(mac))
+	resp, err := cli.http.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

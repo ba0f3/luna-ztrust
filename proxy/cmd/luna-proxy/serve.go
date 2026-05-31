@@ -63,9 +63,23 @@ func runServe(_ *cobra.Command, _ []string) error {
 		AllowedTTLSeconds: cfg.AllowedTTLSeconds,
 	})
 	cliStore := cli.NewStore()
-	csrSigner, _ := cli.NewCSRSignerFromConfig(cfg)
+	csrSigner, csrErr := cli.NewCSRSignerFromConfig(cfg)
+	if csrErr != nil {
+		log.Printf("luna-proxy: CLI CSR signer config: %v", csrErr)
+	}
 	loadLimiter := cli.NewLoadRateLimiter()
-	handler := api.NewServer(cfg, ks, pending, store, replay, telegram, mob, cliStore, csrSigner, loadLimiter)
+	handler := api.NewServer(api.ServerDeps{
+		Config:      cfg,
+		Keystore:    ks,
+		Pending:     pending,
+		Store:       store,
+		Replay:      replay,
+		Telegram:    telegram,
+		Mobile:      mob,
+		CLI:         cliStore,
+		CSRSigner:   csrSigner,
+		LoadLimiter: loadLimiter,
+	})
 	srv := api.NewHTTPServer(cfg.ListenAddr, handler, tlsCfg)
 
 	ctrlPath := socketPath

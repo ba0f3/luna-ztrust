@@ -15,13 +15,13 @@ import (
 
 // ServerDeps are shared services for control operations.
 type ServerDeps struct {
-	Config    config.Config
-	Keystore  *keystore.Keystore
-	Mobile    *mobile.Store
-	Pending   *keystore.PendingStore
-	Cli          *cli.Store
-	CSRSigner    *cli.CSRSigner
-	LoadLimiter  *cli.LoadRateLimiter
+	Config      config.Config
+	Keystore    *keystore.Keystore
+	Mobile      *mobile.Store
+	Pending     *keystore.PendingStore
+	Cli         *cli.Store
+	CSRSigner   *cli.CSRSigner
+	LoadLimiter *cli.LoadRateLimiter
 }
 
 // Server handles control socket requests.
@@ -258,6 +258,12 @@ func (s *Server) handleCLIEnroll(req Request) Response {
 	if in.Label == "" || in.CSRPEM == "" {
 		return s.fail(req.ID, "label and csr_pem required", "BAD_REQUEST")
 	}
+	if err := cli.ValidateLabel(in.Label); err != nil {
+		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
+			return s.fail(req.ID, err.Error(), "BAD_REQUEST")
+		}
+		return s.fail(req.ID, "invalid label", "BAD_REQUEST")
+	}
 
 	certPEM, fp, err := s.deps.CSRSigner.Sign([]byte(in.CSRPEM))
 	if err != nil {
@@ -269,7 +275,7 @@ func (s *Server) handleCLIEnroll(req Request) Response {
 
 	dev, err := s.deps.Cli.Enroll(in.Label, fp)
 	if err != nil {
-		if errors.Is(err, cli.ErrEmptyLabel) {
+		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
 			return s.fail(req.ID, err.Error(), "BAD_REQUEST")
 		}
 		if errors.Is(err, cli.ErrDuplicateFingerprint) {
