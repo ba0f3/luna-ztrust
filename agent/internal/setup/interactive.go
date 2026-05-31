@@ -45,11 +45,11 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 	opts := ioOpts.Prefill.withDefaults()
 	existing := state.Options
 
-	proxyURL, err := p.askString("Proxy URL", firstNonEmpty(opts.ProxyURL, existing.ProxyURL))
+	proxyURL, err := promptProxyURL(p, firstNonEmpty(opts.ProxyURL, existing.ProxyURL))
 	if err != nil {
 		return Options{}, err
 	}
-	opts.ProxyURL = strings.TrimSpace(proxyURL)
+	opts.ProxyURL = proxyURL
 
 	signer, err := p.askChoice("Signer mode (must match luna-proxy)", []string{"local-ca", "local-key"},
 		firstNonEmpty(opts.SignerMode, existing.SignerMode, "local-ca"))
@@ -94,22 +94,37 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 	fmt.Fprintln(p.out)
 	fmt.Fprintln(p.out, "mTLS client material:")
 	state = rescanCerts(opts.CertsDir, state)
-	switch state.materialSummary() {
-	case "complete":
-		fmt.Fprintf(p.out, "  found ca.crt, client.crt, client.key in %s\n", opts.CertsDir)
-		useExisting, err := p.askYesNo("Use existing client certificate?", true)
+	if state.needsEnrollResume() {
+		fmt.Fprintln(p.out, "  resuming enrollment: client.key and CSR present, client.crt missing")
+		fmt.Fprintln(p.out, "  (proxy will sign your CSR — needs the bootstrap password from proxy.yml)")
+		opts.EnrollViaProxy = true
+		opts.Force = true
+		if !state.HasCA {
+			opts.FetchCA = true
+		}
+		token, err := promptEnrollToken(p, firstNonEmpty(opts.EnrollToken))
 		if err != nil {
 			return Options{}, err
 		}
-		if !useExisting {
-			opts.Force = true
+		opts.EnrollToken = strings.TrimSpace(token)
+	} else {
+		switch state.materialSummary() {
+		case "complete":
+			fmt.Fprintf(p.out, "  found ca.crt, client.crt, client.key in %s\n", opts.CertsDir)
+			useExisting, err := p.askYesNo("Use existing client certificate?", true)
+			if err != nil {
+				return Options{}, err
+			}
+			if !useExisting {
+				opts.Force = true
+				if err := opts.applyCertStrategy(p, state); err != nil {
+					return Options{}, err
+				}
+			}
+		default:
 			if err := opts.applyCertStrategy(p, state); err != nil {
 				return Options{}, err
 			}
-		}
-	default:
-		if err := opts.applyCertStrategy(p, state); err != nil {
-			return Options{}, err
 		}
 	}
 
@@ -151,11 +166,36 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 	return opts.withDefaults(), nil
 }
 
+func promptProxyURL(p *prompter, defaultURL string) (string, error) {
+	for {
+		url, err := p.askString("Proxy URL", defaultURL)
+		if err != nil {
+			return "", err
+		}
+		url = strings.TrimSpace(url)
+		fmt.Fprintln(p.out, "  checking proxy reachability...")
+		if err := ProbeProxyURL(url, defaultProbeTimeout); err != nil {
+			fmt.Fprintf(p.out, "  unreachable: %v\n", err)
+			retry, err := p.askYesNo("Try a different proxy URL?", true)
+			if err != nil {
+				return "", err
+			}
+			if retry {
+				defaultURL = url
+				continue
+			}
+			return "", fmt.Errorf("proxy unreachable: %w", err)
+		}
+		fmt.Fprintln(p.out, "  proxy reachable")
+		return url, nil
+	}
+}
+
 func (o *Options) applyCertStrategy(p *prompter, state ExistingState) error {
 	choices := []string{
 		"Copy from directory (scp from luna-proxy setup mtls)",
 		"Provide CA cert + CA key and generate/sign client cert here",
-		"Provide CA cert only — generate key/CSR (sign on proxy host)",
+		"Generate key/CSR and enroll via proxy API (ca.crt optional — can download)",
 		"Provide individual file paths (ca, cert, key)",
 	}
 	idx, err := p.askIndex("How to provide mTLS material?", choices, 0)
@@ -185,11 +225,22 @@ func (o *Options) applyCertStrategy(p *prompter, state ExistingState) error {
 		o.CAKeyFile = strings.TrimSpace(caKey)
 		o.Force = true
 	case 2:
-		ca, err := p.askString("Path to ca.crt", "")
+		fmt.Fprintln(p.out, "  Proxy signs your CSR over HTTPS. You choose a bootstrap password and set it on both sides.")
+		fmt.Fprintln(p.out, "  Leave CA path blank to download ca.crt from the proxy.")
+		ca, err := p.askOptionalString("Path to ca.crt (Enter to download from proxy)", firstNonEmpty(o.CAFile))
 		if err != nil {
 			return err
 		}
 		o.CAFile = strings.TrimSpace(ca)
+		if o.CAFile == "" {
+			o.FetchCA = true
+		}
+		token, err := promptEnrollToken(p, firstNonEmpty(o.EnrollToken))
+		if err != nil {
+			return err
+		}
+		o.EnrollToken = strings.TrimSpace(token)
+		o.EnrollViaProxy = true
 		o.Force = true
 	case 3:
 		o.CAFile, err = p.askOptionalPath("Path to ca.crt (Enter to skip)")
@@ -239,6 +290,10 @@ func (s ExistingState) materialSummary() string {
 		return "complete"
 	}
 	return "incomplete"
+}
+
+func (s ExistingState) needsEnrollResume() bool {
+	return s.HasKey && s.HasCSR && !s.HasCert
 }
 
 func loadExistingConfig(path string) Options {

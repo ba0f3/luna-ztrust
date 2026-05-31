@@ -73,6 +73,8 @@ func NewServer(deps ServerDeps) http.Handler {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
+	mux.HandleFunc("GET /api/v1/mtls/ca", s.handleMTLSCA)
+	mux.HandleFunc("POST /api/v1/mtls/enroll", s.handleMTLSEnroll)
 	mux.HandleFunc("POST /api/v1/admin/unseal", s.withAdminMTLS(s.handleUnseal))
 	mux.HandleFunc("GET /api/v1/admin/seal-status", s.withAdminMTLS(s.handleSealStatus))
 	mux.HandleFunc("GET /api/v1/capabilities", s.withMTLS(s.handleCapabilities))

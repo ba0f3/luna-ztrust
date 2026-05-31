@@ -22,6 +22,12 @@ var (
 	setupMTLSDays        int
 	setupMTLSSkipSamples bool
 	setupMTLSHints       bool
+	setupMTLSWriteConfig bool
+	setupConfigPath      string
+	setupConfigForce     bool
+	setupConfigToken     string
+	setupConfigListen    string
+	setupConfigSigner    string
 )
 
 var setupCmd = &cobra.Command{
@@ -47,9 +53,21 @@ Requires write access to --dir (typically run with sudo for /etc/luna/certs).`,
 	RunE: runSetupMTLS,
 }
 
+var setupConfigCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Write proxy.yml with generated agent bootstrap token",
+	Long: `Create /etc/luna/proxy.yml (or --path) with production defaults and mtls_enroll_token.
+
+The bootstrap password lets luna-agent hosts obtain client.crt via POST /api/v1/mtls/enroll
+without copying ca.key. Print and save the token for agent setup.
+
+Requires write access to --path (typically sudo for /etc/luna/proxy.yml).`,
+	RunE: runSetupConfig,
+}
+
 func init() {
 	rootCmd.AddCommand(setupCmd)
-	setupCmd.AddCommand(setupMTLSCmd)
+	setupCmd.AddCommand(setupMTLSCmd, setupConfigCmd)
 
 	f := setupMTLSCmd.Flags()
 	f.StringVar(&setupMTLSDir, "dir", "", "output directory (default /etc/luna/certs as root, else ~/.config/luna/certs)")
@@ -62,6 +80,14 @@ func init() {
 	f.IntVar(&setupMTLSDays, "days", 0, "certificate validity in days (default 3650)")
 	f.BoolVar(&setupMTLSSkipSamples, "skip-samples", false, "only generate CA and server material")
 	f.BoolVar(&setupMTLSHints, "hints", true, "print suggested proxy.yml paths after generation")
+	f.BoolVar(&setupMTLSWriteConfig, "write-config", false, "write proxy.yml with generated mtls_enroll_token")
+
+	cf := setupConfigCmd.Flags()
+	cf.StringVar(&setupConfigPath, "path", "", "proxy.yml path (default /etc/luna/proxy.yml as root)")
+	cf.BoolVar(&setupConfigForce, "force", false, "overwrite existing proxy.yml")
+	cf.StringVar(&setupConfigToken, "token", "", "use this bootstrap token (default: generate random)")
+	cf.StringVar(&setupConfigListen, "listen", "", "listen_addr (default :8443)")
+	cf.StringVar(&setupConfigSigner, "signer-mode", "", "signer_mode (default local-ca)")
 }
 
 func runSetupMTLS(_ *cobra.Command, _ []string) error {
@@ -100,8 +126,74 @@ func runSetupMTLS(_ *cobra.Command, _ []string) error {
 		fmt.Println()
 		fmt.Print(setup.ProxyYAMLHints(dir))
 	}
+	if setupMTLSWriteConfig {
+		if err := writeSetupProxyConfig(""); err != nil {
+			return err
+		}
+	}
 	fmt.Println("then: luna-proxy key load … && systemctl restart luna-proxy")
 	return nil
+}
+
+func runSetupConfig(_ *cobra.Command, _ []string) error {
+	path := setupConfigPath
+	if path == "" {
+		path = defaultProxyConfigPath()
+	}
+	res, err := setup.WriteProxyConfig(setup.ProxyConfigOptions{
+		Path:        path,
+		Force:       setupConfigForce,
+		EnrollToken: setupConfigToken,
+		ListenAddr:  setupConfigListen,
+		SignerMode:  setupConfigSigner,
+	})
+	if err != nil {
+		if errors.Is(err, setup.ErrConfigExists) {
+			return fmt.Errorf("%w — re-run with --force to replace", err)
+		}
+		return err
+	}
+	printProxyConfigResult(res)
+	return nil
+}
+
+func writeSetupProxyConfig(token string) error {
+	path := defaultProxyConfigPath()
+	res, err := setup.WriteProxyConfig(setup.ProxyConfigOptions{
+		Path:        path,
+		Force:       setupMTLSForce,
+		EnrollToken: token,
+	})
+	if err != nil {
+		if errors.Is(err, setup.ErrConfigExists) {
+			fmt.Printf("proxy.yml already exists at %s (skipped; use setup config --force)\n", path)
+			return nil
+		}
+		return err
+	}
+	printProxyConfigResult(res)
+	return nil
+}
+
+func printProxyConfigResult(res setup.ProxyConfigResult) {
+	fmt.Printf("wrote %s\n", res.Path)
+	fmt.Println()
+	fmt.Println("Agent bootstrap password (mtls_enroll_token) — give this to luna-agent setup:")
+	fmt.Printf("  %s\n", res.EnrollToken)
+	fmt.Println()
+	fmt.Println("  export LUNA_MTLS_ENROLL_TOKEN='...'")
+	fmt.Println("  luna-agent setup --enroll-token '...'")
+}
+
+func defaultProxyConfigPath() string {
+	if os.Geteuid() == 0 {
+		return config.DefaultProxyConfigPath
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "./proxy.yml"
+	}
+	return strings.TrimSpace(home) + "/.config/luna/proxy.yml"
 }
 
 func defaultSetupDir() string {

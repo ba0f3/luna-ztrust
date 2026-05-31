@@ -69,6 +69,7 @@ func newViper() (*viper.Viper, error) {
 	bindEnv("mtls_client_ca", "LUNA_MTLS_CLIENT_CA")
 	bindEnv("mtls_ca_cert_path", "LUNA_MTLS_CA_CERT")
 	bindEnv("mtls_ca_key_path", "LUNA_MTLS_CA_KEY")
+	bindEnv("mtls_enroll_token", "LUNA_MTLS_ENROLL_TOKEN")
 	bindEnv("fcm_credentials", "FCM_CREDENTIALS")
 	bindEnv("control_socket", "LUNA_CONTROL_SOCKET")
 	bindEnv("control_socket_group", "LUNA_CONTROL_SOCKET_GROUP")
@@ -103,6 +104,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		MTLSClientCA:          strings.TrimSpace(v.GetString("mtls_client_ca")),
 		MTLSCACertPath:        strings.TrimSpace(v.GetString("mtls_ca_cert_path")),
 		MTLSCAKeyPath:         strings.TrimSpace(v.GetString("mtls_ca_key_path")),
+		MTLSEnrollToken:       strings.TrimSpace(v.GetString("mtls_enroll_token")),
 	}
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = defaultListenAddr

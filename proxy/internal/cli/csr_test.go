@@ -43,6 +43,34 @@ func TestSignCSR_IssuesClientCert(t *testing.T) {
 	}
 }
 
+func TestSignAutomation_AcceptsAutomationCSR(t *testing.T) {
+	caCert, caKey := loadTestCA(t)
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	template := x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName:   "Luna Automation Client",
+			Organization: []string{"Luna Z-Trust"},
+		},
+	}
+	csrDER, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	csrPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+
+	signer := NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)
+	certPEM, _, err := signer.SignAutomation(csrPEM)
+	if err != nil {
+		t.Fatalf("SignAutomation: %v", err)
+	}
+	if len(certPEM) == 0 {
+		t.Fatal("expected cert PEM")
+	}
+}
+
 func TestSignCSR_RejectsWrongOU(t *testing.T) {
 	caCert, caKey := loadTestCA(t)
 	signer := NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)

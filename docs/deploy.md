@@ -76,6 +76,16 @@ sudo luna-proxy setup mtls --dir /etc/luna/certs \
 
 Use `--skip-samples` for CA + server only. Re-run with `--force` to replace. **`luna-proxy serve` uses `/etc/luna/certs/` by default** when mTLS paths are unset (same layout as `setup mtls`).
 
+Write `proxy.yml` with a generated agent bootstrap token (recommended before first `serve`):
+
+```bash
+sudo luna-proxy setup config
+# or combined with mTLS generation:
+sudo luna-proxy setup mtls --dir /etc/luna/certs --write-config
+```
+
+Save the printed **mtls_enroll_token** — agent hosts need it for `luna-agent setup`.
+
 For development/CI, `make testdata` still uses `scripts/gen-test-ca.sh` under `testdata/ca/` (`LUNA_ENV=dev`).
 
 ### 4. Place signing key and adjust ownership
@@ -90,8 +100,17 @@ For development/CI, `make testdata` still uses `scripts/gen-test-ca.sh` under `t
 
 ### 5. Configuration
 
+Generate production `proxy.yml` (includes random `mtls_enroll_token` for agent enrollment):
+
+```bash
+sudo luna-proxy setup config
+```
+
+Or copy the example and add the token manually:
+
 ```bash
 sudo cp deploy/luna-proxy.production.example.yaml /etc/luna/proxy.yml
+```
 sudo chmod 600 /etc/luna/proxy.yml
 sudo chown luna:luna /etc/luna/proxy.yml
 ```
@@ -218,7 +237,23 @@ sudo luna-agent setup --non-interactive \
   --install-systemd --enable
 ```
 
-Copy certs from proxy (after `luna-proxy setup mtls` on the central host) — the wizard option **Copy from directory** or:
+Copy certs from proxy (after `luna-proxy setup mtls` on the central host) — the wizard option **Copy from directory** or use **HTTP bootstrap** (no SCP for `ca.crt`):
+
+1. On the proxy, set a enroll token in `/etc/luna/proxy.yml` and restart:
+
+```yaml
+mtls_enroll_token: "your-long-random-secret"
+```
+
+2. On the agent host, wizard option **Generate key/CSR and enroll via proxy API** (or):
+
+```bash
+luna-agent setup --fetch-ca --enroll-token 'your-long-random-secret' \
+  --proxy-url https://luna.example:8443 ...
+```
+
+- `GET /api/v1/mtls/ca` — download public CA (no client cert)
+- `POST /api/v1/mtls/enroll` — submit CSR, receive `client.crt` (requires `X-Luna-Enroll-Token` header)
 
 ### 3. Manual mTLS layout (alternative)
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/agent/internal/install"
@@ -25,6 +26,9 @@ type Options struct {
 	TargetHost         string
 	SignerMode         string
 	HostKeyFingerprint string
+	EnrollToken        string
+	EnrollViaProxy     bool
+	FetchCA            bool
 	Force              bool
 	RewriteConfig      bool
 	SkipVerify         bool
@@ -42,6 +46,11 @@ type Result struct {
 // Run executes setup steps: dirs → certs → agent.yml → verify → optional systemd.
 func Run(opts Options) (Result, error) {
 	opts = opts.withDefaults()
+	if opts.ProxyURL != "" {
+		if err := ProbeProxyURL(opts.ProxyURL, defaultProbeTimeout); err != nil {
+			return Result{}, fmt.Errorf("proxy unreachable: %w", err)
+		}
+	}
 	if err := os.MkdirAll(opts.CertsDir, 0o750); err != nil {
 		return Result{}, fmt.Errorf("create certs dir: %w", err)
 	}
@@ -57,6 +66,17 @@ func Run(opts Options) (Result, error) {
 		if err := InstallFile(opts.CAFile, filepath.Join(opts.CertsDir, "ca.crt"), 0o644, opts.Force); err != nil {
 			return Result{}, err
 		}
+	} else if opts.FetchCA {
+		fmt.Println("step 1/5: download CA certificate from proxy")
+		caPath, err := FetchCA(BootstrapOptions{
+			ProxyURL:           opts.ProxyURL,
+			CertsDir:           opts.CertsDir,
+			InsecureSkipVerify: true,
+		})
+		if err != nil {
+			return Result{}, fmt.Errorf("fetch CA: %w", err)
+		}
+		fmt.Printf("  %s\n", caPath)
 	}
 	if opts.CertFile != "" {
 		if err := InstallFile(opts.CertFile, filepath.Join(opts.CertsDir, "client.crt"), 0o644, opts.Force); err != nil {
@@ -99,13 +119,35 @@ func Run(opts Options) (Result, error) {
 				return Result{}, err
 			}
 			fmt.Printf("  %s\n", certPath)
+		} else if opts.ProxyURL != "" && fileExists(filepath.Join(opts.CertsDir, "ca.crt")) &&
+			fileExists(filepath.Join(opts.CertsDir, "client.csr.pem")) {
+			fmt.Println("step 3/5: enroll client certificate via proxy")
+			if err := ensureEnrollToken(&opts); err != nil {
+				return Result{}, fmt.Errorf("step 3/5: %w", err)
+			}
+			certPath, err := EnrollClientCSR(BootstrapOptions{
+				ProxyURL:    opts.ProxyURL,
+				CertsDir:    opts.CertsDir,
+				EnrollToken: opts.EnrollToken,
+			})
+			if err != nil {
+				return Result{}, fmt.Errorf(`step 3/5: proxy enroll failed: %w
+
+Check mtls_enroll_token on the proxy matches the token you entered.
+On the proxy: set mtls_enroll_token in proxy.yml and restart luna-proxy.`, err)
+			}
+			fmt.Printf("  %s\n", certPath)
 		} else {
-			return Result{}, fmt.Errorf(`step 3/5: client.crt missing — on the proxy host sign the CSR:
+			return Result{}, fmt.Errorf(`step 3/5: client.crt missing — enroll via proxy (recommended):
+  # on proxy: set mtls_enroll_token in proxy.yml and restart luna-proxy
+  luna-agent setup --proxy-url %s --enroll-token '<token>'
+
+Or sign on the proxy host:
   openssl x509 -req -in %s/client.csr.pem -CA %s/ca.crt -CAkey /path/to/ca.key \
     -CAcreateserial -out client.crt -days 3650 -sha256 \
     -extfile <(printf 'keyUsage=digitalSignature\nextendedKeyUsage=clientAuth\n')
   scp client.crt this-host:%s/client.crt
-Or re-run with --ca-key /path/to/ca.key (or copy ca.key to %s temporarily)`, opts.CertsDir, opts.CertsDir, opts.CertsDir, opts.CertsDir)
+Or re-run with --ca-key /path/to/ca.key`, opts.ProxyURL, opts.CertsDir, opts.CertsDir, opts.CertsDir)
 		}
 	} else {
 		fmt.Println("step 3/5: client.crt already present")
@@ -223,6 +265,9 @@ func (o Options) withDefaults() Options {
 	}
 	if o.SignerMode == "" {
 		o.SignerMode = "local-ca"
+	}
+	if o.EnrollToken == "" {
+		o.EnrollToken = strings.TrimSpace(os.Getenv("LUNA_MTLS_ENROLL_TOKEN"))
 	}
 	return o
 }

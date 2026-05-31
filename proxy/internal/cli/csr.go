@@ -23,6 +23,9 @@ var (
 	ErrCANotConfigured = errors.New("mTLS CA certificate and key paths required")
 )
 
+// defaultAutomationClientCertTTL matches luna-agent setup client cert lifetime.
+const defaultAutomationClientCertTTL = 3650 * 24 * time.Hour
+
 // defaultCLIClientCertTTL is the lifetime for issued CLI client certificates.
 // Workstation identity certs are long-lived; re-enroll via admin if revoked.
 const defaultCLIClientCertTTL = 365 * 24 * time.Hour
@@ -82,6 +85,29 @@ func (s *CSRSigner) Sign(csrPEM []byte) (certPEM []byte, fingerprint string, err
 	if err := validateCSR(csr, s.requiredOU); err != nil {
 		return nil, "", err
 	}
+	return s.signCSRWithTTL(csr, s.ttl)
+}
+
+// SignAutomation signs an automation client CSR (no OU requirement).
+func (s *CSRSigner) SignAutomation(csrPEM []byte) (certPEM []byte, fingerprint string, err error) {
+	if s == nil || s.caCert == nil || s.caKey == nil {
+		return nil, "", ErrCANotConfigured
+	}
+	csr, err := parseCSR(csrPEM)
+	if err != nil {
+		return nil, "", err
+	}
+	if err := validateCSR(csr, ""); err != nil {
+		return nil, "", err
+	}
+	return s.signCSRWithTTL(csr, defaultAutomationClientCertTTL)
+}
+
+func (s *CSRSigner) signCSR(csr *x509.CertificateRequest) (certPEM []byte, fingerprint string, err error) {
+	return s.signCSRWithTTL(csr, s.ttl)
+}
+
+func (s *CSRSigner) signCSRWithTTL(csr *x509.CertificateRequest, ttl time.Duration) (certPEM []byte, fingerprint string, err error) {
 
 	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
@@ -93,7 +119,7 @@ func (s *CSRSigner) Sign(csrPEM []byte) (certPEM []byte, fingerprint string, err
 		SerialNumber: serial,
 		Subject:      csr.Subject,
 		NotBefore:    now.Add(-time.Minute),
-		NotAfter:     now.Add(s.ttl),
+		NotAfter:     now.Add(ttl),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
@@ -128,7 +154,7 @@ func validateCSR(csr *x509.CertificateRequest, requiredOU string) error {
 	if err := csr.CheckSignature(); err != nil {
 		return ErrCSRInvalid
 	}
-	if !subjectHasOU(csr.Subject, requiredOU) {
+	if requiredOU != "" && !subjectHasOU(csr.Subject, requiredOU) {
 		return ErrCSRInvalid
 	}
 	if err := validateCSRPublicKey(csr.PublicKey); err != nil {

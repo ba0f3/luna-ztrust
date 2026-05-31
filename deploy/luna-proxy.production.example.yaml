@@ -39,7 +39,9 @@ approval_timeout: 60s
 # mtls_ca_cert_path: /etc/luna/certs/ca.crt
 # mtls_ca_key_path: /etc/luna/certs/ca.key
 
-# Telegram OOB approval (required when env is not dev)
+# Agent bootstrap: GET /api/v1/mtls/ca (public CA) and POST /api/v1/mtls/enroll (CSR → client.crt)
+# Set a long random token; pass to luna-agent setup as --enroll-token or LUNA_MTLS_ENROLL_TOKEN
+# mtls_enroll_token: "change-me-to-a-long-random-secret"
 telegram_bot_token: ""
 telegram_webhook_secret: ""
 telegram_chat_id: ""

@@ -20,6 +20,7 @@ type Config struct {
 	MTLSClientCA          string
 	MTLSCACertPath        string
 	MTLSCAKeyPath         string
+	MTLSEnrollToken       string
 	FCMCredentials        string
 	ControlSocket         string
 	ControlSocketGroup    string
