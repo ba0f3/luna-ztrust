@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,6 +74,8 @@ type BootstrapOptions struct {
 	Timeout     time.Duration
 	// InsecureSkipVerify allows fetching the CA before trust is installed (first contact only).
 	InsecureSkipVerify bool
+	// RefreshCA replaces ca.crt from the proxy before enroll (default for proxy enrollment).
+	RefreshCA bool
 }
 
 // FetchCA downloads the proxy mTLS CA PEM to certsDir/ca.crt.
@@ -106,11 +110,74 @@ func FetchCA(opts BootstrapOptions) (string, error) {
 	return dest, nil
 }
 
+// RefreshTrustAnchor downloads ca.crt from the proxy and verifies it trusts the server TLS certificate.
+func RefreshTrustAnchor(opts BootstrapOptions) error {
+	opts = opts.withDefaults()
+	if _, err := FetchCA(BootstrapOptions{
+		ProxyURL:           opts.ProxyURL,
+		CertsDir:           opts.CertsDir,
+		InsecureSkipVerify: true,
+		Timeout:            opts.Timeout,
+	}); err != nil {
+		return fmt.Errorf("download CA: %w", err)
+	}
+	if err := VerifyProxyServerTrust(opts.ProxyURL, opts.CertsDir, opts.Timeout); err != nil {
+		return err
+	}
+	return nil
+}
+
+// VerifyProxyServerTrust checks that ca.crt in certsDir validates the proxy HTTPS server certificate.
+func VerifyProxyServerTrust(proxyURL, certsDir string, timeout time.Duration) error {
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	pool, err := loadCAPool(filepath.Join(certsDir, "ca.crt"))
+	if err != nil {
+		return fmt.Errorf("load ca.crt: %w", err)
+	}
+	u, err := url.Parse(strings.TrimRight(strings.TrimSpace(proxyURL), "/"))
+	if err != nil {
+		return fmt.Errorf("parse proxy URL: %w", err)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("proxy URL missing hostname")
+	}
+	port := u.Port()
+	if port == "" {
+		port = "443"
+	}
+	addr := net.JoinHostPort(host, port)
+
+	dialer := &tls.Dialer{
+		NetDialer: &net.Dialer{Timeout: timeout},
+		Config: &tls.Config{
+			RootCAs:    pool,
+			ServerName: host,
+			MinVersion: tls.VersionTLS12,
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	conn, err := dialer.DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return formatServerTrustError(proxyURL, err)
+	}
+	_ = conn.Close()
+	return nil
+}
+
 // EnrollClientCSR posts client.csr.pem to the proxy enroll endpoint and writes client.crt.
 func EnrollClientCSR(opts BootstrapOptions) (string, error) {
 	opts = opts.withDefaults()
 	if strings.TrimSpace(opts.EnrollToken) == "" {
 		return "", fmt.Errorf("enroll token required (set LUNA_MTLS_ENROLL_TOKEN or proxy mtls_enroll_token)")
+	}
+	if opts.RefreshCA {
+		if err := RefreshTrustAnchor(opts); err != nil {
+			return "", err
+		}
 	}
 	csrPath := filepath.Join(opts.CertsDir, "client.csr.pem")
 	csrPEM, err := os.ReadFile(csrPath)
@@ -174,6 +241,44 @@ func bootstrapHTTPClient(certsDir string, insecure bool, timeout time.Duration) 
 			TLSClientConfig: tlsCfg,
 		},
 	}
+}
+
+func formatServerTrustError(proxyURL string, err error) error {
+	msg := err.Error()
+	hints := []string{
+		"ca.crt does not trust the server certificate at " + proxyURL,
+		"common causes:",
+		"  - stale ca.crt from an earlier luna-proxy setup (re-run setup; ca.crt is refreshed automatically)",
+		"  - proxy PKI was regenerated with luna-proxy setup --force but the agent still has the old CA",
+		"  - TLS terminates in front of luna-proxy (nginx/ingress) with a different certificate",
+		"  - proxy hostname in the server cert SAN does not match the URL you entered",
+	}
+	if strings.Contains(msg, "x509:") || strings.Contains(msg, "tls:") {
+		return fmt.Errorf("%s\n\n%s", strings.Join(hints, "\n"), msg)
+	}
+	return fmt.Errorf("verify server TLS: %w", err)
+}
+
+func formatEnrollError(err error, certsDir string) error {
+	if err == nil {
+		return nil
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "invalid enroll token") || strings.Contains(msg, "HTTP 401") {
+		return fmt.Errorf(`%w
+
+Check mtls_enroll_token on the proxy matches the token you entered.
+On the proxy: set mtls_enroll_token in proxy.yml and restart luna-proxy.`, err)
+	}
+	if strings.Contains(msg, "x509:") || strings.Contains(msg, "tls:") ||
+		strings.Contains(msg, "does not trust the server certificate") {
+		return fmt.Errorf(`%w
+
+This is a TLS trust problem, not an enroll token mismatch.
+Re-run luna-agent setup (ca.crt will be re-downloaded), or delete %s/ca.crt and try again.
+Ensure the proxy URL hostname matches the certificate from luna-proxy setup.`, err, certsDir)
+	}
+	return err
 }
 
 func loadCAPool(caPath string) (*x509.CertPool, error) {

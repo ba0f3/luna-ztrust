@@ -126,16 +126,18 @@ func Run(opts Options) (Result, error) {
 			if err := ensureEnrollToken(&opts); err != nil {
 				return Result{}, fmt.Errorf("step 3/5: %w", err)
 			}
+			refreshCA := opts.CAFile == "" && opts.FromDir == ""
+			if refreshCA {
+				fmt.Println("  refreshing ca.crt from proxy")
+			}
 			certPath, err := EnrollClientCSR(BootstrapOptions{
 				ProxyURL:    opts.ProxyURL,
 				CertsDir:    opts.CertsDir,
 				EnrollToken: opts.EnrollToken,
+				RefreshCA:   refreshCA,
 			})
 			if err != nil {
-				return Result{}, fmt.Errorf(`step 3/5: proxy enroll failed: %w
-
-Check mtls_enroll_token on the proxy matches the token you entered.
-On the proxy: set mtls_enroll_token in proxy.yml and restart luna-proxy.`, err)
+				return Result{}, fmt.Errorf("step 3/5: proxy enroll failed: %w", formatEnrollError(err, opts.CertsDir))
 			}
 			fmt.Printf("  %s\n", certPath)
 		} else {

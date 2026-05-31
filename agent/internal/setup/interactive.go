@@ -112,9 +112,7 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 		fmt.Fprintln(p.out, "  (proxy will sign your CSR — needs the bootstrap password from proxy.yml)")
 		opts.EnrollViaProxy = true
 		opts.Force = true
-		if !state.HasCA {
-			opts.FetchCA = true
-		}
+		opts.FetchCA = true
 		token, err := promptEnrollToken(p, firstNonEmpty(opts.EnrollToken))
 		if err != nil {
 			return Options{}, err

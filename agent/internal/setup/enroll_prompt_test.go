@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -21,6 +22,20 @@ func TestEnsureEnrollTokenFromValue(t *testing.T) {
 	opts := Options{EnrollToken: "secret"}
 	if err := ensureEnrollToken(&opts); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFormatEnrollError_TLS(t *testing.T) {
+	err := formatEnrollError(fmt.Errorf("Post: tls: failed to verify certificate: x509: unknown"), "/etc/luna/certs")
+	if err == nil || !strings.Contains(err.Error(), "TLS trust problem") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestFormatEnrollError_Token(t *testing.T) {
+	err := formatEnrollError(fmt.Errorf("POST /api/v1/mtls/enroll: HTTP 401: invalid enroll token"), "/etc/luna/certs")
+	if err == nil || !strings.Contains(err.Error(), "mtls_enroll_token") {
+		t.Fatalf("err = %v", err)
 	}
 }
 
