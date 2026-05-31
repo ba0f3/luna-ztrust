@@ -2,6 +2,8 @@
 
 package keystore
 
+import "golang.org/x/crypto/ssh"
+
 func mlockSigner(_ ssh.Signer) {}
 
 func mlockBytes([]byte) {}
