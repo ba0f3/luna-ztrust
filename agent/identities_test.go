@@ -52,6 +52,39 @@ func TestResolveIdentitiesLocalKeySealed(t *testing.T) {
 	}
 }
 
+func TestResolveIdentitiesLocalKeyMultipleSigners(t *testing.T) {
+	makePubLine := func(t *testing.T) string {
+		t.Helper()
+		_, priv, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		signer, err := ssh.NewSignerFromKey(priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(ssh.MarshalAuthorizedKey(signer.PublicKey()))
+	}
+
+	mock := &mockProvider{
+		caps: sdk.Capabilities{
+			SignerMode: agent.SignerModeLocalKey,
+			LoadedSigners: []sdk.LoadedSigner{
+				{PublicKey: makePubLine(t), Fingerprint: "fp1"},
+				{PublicKey: makePubLine(t), Fingerprint: "fp2"},
+			},
+		},
+	}
+
+	keys, err := agent.ResolveIdentities(mock, agent.Config{SignerMode: agent.SignerModeLocalKey})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 2 {
+		t.Fatalf("len = %d, want 2 (all loaded signers without fingerprint filter)", len(keys))
+	}
+}
+
 func TestResolveIdentitiesLocalKeyFingerprintOnlyWithFallback(t *testing.T) {
 	_, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

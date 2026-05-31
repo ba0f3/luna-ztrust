@@ -262,20 +262,16 @@ ssh deploy@203.0.113.10
 
 Ensure the connecting user can access the socket (e.g. group `luna` and `chmod 660` on the socket, or run the agent as the login user with a user-writable socket path).
 
-For `local-key`, the wizard may ask for **host key fingerprint** — skip it (Enter) unless the proxy has **multiple** host signing keys loaded. To look up a fingerprint on the central host:
+For `local-key`, **leave host key fingerprint blank** in normal setups. After mTLS, `luna-agent` calls `GET /api/v1/capabilities` on the proxy and advertises every loaded host signing key to OpenSSH. When the client picks a key, the agent sends that key's fingerprint on sign.
+
+Set `host_key_fingerprint` only when you want to **restrict** the agent to one key while several are loaded on the proxy. To look up a fingerprint for that filter:
 
 ```bash
 luna-proxy --socket /run/luna/control.sock key list
+# or: ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 ```
 
-Or from the host `.pub` file (same format as `ssh-keygen -lf`):
-
-```bash
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
-# use the SHA256:... value, with or without the SHA256: prefix
-```
-
-For `local-key`, set `host_key_fingerprint` or `hosted_public_key` when multiple host keys are loaded on the proxy.
+`hosted_public_key` is a legacy fallback when an older proxy returns fingerprints without `public_key` in capabilities.
 
 ### 6. Verify
 

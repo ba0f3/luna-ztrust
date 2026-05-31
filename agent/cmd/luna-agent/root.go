@@ -83,7 +83,12 @@ func runAgent(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("chmod socket: %w", err)
 	}
 
-	log.Printf("luna-agent %s listening on %s", version.String(), cfg.SocketPath)
+	if signerMode == agent.SignerModeLocalKey {
+		log.Printf("luna-agent %s listening on %s (%d host key(s) from proxy capabilities)",
+			version.String(), cfg.SocketPath, len(identities))
+	} else {
+		log.Printf("luna-agent %s listening on %s", version.String(), cfg.SocketPath)
+	}
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

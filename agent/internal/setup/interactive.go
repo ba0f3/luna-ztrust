@@ -81,10 +81,10 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 	}
 
 	if opts.SignerMode == "local-key" {
-		fmt.Fprintln(p.out, "  Host key fingerprint: which proxy-hosted SSH key to use for signing.")
-		fmt.Fprintln(p.out, "  Skip if only one key is loaded on the proxy.")
-		fmt.Fprintln(p.out, "  List on central host: luna-proxy --socket /run/luna/control.sock key list")
-		fp, err := p.askOptionalString("Host key fingerprint (optional)", firstNonEmpty(opts.HostKeyFingerprint, existing.HostKeyFingerprint))
+		fmt.Fprintln(p.out, "  Host keys are discovered from GET /api/v1/capabilities after mTLS (all loaded signers).")
+		fmt.Fprintln(p.out, "  Leave fingerprint blank to offer every key loaded on the proxy.")
+		fmt.Fprintln(p.out, "  Set fingerprint only to restrict the agent to one key when several are loaded.")
+		fp, err := p.askOptionalString("Host key fingerprint filter (optional)", firstNonEmpty(opts.HostKeyFingerprint, existing.HostKeyFingerprint))
 		if err != nil {
 			return Options{}, err
 		}
