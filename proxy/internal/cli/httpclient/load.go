@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
@@ -46,15 +45,15 @@ type loadErrorResponse struct {
 }
 
 // Load uploads a local encrypted PEM to POST /api/v1/cli/keys/load over mTLS.
-// Each call dials a fresh TLS session (sharedTLSConn is one-shot per Load) so
-// HMAC and the HTTP request use the same exporter key.
+// Each call dials one TLS session; HMAC and the HTTP request share it, then the
+// connection is closed when Load returns.
 func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, label string) (string, error) {
 	pemBytes, err := os.ReadFile(pemPath)
 	if err != nil {
 		return "", err
 	}
 
-	client, shared, err := newMTLSClient(cfg)
+	tlsCfg, host, err := tlsConfigFrom(cfg)
 	if err != nil {
 		return "", err
 	}
@@ -70,13 +69,25 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 		return "", err
 	}
 
-	conn, err := shared.dial(ctx)
+	conn, err := dialTLS(ctx, host, tlsCfg)
 	if err != nil {
 		return "", fmt.Errorf("tls dial: %w", err)
 	}
+	defer conn.Close()
+
 	mac, err := auth.ComputeBodyHMAC(conn, body)
 	if err != nil {
 		return "", fmt.Errorf("body HMAC: %w", err)
+	}
+
+	client := &http.Client{
+		Timeout: 2 * time.Minute,
+		Transport: &http.Transport{
+			TLSClientConfig: tlsCfg,
+			DialTLSContext: func(context.Context, string, string) (net.Conn, error) {
+				return conn, nil
+			},
+		},
 	}
 
 	endpoint := strings.TrimRight(cfg.ProxyURL, "/") + "/api/v1/cli/keys/load"
@@ -112,19 +123,19 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 	return out.Fingerprint, nil
 }
 
-func newMTLSClient(cfg Config) (*http.Client, *sharedTLSConn, error) {
+func tlsConfigFrom(cfg Config) (*tls.Config, string, error) {
 	cert, err := tls.LoadX509KeyPair(cfg.CliCert, cfg.CliKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("load cli cert/key: %w", err)
+		return nil, "", fmt.Errorf("load cli cert/key: %w", err)
 	}
 
 	caPEM, err := os.ReadFile(cfg.CA)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read CA: %w", err)
+		return nil, "", fmt.Errorf("read CA: %w", err)
 	}
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM(caPEM) {
-		return nil, nil, fmt.Errorf("parse CA certificate")
+		return nil, "", fmt.Errorf("parse CA certificate")
 	}
 
 	serverName := "localhost"
@@ -152,45 +163,21 @@ func newMTLSClient(cfg Config) (*http.Client, *sharedTLSConn, error) {
 		host = net.JoinHostPort(host, "443")
 	}
 
-	shared := &sharedTLSConn{cfg: tlsCfg, addr: host}
-	tr := &http.Transport{
-		TLSClientConfig: tlsCfg,
-		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return shared.dial(ctx)
-		},
+	return tlsCfg, host, nil
+}
+
+func dialTLS(ctx context.Context, addr string, cfg *tls.Config) (*tls.Conn, error) {
+	var d net.Dialer
+	raw, err := d.DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return nil, err
 	}
-
-	return &http.Client{
-		Timeout:   2 * time.Minute,
-		Transport: tr,
-	}, shared, nil
-}
-
-type sharedTLSConn struct {
-	once sync.Once
-	conn *tls.Conn
-	err  error
-	cfg  *tls.Config
-	addr string
-}
-
-func (s *sharedTLSConn) dial(ctx context.Context) (*tls.Conn, error) {
-	s.once.Do(func() {
-		var d net.Dialer
-		raw, err := d.DialContext(ctx, "tcp", s.addr)
-		if err != nil {
-			s.err = err
-			return
-		}
-		tc := tls.Client(raw, s.cfg)
-		if err := tc.Handshake(); err != nil {
-			raw.Close()
-			s.err = err
-			return
-		}
-		s.conn = tc
-	})
-	return s.conn, s.err
+	tc := tls.Client(raw, cfg)
+	if err := tc.Handshake(); err != nil {
+		raw.Close()
+		return nil, err
+	}
+	return tc, nil
 }
 
 func loadHTTPError(status int, body []byte) error {
