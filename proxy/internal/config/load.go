@@ -39,6 +39,7 @@ func newViper() (*viper.Viper, error) {
 	v := viper.New()
 	v.SetDefault("listen_addr", defaultListenAddr)
 	v.SetDefault("admin_client_ou", defaultAdminClientOU)
+	v.SetDefault("cli_client_ou", "luna-cli")
 	v.SetDefault("signer_mode", defaultSignerMode)
 	v.SetDefault("approval_timeout", defaultApprovalPeriod.String())
 	v.SetDefault("control_socket", DefaultControlSocket())
@@ -63,11 +64,14 @@ func newViper() (*viper.Viper, error) {
 	bindEnv("telegram_webhook_secret", "TELEGRAM_WEBHOOK_SECRET")
 	bindEnv("telegram_chat_id", "TELEGRAM_CHAT_ID")
 	bindEnv("admin_client_ou", "LUNA_ADMIN_CLIENT_OU")
+	bindEnv("cli_client_ou", "LUNA_CLI_CLIENT_OU")
 	bindEnv("key_path", "LUNA_KEY_PATH")
 	bindEnv("signer_mode", "LUNA_SIGNER_MODE")
 	bindEnv("mtls_server_cert", "LUNA_MTLS_SERVER_CERT")
 	bindEnv("mtls_server_key", "LUNA_MTLS_SERVER_KEY")
 	bindEnv("mtls_client_ca", "LUNA_MTLS_CLIENT_CA")
+	bindEnv("mtls_ca_cert_path", "LUNA_MTLS_CA_CERT")
+	bindEnv("mtls_ca_key_path", "LUNA_MTLS_CA_KEY")
 	bindEnv("fcm_credentials", "FCM_CREDENTIALS")
 	bindEnv("control_socket", "LUNA_CONTROL_SOCKET")
 	bindEnv("control_socket_group", "LUNA_CONTROL_SOCKET_GROUP")
@@ -90,6 +94,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		TelegramWebhookSecret: strings.TrimSpace(v.GetString("telegram_webhook_secret")),
 		TelegramChatID:        strings.TrimSpace(v.GetString("telegram_chat_id")),
 		AdminClientOU:         strings.TrimSpace(v.GetString("admin_client_ou")),
+		CliClientOU:           strings.TrimSpace(v.GetString("cli_client_ou")),
 		KeyPath:               strings.TrimSpace(v.GetString("key_path")),
 		SignerMode:            strings.TrimSpace(v.GetString("signer_mode")),
 		AllowedTTLSeconds:     append([]int(nil), defaultAllowedTTLSeconds...),
@@ -99,6 +104,8 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		MTLSServerCert:        strings.TrimSpace(v.GetString("mtls_server_cert")),
 		MTLSServerKey:         strings.TrimSpace(v.GetString("mtls_server_key")),
 		MTLSClientCA:          strings.TrimSpace(v.GetString("mtls_client_ca")),
+		MTLSCACertPath:        strings.TrimSpace(v.GetString("mtls_ca_cert_path")),
+		MTLSCAKeyPath:         strings.TrimSpace(v.GetString("mtls_ca_key_path")),
 	}
 	if cfg.ListenAddr == "" {
 		cfg.ListenAddr = defaultListenAddr

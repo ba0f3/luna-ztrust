@@ -315,3 +315,11 @@ proxy/
 - Persisting pending blobs or decrypted keys across restart.
 - Remote Unix socket forwarding / SSH tunnel as supported workflow.
 - Replacing Telegram with mobile-only approval.
+
+---
+
+## 14. Remote key load (CLI mTLS)
+
+Socket `key.load` with a server-local path remains the on-host operator path. For **`local-key`** deployments, operators on a laptop upload encrypted PEM over **`POST /api/v1/cli/keys/load`** using an enrolled CLI client cert (`OU=luna-cli`).
+
+CSR enrollment, HTTP API, Cobra `luna-proxy cli …`, and `key load` HTTP branch are specified in [`2026-05-31-cli-remote-key-load-design.md`](2026-05-31-cli-remote-key-load-design.md). Mobile pending upload (§6.3) is unchanged.

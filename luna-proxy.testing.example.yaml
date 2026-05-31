@@ -28,12 +28,16 @@ signer_mode: local-ca
 # key_path: ./testdata/ssh/encrypted_host.key
 
 admin_client_ou: luna-admin
+cli_client_ou: luna-cli
 approval_timeout: 60s
 
 # Server mTLS (testdata CA)
 mtls_server_cert: ./testdata/ca/server.crt
 mtls_server_key: ./testdata/ca/server.key
 mtls_client_ca: ./testdata/ca/ca.crt
+# CLI cert issuance CA (for remote key load / cli enroll)
+mtls_ca_cert_path: ./testdata/ca/ca.crt
+mtls_ca_key_path: ./testdata/ca/ca.key
 
 # Telegram OOB approval (optional when env=dev)
 # telegram_bot_token: ""

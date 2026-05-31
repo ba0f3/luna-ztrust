@@ -7,6 +7,7 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
@@ -61,7 +62,9 @@ func runServe(_ *cobra.Command, _ []string) error {
 		ChatID:            cfg.TelegramChatID,
 		AllowedTTLSeconds: cfg.AllowedTTLSeconds,
 	})
-	handler := api.NewServer(cfg, ks, pending, store, replay, telegram, mob)
+	cliStore := cli.NewStore()
+	csrSigner, _ := cli.NewCSRSignerFromConfig(cfg)
+	handler := api.NewServer(cfg, ks, pending, store, replay, telegram, mob, cliStore, csrSigner)
 	srv := api.NewHTTPServer(cfg.ListenAddr, handler, tlsCfg)
 
 	ctrlPath := socketPath
@@ -72,10 +75,12 @@ func runServe(_ *cobra.Command, _ []string) error {
 		ctrlPath = config.DefaultControlSocket()
 	}
 	ctrl := control.NewServer(control.ServerDeps{
-		Config:   cfg,
-		Keystore: ks,
-		Mobile:   mob,
-		Pending:  pending,
+		Config:    cfg,
+		Keystore:  ks,
+		Mobile:    mob,
+		Pending:   pending,
+		Cli:       cliStore,
+		CSRSigner: csrSigner,
 	})
 	go func() {
 		log.Printf("luna-proxy control socket %s", ctrlPath)

@@ -110,6 +110,9 @@ LUNA_PROXY_URL=https://localhost:8443 go test -tags=e2e ./sdk/sign/... -v
 | `LUNA_KEY_PATH` | Encrypted SSH signing key (PEM, passphrase at unseal) |
 | `LUNA_SIGNER_MODE` | `local-ca` (default) or `local-key` |
 | `LUNA_ADMIN_CLIENT_OU` | Client cert OU for `/api/v1/admin/*` (default `luna-admin`) |
+| `LUNA_CLI_CLIENT_OU` | Client cert OU for enrolled CLI devices (default `luna-cli`) |
+| `LUNA_MTLS_CA_CERT` | mTLS issuing CA cert path (CSR enrollment for CLI devices) |
+| `LUNA_MTLS_CA_KEY` | mTLS issuing CA key path (0400; required for `cli enroll`) |
 | `LUNA_ENV=dev` | Auto-approve (proxy env only) |
 | `TELEGRAM_BOT_TOKEN` | Outbound Telegram API |
 | `TELEGRAM_WEBHOOK_SECRET` | Webhook validation |
@@ -117,6 +120,47 @@ LUNA_PROXY_URL=https://localhost:8443 go test -tags=e2e ./sdk/sign/... -v
 | `FCM_CREDENTIALS` | P5 hook for mobile push (stub until implemented) |
 
 Vault / `LUNA_VAULT_*` are removed from the runtime path; see [docs/legacy-vault-migration.md](docs/legacy-vault-migration.md).
+
+### Remote key load (`local-key`)
+
+When `signer_mode=local-key`, operators can load host signing keys without copying encrypted PEM to the central host. On-host load still uses the control socket (`luna-proxy key load /path/on/server` on the central machine). From a laptop, use enrolled CLI mTLS (`OU=luna-cli`).
+
+**1. Enroll a CLI device (CSR; private key never leaves the laptop)**
+
+```bash
+luna-proxy cli init                    # ~/.config/luna/cli.key
+luna-proxy cli csr                     # ~/.config/luna/cli.csr.pem
+# On central host (admin control socket or admin mTLS):
+luna-proxy cli enroll --label alice-macbook --csr-file ~/.config/luna/cli.csr.pem
+# Writes cli.crt beside the CSR (or use --cert-out)
+```
+
+The proxy must have `mtls_ca_cert_path` / `mtls_ca_key_path` set (or `LUNA_MTLS_CA_CERT` / `LUNA_MTLS_CA_KEY`). Without CA key material, enroll returns `503`.
+
+**2. Configure the operator profile**
+
+`~/.config/luna/cli.yaml`:
+
+```yaml
+proxy_url: https://luna.example:443
+cli_cert: ~/.config/luna/cli.crt
+cli_key: ~/.config/luna/cli.key
+ca: ~/.config/luna/ca.crt
+```
+
+Flags override the file: `--proxy-url`, `--cli-cert`, `--cli-key`, `--ca`.
+
+**3. Load from the laptop**
+
+```bash
+luna-proxy key load ./encrypted-host.key --label deploy-prod
+```
+
+Uploads base64 encrypted PEM + passphrase over `POST /api/v1/cli/keys/load` inside mTLS. Requires `--label` for remote load. Keystore must be unsealed on the proxy.
+
+**v1 notes:** CLI device registry is in-memory; proxy restart drops enrollments (re-enroll and re-load). Mobile pending upload + `key confirm` is unchanged.
+
+See [docs/superpowers/specs/2026-05-31-cli-remote-key-load-design.md](docs/superpowers/specs/2026-05-31-cli-remote-key-load-design.md).
 
 ### luna-agent
 
@@ -143,6 +187,10 @@ Agent socket: `/run/luna/agent.sock` (mode `0600`).
 | `POST` | `/api/v1/mobile/enroll` | Admin mTLS: register device |
 | `POST` | `/api/v1/mobile/approve` | mTLS + device signature |
 | `DELETE` | `/api/v1/mobile/devices/{device_id}` | Admin mTLS: revoke device |
+| `POST` | `/api/v1/cli/enroll` | Admin mTLS: sign CSR, register CLI device |
+| `GET` | `/api/v1/cli/devices` | Admin mTLS: list CLI devices |
+| `DELETE` | `/api/v1/cli/devices/{device_id}` | Admin mTLS: revoke CLI device |
+| `POST` | `/api/v1/cli/keys/load` | Enrolled CLI mTLS: upload encrypted key (`local-key` only) |
 | `GET` | `/healthz` | Health check (no client cert required) |
 
 Auth order on sign requests: mTLS → HMAC → timestamp → replay LRU → PoP → tx/lease/sign.

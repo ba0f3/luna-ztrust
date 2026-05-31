@@ -84,7 +84,7 @@ luna-ztrust/
     client.go pop.go mtls.go signer.go
   proxy/                  # github.com/ba0f3/luna-ztrust/proxy
     cmd/luna-proxy/
-    internal/{api,auth,approval,keystore,signing,lease,mobile,config}/
+    internal/{api,auth,approval,keystore,signing,lease,mobile,cli,config}/
   agent/                  # github.com/ba0f3/luna-ztrust/agent
     cmd/luna-agent/
     agent.go config.go
@@ -143,7 +143,8 @@ PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed w
 | `internal/signing` | `local-ca`, `local-key` |
 | `internal/lease` | Session lease store |
 | `internal/mobile` | Device registry, push stub |
-| `internal/api` | HTTP routing, handlers |
+| `internal/cli` | CLI device registry, CSR signing, remote key-load HTTP client |
+| `internal/api` | HTTP routing, handlers (`/api/v1/cli/*` enroll/list/delete + `keys/load`) |
 
 ## Deferred (do not implement in v1 unless spec changes)
 
