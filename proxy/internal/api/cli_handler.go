@@ -143,21 +143,21 @@ func (s *server) handleCLIDeleteDevice(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
-		writeCLIKeysLoadError(w, http.StatusUnauthorized, "CLIENT_CERT_REQUIRED", "client certificate required")
+		denyCLIKeysLoad(w, http.StatusUnauthorized, "CLIENT_CERT_REQUIRED", "client certificate required", "")
 		return
 	}
 	peer := r.TLS.PeerCertificates[0]
 	if adminClientAllowed(s.cfg.AdminClientOU, peer) {
-		writeCLIKeysLoadError(w, http.StatusForbidden, "FORBIDDEN_ADMIN", "automation/admin cert cannot upload keys")
+		denyCLIKeysLoad(w, http.StatusForbidden, "FORBIDDEN_ADMIN", "automation/admin cert cannot upload keys", "")
 		return
 	}
 	if !cliClientAllowed(s.cfg.CliClientOU, peer) {
-		writeCLIKeysLoadError(w, http.StatusForbidden, "FORBIDDEN_CLI_CERT", "cli client certificate required")
+		denyCLIKeysLoad(w, http.StatusForbidden, "FORBIDDEN_CLI_CERT", "cli client certificate required", "")
 		return
 	}
 	dev, ok := s.cliDeviceFromPeer(peer)
 	if !ok {
-		writeCLIKeysLoadError(w, http.StatusForbidden, "UNKNOWN_DEVICE", "unknown cli device")
+		denyCLIKeysLoad(w, http.StatusForbidden, "UNKNOWN_DEVICE", "unknown cli device", "")
 		return
 	}
 	if s.cfg.SignerMode != approval.SignerModeLocalKey {
@@ -175,7 +175,7 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 
 	conn, ok := tlsConnFromContext(r.Context())
 	if !ok {
-		writeCLIKeysLoadError(w, http.StatusUnauthorized, "TLS_REQUIRED", "tls connection required")
+		denyCLIKeysLoad(w, http.StatusUnauthorized, "TLS_REQUIRED", "tls connection required", dev.ID)
 		return
 	}
 
@@ -187,7 +187,7 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 	defer control.ZeroBytes(parsed.Passphrase)
 
 	if err := auth.ValidateCLIKeysLoad(conn, raw, r.Header.Get("X-Luna-Body-Mac"), parsed.Timestamp, time.Now(), s.replay); err != nil {
-		writeCLIKeysLoadAuthError(w, err)
+		writeCLIKeysLoadAuthError(w, dev.ID, err)
 		return
 	}
 
@@ -200,8 +200,8 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.loadLimiter != nil && !s.loadLimiter.TryRecordSuccess(dev.ID) {
-		writeCLIKeysLoadError(w, http.StatusTooManyRequests, "RATE_LIMIT", "rate limit exceeded")
+	if s.loadLimiter != nil && !s.loadLimiter.Allowed(dev.ID) {
+		denyCLIKeysLoad(w, http.StatusTooManyRequests, "RATE_LIMIT", "rate limit exceeded", dev.ID)
 		return
 	}
 
@@ -220,6 +220,9 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 		writeCLIKeysLoadError(w, http.StatusForbidden, "LOAD_FAILED", "load failed")
 		return
 	}
+	if s.loadLimiter != nil && !s.loadLimiter.TryRecordSuccess(dev.ID) {
+		log.Printf("auth: cli_keys_load rate_limit accounting mismatch device_id=%s fp=%s", dev.ID, fp)
+	}
 
 	log.Printf("control: cli_key_loaded fp=%s device_id=%s", fp, dev.ID)
 
@@ -227,15 +230,15 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(cliKeysLoadResponse{Fingerprint: fp})
 }
 
-func writeCLIKeysLoadAuthError(w http.ResponseWriter, err error) {
+func writeCLIKeysLoadAuthError(w http.ResponseWriter, deviceID string, err error) {
 	switch {
 	case errors.Is(err, auth.ErrReplay):
-		writeCLIKeysLoadError(w, http.StatusConflict, "REPLAY", err.Error())
+		denyCLIKeysLoad(w, http.StatusConflict, "REPLAY", err.Error(), deviceID)
 	case errors.Is(err, auth.ErrInvalidHMAC):
-		writeCLIKeysLoadError(w, http.StatusUnauthorized, "INVALID_HMAC", err.Error())
+		denyCLIKeysLoad(w, http.StatusUnauthorized, "INVALID_HMAC", err.Error(), deviceID)
 	case errors.Is(err, auth.ErrTimestampOutsideWindow):
-		writeCLIKeysLoadError(w, http.StatusUnauthorized, "TIMESTAMP", err.Error())
+		denyCLIKeysLoad(w, http.StatusUnauthorized, "TIMESTAMP", err.Error(), deviceID)
 	default:
-		writeCLIKeysLoadError(w, http.StatusBadRequest, "AUTH", err.Error())
+		denyCLIKeysLoad(w, http.StatusBadRequest, "AUTH", err.Error(), deviceID)
 	}
 }

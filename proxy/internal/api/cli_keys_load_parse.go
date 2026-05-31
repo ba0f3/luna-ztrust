@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -58,4 +59,13 @@ func writeCLIKeysLoadError(w http.ResponseWriter, status int, code, msg string) 
 		"error": msg,
 		"code":  code,
 	})
+}
+
+func denyCLIKeysLoad(w http.ResponseWriter, status int, code, msg, deviceID string) {
+	if deviceID != "" {
+		log.Printf("auth: cli_keys_load denied code=%s device_id=%s %s", code, deviceID, msg)
+	} else {
+		log.Printf("auth: cli_keys_load denied code=%s %s", code, msg)
+	}
+	writeCLIKeysLoadError(w, status, code, msg)
 }
