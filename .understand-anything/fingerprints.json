@@ -1,11 +1,101 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "5bcc4d0fb9d9a3737d35f03f2c28334a64879e64",
-  "generatedAt": "2026-05-30T17:02:20.643Z",
+  "gitCommitHash": "458cdd3032bcad760aae21ccb3ce926f3a912f80",
+  "generatedAt": "2026-05-31T02:18:20.311Z",
   "files": {
+    ".env.example": {
+      "filePath": ".env.example",
+      "contentHash": "a8f964323ef4f38754a8c9065cdd43f55e6c05c07db7ee63a63fad3685031877",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    ".env.testing.example": {
+      "filePath": ".env.testing.example",
+      "contentHash": "434d10cb9fc767e8b0e1353ea33a40b08f232eff8aef1e20ed6c89774d45a552",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 61,
+      "hasStructuralAnalysis": false
+    },
+    ".github/workflows/ci.yml": {
+      "filePath": ".github/workflows/ci.yml",
+      "contentHash": "16f1582a32e47ea7d221da0167b86fd4a769ddc87252dd7ffba6cc2ade30c27a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    ".github/workflows/release.yml": {
+      "filePath": ".github/workflows/release.yml",
+      "contentHash": "e74a05afd99bca2cdf5c9d66337ee808a771b123424502cb91d6d67abac6035e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    ".goreleaser.yaml": {
+      "filePath": ".goreleaser.yaml",
+      "contentHash": "b44dd45692f40017434f4aa404d1d8d97fccdbbacc047583a6b298a87599f7bc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/.understandignore": {
+      "filePath": ".understand-anything/.understandignore",
+      "contentHash": "d634f65c1ca3b38d649c76b01baefb36f215c7d075f7221cde235722d3d5086f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": false
+    },
+    ".understand-anything/fingerprints.json": {
+      "filePath": ".understand-anything/fingerprints.json",
+      "contentHash": "fe8f1299973864f7f4a28e2e0c667e962fccc549bab443bff659198c159b4b30",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7060,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/knowledge-graph.json": {
+      "filePath": ".understand-anything/knowledge-graph.json",
+      "contentHash": "3c4bd18e68a1831c760e4a68f4474c127a253da58bd277361196244b4fc2d2e1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10651,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/meta.json": {
+      "filePath": ".understand-anything/meta.json",
+      "contentHash": "f9e4f9d7f0fbe33a144f9f68aaad218f82476c2ecd61de9b962bc98c34fb31eb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
     "agent/agent_test.go": {
       "filePath": "agent/agent_test.go",
-      "contentHash": "92ee3ddb9df81f2a0ea41d2f646c24ca00e357c021cc4b72cfedf95691051a95",
+      "contentHash": "e64afd34cd2dc71ada7ad7d53cb9f8277b251500768466c8e3151b80364fef66",
       "functions": [
         {
           "name": "SignerMode",
@@ -13,6 +103,13 @@
           "returnType": "string",
           "exported": true,
           "lineCount": 1
+        },
+        {
+          "name": "FetchCapabilities",
+          "params": [],
+          "returnType": "(sdk.Capabilities, error)",
+          "exported": true,
+          "lineCount": 6
         },
         {
           "name": "RequestCertificate",
@@ -50,7 +147,7 @@
             "t"
           ],
           "exported": true,
-          "lineCount": 34
+          "lineCount": 35
         },
         {
           "name": "TestLunaAgentSignLocalKeyMode",
@@ -58,15 +155,15 @@
             "t"
           ],
           "exported": true,
-          "lineCount": 27
+          "lineCount": 28
         },
         {
-          "name": "TestLunaAgentListEmpty",
+          "name": "TestLunaAgentListReturnsIdentities",
           "params": [
             "t"
           ],
           "exported": true,
-          "lineCount": 10
+          "lineCount": 14
         },
         {
           "name": "TestLunaAgentSignProviderError",
@@ -74,7 +171,7 @@
             "t"
           ],
           "exported": true,
-          "lineCount": 8
+          "lineCount": 9
         }
       ],
       "classes": [
@@ -82,11 +179,13 @@
           "name": "mockProvider",
           "methods": [
             "SignerMode",
+            "FetchCapabilities",
             "RequestCertificate",
             "RequestSignature"
           ],
           "properties": [
             "signerMode",
+            "caps",
             "lastReq",
             "lastSigReq",
             "lastData",
@@ -96,7 +195,7 @@
             "err"
           ],
           "exported": false,
-          "lineCount": 10
+          "lineCount": 11
         }
       ],
       "imports": [
@@ -147,23 +246,30 @@
           "specifiers": [
             "ssh"
           ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh/agent",
+          "specifiers": [
+            "sshagent"
+          ]
         }
       ],
       "exports": [
         "SignerMode",
+        "FetchCapabilities",
         "RequestCertificate",
         "RequestSignature",
         "TestLunaAgentSignCallsProvider",
         "TestLunaAgentSignLocalKeyMode",
-        "TestLunaAgentListEmpty",
+        "TestLunaAgentListReturnsIdentities",
         "TestLunaAgentSignProviderError"
       ],
-      "totalLines": 163,
+      "totalLines": 179,
       "hasStructuralAnalysis": true
     },
     "agent/agent.go": {
       "filePath": "agent/agent.go",
-      "contentHash": "abd8b03debca889283b557c86a16eb0fde02b966e3f4b87be8bba8941f4f5b9a",
+      "contentHash": "552dc3bbc6896947da5bb8dd564fceedd82aa72dc90851f609ad2f07e63d545c",
       "functions": [
         {
           "name": "NewLunaAgent",
@@ -171,18 +277,20 @@
             "provider",
             "signerMode",
             "targetUser",
-            "targetHost"
+            "targetHost",
+            "hostKeyFingerprint",
+            "identities"
           ],
           "returnType": "*LunaAgent",
           "exported": true,
-          "lineCount": 11
+          "lineCount": 13
         },
         {
           "name": "List",
           "params": [],
           "returnType": "([]*agent.Key, error)",
           "exported": true,
-          "lineCount": 8
+          "lineCount": 13
         },
         {
           "name": "Sign",
@@ -192,7 +300,7 @@
           ],
           "returnType": "(*ssh.Signature, error)",
           "exported": true,
-          "lineCount": 33
+          "lineCount": 44
         },
         {
           "name": "Add",
@@ -274,11 +382,13 @@
             "signerMode",
             "targetUser",
             "targetHost",
+            "hostKeyFingerprint",
+            "identities",
             "mu",
             "locked"
           ],
           "exported": true,
-          "lineCount": 9
+          "lineCount": 11
         }
       ],
       "imports": [
@@ -304,6 +414,12 @@
           "source": "errors",
           "specifiers": [
             "errors"
+          ]
+        },
+        {
+          "source": "log",
+          "specifiers": [
+            "log"
           ]
         },
         {
@@ -344,18 +460,18 @@
         "Unlock",
         "Signers"
       ],
-      "totalLines": 117,
+      "totalLines": 139,
       "hasStructuralAnalysis": true
     },
     "agent/cmd/luna-agent/main.go": {
       "filePath": "agent/cmd/luna-agent/main.go",
-      "contentHash": "4827a6782ac61ebfd93f0f6b93a56c4efb751cc8148e4ccc951a948fe80404fb",
+      "contentHash": "f7d3b13e6639389ccb77e7b8acb3b6ece1f3bba94be2742b93d96d3b753c8863",
       "functions": [
         {
           "name": "main",
           "params": [],
           "exported": false,
-          "lineCount": 65
+          "lineCount": 72
         }
       ],
       "classes": [],
@@ -416,39 +532,96 @@
         }
       ],
       "exports": [],
-      "totalLines": 81,
+      "totalLines": 88,
       "hasStructuralAnalysis": true
     },
-    "agent/config.go": {
-      "filePath": "agent/config.go",
-      "contentHash": "d1530343599110d9a6b53be68b7afa0b69f5824c8d6e6f7439a6f3f0d3cc9515",
+    "agent/config_load_test.go": {
+      "filePath": "agent/config_load_test.go",
+      "contentHash": "c9328bdd731d3f4aa698dca51b562c45a954863a9d542404957da2820e418fee",
       "functions": [
+        {
+          "name": "TestLoadDefaultsAndRequired",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "TestLoadEnvOverride",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "clearAgentEnv",
+          "params": [
+            "t"
+          ],
+          "exported": false,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/agent",
+          "specifiers": [
+            "agent"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLoadDefaultsAndRequired",
+        "TestLoadEnvOverride"
+      ],
+      "totalLines": 78,
+      "hasStructuralAnalysis": true
+    },
+    "agent/config_load.go": {
+      "filePath": "agent/config_load.go",
+      "contentHash": "35f6b212bdfcf8662c466300bd029e2d7edc979d0568ec48da716f03ec05a267",
+      "functions": [
+        {
+          "name": "Load",
+          "params": [],
+          "returnType": "(Config, error)",
+          "exported": true,
+          "lineCount": 7
+        },
         {
           "name": "LoadFromEnv",
           "params": [],
           "returnType": "(Config, error)",
           "exported": true,
-          "lineCount": 39
-        }
-      ],
-      "classes": [
+          "lineCount": 3
+        },
         {
-          "name": "Config",
-          "methods": [],
-          "properties": [
-            "ProxyURL",
-            "MTLSCert",
-            "MTLSKey",
-            "MTLSCA",
-            "TargetUser",
-            "TargetHost",
-            "SocketPath",
-            "SignerMode"
+          "name": "newAgentViper",
+          "params": [],
+          "returnType": "(*viper.Viper, error)",
+          "exported": false,
+          "lineCount": 33
+        },
+        {
+          "name": "configFromViper",
+          "params": [
+            "v"
           ],
-          "exported": true,
-          "lineCount": 10
+          "returnType": "(Config, error)",
+          "exported": false,
+          "lineCount": 44
         }
       ],
+      "classes": [],
       "imports": [
         {
           "source": "fmt",
@@ -467,24 +640,615 @@
           "specifiers": [
             "strings"
           ]
+        },
+        {
+          "source": "github.com/spf13/viper",
+          "specifiers": [
+            "viper"
+          ]
+        },
+        {
+          "source": "github.com/subosito/gotenv",
+          "specifiers": [
+            "gotenv"
+          ]
         }
       ],
       "exports": [
-        "Config",
+        "Load",
         "LoadFromEnv"
       ],
-      "totalLines": 63,
+      "totalLines": 109,
       "hasStructuralAnalysis": true
     },
-    "agent/go.sum": {
-      "filePath": "agent/go.sum",
-      "contentHash": "677b5c67c64d1fe7cbae9a083bf228058a46d71ca5cdeeb7daa7957973a0ace9",
+    "agent/config_paths.go": {
+      "filePath": "agent/config_paths.go",
+      "contentHash": "8a5d52e871e4bdd8e3ccd34b717a58a0287261663a60b16734baa92a2dac711f",
+      "functions": [
+        {
+          "name": "userLunaConfigDir",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "agentConfigPaths",
+          "params": [],
+          "returnType": "[]string",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "mergeConfigFiles",
+          "params": [
+            "v",
+            "paths"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "github.com/spf13/viper",
+          "specifiers": [
+            "viper"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "agent/config.go": {
+      "filePath": "agent/config.go",
+      "contentHash": "c4ca2d10d186cba4d512ee08f207f252620463700aeb435c469eda8b4746d6bc",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Config",
+          "methods": [],
+          "properties": [
+            "ProxyURL",
+            "MTLSCert",
+            "MTLSKey",
+            "MTLSCA",
+            "TargetUser",
+            "TargetHost",
+            "SocketPath",
+            "SignerMode",
+            "HostKeyFingerprint",
+            "HostedPublicKey"
+          ],
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "Config"
+      ],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "agent/debug.go": {
+      "filePath": "agent/debug.go",
+      "contentHash": "c2a7b203069f4fefba183d968869391b521eb6200c805c02940c6151f472617e",
+      "functions": [
+        {
+          "name": "DebugEnabled",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        }
+      ],
+      "exports": [
+        "DebugEnabled"
+      ],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "agent/fingerprint.go": {
+      "filePath": "agent/fingerprint.go",
+      "contentHash": "ed6501310a3ebe2aa90a216701692ab2ab0be5c08bf6409ea263420e3a38a0ad",
+      "functions": [
+        {
+          "name": "PublicKeyFingerprint",
+          "params": [
+            "pub"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "normalizeFingerprintHint",
+          "params": [
+            "s"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/sha256",
+          "specifiers": [
+            "sha256"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "PublicKeyFingerprint"
+      ],
+      "totalLines": 23,
+      "hasStructuralAnalysis": true
+    },
+    "agent/go.mod": {
+      "filePath": "agent/go.mod",
+      "contentHash": "f1f33bb9de3ac7a73e13a6e1c3bcfe2b205b3b8eed800251a3a923d36c80572f",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 7,
+      "totalLines": 30,
       "hasStructuralAnalysis": false
+    },
+    "agent/go.sum": {
+      "filePath": "agent/go.sum",
+      "contentHash": "af80342c05a59e511aa2a365196a24260e23c0f4fd89aead3b6054a1c0f384d4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 50,
+      "hasStructuralAnalysis": false
+    },
+    "agent/identities_test.go": {
+      "filePath": "agent/identities_test.go",
+      "contentHash": "7e2be9de0ebc3ae43aec50cc417db5f11f448bae0da54125e624d091b98a777e",
+      "functions": [
+        {
+          "name": "TestResolveIdentitiesLocalKeyFromCapabilities",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "TestResolveIdentitiesLocalKeySealed",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TestResolveIdentitiesLocalKeyFingerprintOnlyWithFallback",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 32
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/agent",
+          "specifiers": [
+            "agent"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestResolveIdentitiesLocalKeyFromCapabilities",
+        "TestResolveIdentitiesLocalKeySealed",
+        "TestResolveIdentitiesLocalKeyFingerprintOnlyWithFallback"
+      ],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
+    "agent/identities.go": {
+      "filePath": "agent/identities.go",
+      "contentHash": "ffba3617d7ba0d7b6ab29a4ee09153bbb841917066795349523c32a7734a17d1",
+      "functions": [
+        {
+          "name": "ResolveIdentities",
+          "params": [
+            "client",
+            "cfg"
+          ],
+          "returnType": "([]*agent.Key, error)",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "resolveLocalCAIdentities",
+          "params": [],
+          "returnType": "([]*agent.Key, error)",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "resolveLocalKeyIdentities",
+          "params": [
+            "caps",
+            "cfg"
+          ],
+          "returnType": "([]*agent.Key, error)",
+          "exported": false,
+          "lineCount": 54
+        },
+        {
+          "name": "loadHostedPublicKeyLine",
+          "params": [
+            "pathOrLine"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "parsePublicKeyLine",
+          "params": [
+            "line"
+          ],
+          "returnType": "(ssh.PublicKey, error)",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "agentKeyFromPublic",
+          "params": [
+            "pub"
+          ],
+          "returnType": "*agent.Key",
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "classes": [
+        {
+          "name": "capabilityClient",
+          "methods": [
+            "SignerMode",
+            "FetchCapabilities"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "context",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/sdk",
+          "specifiers": [
+            "sdk"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh/agent",
+          "specifiers": [
+            "agent"
+          ]
+        }
+      ],
+      "exports": [
+        "ResolveIdentities"
+      ],
+      "totalLines": 147,
+      "hasStructuralAnalysis": true
+    },
+    "AGENTS.md": {
+      "filePath": "AGENTS.md",
+      "contentHash": "4c0b1ff00c38b557a44dee43c4105547be51860775b489a68b048c213323a3ff",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 171,
+      "hasStructuralAnalysis": true
+    },
+    "deploy/.env.agent.example": {
+      "filePath": "deploy/.env.agent.example",
+      "contentHash": "2c5d2362f26390ffdfc04e2f3e1cda8f09220c6b39dee6ba5e77b52367f1bb52",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": false
+    },
+    "deploy/.env.production.example": {
+      "filePath": "deploy/.env.production.example",
+      "contentHash": "d83b716764be40405cb337b9ae296f911bc8cbb5c37286b990b0d21bd2e53b5c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 40,
+      "hasStructuralAnalysis": false
+    },
+    "deploy/docker-compose.e2e.yml": {
+      "filePath": "deploy/docker-compose.e2e.yml",
+      "contentHash": "7215eeb8ed6ff7f8079eab49a16c13fdc8f2f72b89d6b33ee216f19956c21a54",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 23,
+      "hasStructuralAnalysis": true
+    },
+    "deploy/Dockerfile.luna-proxy": {
+      "filePath": "deploy/Dockerfile.luna-proxy",
+      "contentHash": "a48cb5f3072a9129b9705d63f47bcd4785e7f06d43a4b8dac2a950348cdc95b2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": false
+    },
+    "deploy/luna-agent.example.yaml": {
+      "filePath": "deploy/luna-agent.example.yaml",
+      "contentHash": "df10e550bf6a992a9f6c81305b30a17f53495fdbe6e9dff21df701ae45efe3c4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "deploy/luna-proxy.production.example.yaml": {
+      "filePath": "deploy/luna-proxy.production.example.yaml",
+      "contentHash": "afe5dba71bd631a57ddbb9c8969f03f51e704a1685efa95c3011bf542ec4e74c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "deploy/vault/ssh-ca-setup.sh": {
+      "filePath": "deploy/vault/ssh-ca-setup.sh",
+      "contentHash": "daac26bdf8038eeea3174fdb0511cba761e7b21e5374a19043b14efccb4b40d9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "docs/design-specification.md": {
+      "filePath": "docs/design-specification.md",
+      "contentHash": "7c76abbaffc86660abfab24904be2ae2887419f25aa8a98aa309eb7a65c001cc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 467,
+      "hasStructuralAnalysis": true
+    },
+    "docs/legacy-vault-migration.md": {
+      "filePath": "docs/legacy-vault-migration.md",
+      "contentHash": "e122e1afddd8afdc38a66d6cfc498c2a9f938b359a3581fd82cde4a7eabb616e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 39,
+      "hasStructuralAnalysis": true
+    },
+    "docs/setup.md": {
+      "filePath": "docs/setup.md",
+      "contentHash": "7d959ff7f0a62c18eebae5b4e0859321150b96319a09a624ec9303a264743613",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 431,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/plans/2026-05-21-luna-core.md": {
+      "filePath": "docs/superpowers/plans/2026-05-21-luna-core.md",
+      "contentHash": "8ffa024e37195104ebf0a460bb1770f27342ff902980d9309fd06ec170b5ce33",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 683,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/plans/2026-05-30-mobile-push.md": {
+      "filePath": "docs/superpowers/plans/2026-05-30-mobile-push.md",
+      "contentHash": "91e83661725ad9d3f162189b083a0669c37f9a90cae096ee041890b353297704",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/plans/2026-05-30-self-hosted-central.md": {
+      "filePath": "docs/superpowers/plans/2026-05-30-self-hosted-central.md",
+      "contentHash": "541379eb0d73da90c84e4d4cd21a0cfada4cd9d2ad0dd5abcc3e19a7d723ac95",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 648,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/plans/2026-05-31-proxy-cli-keystore.md": {
+      "filePath": "docs/superpowers/plans/2026-05-31-proxy-cli-keystore.md",
+      "contentHash": "e77ec9af2e776cd7adad18da94272dabaf1cb3ecb3a3328a050b48cc8ffb5a8a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 600,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/specs/2026-05-21-luna-core-design.md": {
+      "filePath": "docs/superpowers/specs/2026-05-21-luna-core-design.md",
+      "contentHash": "ebf28c30e3606336302ae893ceb3f8e3c8159922220ae1a42261a60546560393",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 342,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/specs/2026-05-30-self-hosted-central-design.md": {
+      "filePath": "docs/superpowers/specs/2026-05-30-self-hosted-central-design.md",
+      "contentHash": "d5d9d1fe92598f35c4ba67215731c496a533dc0ba1107484901a17beb365d5ca",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 413,
+      "hasStructuralAnalysis": true
+    },
+    "docs/superpowers/specs/2026-05-31-proxy-cli-keystore-design.md": {
+      "filePath": "docs/superpowers/specs/2026-05-31-proxy-cli-keystore-design.md",
+      "contentHash": "2feae9564d9c12b5957979bf0b2d6d108a6c1e9003d417c6849afdb8917bccd5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 318,
+      "hasStructuralAnalysis": true
     },
     "go.work": {
       "filePath": "go.work",
@@ -498,33 +1262,517 @@
     },
     "go.work.sum": {
       "filePath": "go.work.sum",
-      "contentHash": "f3e9e73f453da1a3592a52a220a476acdf7509704eb3a335e3e99ece724d97e5",
+      "contentHash": "564e5f8054db4bbf2dc1461463d97f3cce72a73dbf7531a10d16f3726d6705b6",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 9,
+      "totalLines": 13,
       "hasStructuralAnalysis": false
+    },
+    "luna-agent.testing.example.yaml": {
+      "filePath": "luna-agent.testing.example.yaml",
+      "contentHash": "d26ba844534938ed4200292c71f9d09afc2204030776fcd25bb15f1c558fe325",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "luna-proxy.testing.example.yaml": {
+      "filePath": "luna-proxy.testing.example.yaml",
+      "contentHash": "89be60ca4393ba65bdbce704547be22fcd3274c6bfb83662496060ac904ad512",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
+    "Makefile": {
+      "filePath": "Makefile",
+      "contentHash": "30c4aecbb7c75311808b99632c90fd4ef6024e248e6e55e6d26036f6ceca9924",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/cmd/luna-proxy/key.go": {
+      "filePath": "proxy/cmd/luna-proxy/key.go",
+      "contentHash": "5d1913c23677cf01d766fe31b32f89f6158b25757e4c77abacf7e4dfdf997c3a",
+      "functions": [
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "runKeyLoad",
+          "params": [
+            "_",
+            "args"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "runKeyList",
+          "params": [
+            "_",
+            "_"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "runKeyRemove",
+          "params": [
+            "_",
+            "args"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "runKeyConfirm",
+          "params": [
+            "_",
+            "args"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "runKeyReject",
+          "params": [
+            "_",
+            "args"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "readPassphrase",
+          "params": [],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 23
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bufio",
+          "specifiers": [
+            "bufio"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/control",
+          "specifiers": [
+            "control"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/control/client",
+          "specifiers": [
+            "client"
+          ]
+        },
+        {
+          "source": "github.com/spf13/cobra",
+          "specifiers": [
+            "cobra"
+          ]
+        },
+        {
+          "source": "golang.org/x/term",
+          "specifiers": [
+            "term"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 156,
+      "hasStructuralAnalysis": true
     },
     "proxy/cmd/luna-proxy/main.go": {
       "filePath": "proxy/cmd/luna-proxy/main.go",
-      "contentHash": "ddacac6abc961529af65e36d0fd49e98e10f1ee3ac64b328ce37ca7147596043",
+      "contentHash": "3eaf7081582a6439ccec9e994b5479bacb2169fbf15cc0fb101cfe664c7b7214",
       "functions": [
         {
           "name": "main",
           "params": [],
           "exported": false,
-          "lineCount": 54
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/cmd/luna-proxy/mobile.go": {
+      "filePath": "proxy/cmd/luna-proxy/mobile.go",
+      "contentHash": "c57d418f30fe38940abc77260d039774563bdfdbab4c05b185d446c536c52677",
+      "functions": [
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
         },
         {
-          "name": "envOrDefault",
+          "name": "runMobileEnroll",
           "params": [
-            "key",
-            "fallback"
+            "_",
+            "_"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "runMobileList",
+          "params": [
+            "_",
+            "_"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "runMobileDelete",
+          "params": [
+            "_",
+            "args"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/control/client",
+          "specifiers": [
+            "client"
+          ]
+        },
+        {
+          "source": "github.com/spf13/cobra",
+          "specifiers": [
+            "cobra"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 85,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/cmd/luna-proxy/output_test.go": {
+      "filePath": "proxy/cmd/luna-proxy/output_test.go",
+      "contentHash": "4ad881470046f7defa123761034ac7293ca95e58cd60f39900b882a700467874",
+      "functions": [
+        {
+          "name": "TestFormatSHA256",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "TestFormatKeyListResult",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "TestFormatStatusResult",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "TestFormatKeyLoadResult",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestFormatSHA256",
+        "TestFormatKeyListResult",
+        "TestFormatStatusResult",
+        "TestFormatKeyLoadResult"
+      ],
+      "totalLines": 50,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/cmd/luna-proxy/output.go": {
+      "filePath": "proxy/cmd/luna-proxy/output.go",
+      "contentHash": "6f02bee8d77051d5a2124dd4a914498c2a90899a8ef90f505ee347a95dd9b7ce",
+      "functions": [
+        {
+          "name": "formatSHA256",
+          "params": [
+            "fingerprint"
           ],
           "returnType": "string",
           "exported": false,
           "lineCount": 6
+        },
+        {
+          "name": "writeFingerprintLine",
+          "params": [
+            "w",
+            "prefix",
+            "fingerprint",
+            "comment"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "writeSigners",
+          "params": [
+            "w",
+            "prefix",
+            "signers"
+          ],
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "formatKeyLoadResult",
+          "params": [
+            "data"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "printKeyLoadResult",
+          "params": [
+            "data"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "formatKeyListResult",
+          "params": [
+            "data"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "printKeyListResult",
+          "params": [
+            "data"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "formatStatusResult",
+          "params": [
+            "data"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "printStatusResult",
+          "params": [
+            "data"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 8
+        }
+      ],
+      "classes": [
+        {
+          "name": "signerRow",
+          "methods": [],
+          "properties": [
+            "Fingerprint",
+            "Comment"
+          ],
+          "exported": false,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "bytes",
+          "specifiers": [
+            "bytes"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "sort",
+          "specifiers": [
+            "sort"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 112,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/cmd/luna-proxy/root.go": {
+      "filePath": "proxy/cmd/luna-proxy/root.go",
+      "contentHash": "69a7a6667ee9012eca82d22eefa10fdf407068f5de5f1e756a69f6ac61c3dcb8",
+      "functions": [
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "Execute",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "github.com/spf13/cobra",
+          "specifiers": [
+            "cobra"
+          ]
+        }
+      ],
+      "exports": [
+        "Execute"
+      ],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/cmd/luna-proxy/serve.go": {
+      "filePath": "proxy/cmd/luna-proxy/serve.go",
+      "contentHash": "d0d8f5ab1f80613e62688d1b55532634e3df4c96bb3822feca13d460e8e5238d",
+      "functions": [
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "runServe",
+          "params": [
+            "_",
+            "_"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 61
         }
       ],
       "classes": [],
@@ -533,12 +1781,6 @@
           "source": "log",
           "specifiers": [
             "log"
-          ]
-        },
-        {
-          "source": "os",
-          "specifiers": [
-            "os"
           ]
         },
         {
@@ -572,6 +1814,12 @@
           ]
         },
         {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/control",
+          "specifiers": [
+            "control"
+          ]
+        },
+        {
           "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
           "specifiers": [
             "keystore"
@@ -584,29 +1832,104 @@
           ]
         },
         {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/mobile",
+          "specifiers": [
+            "mobile"
+          ]
+        },
+        {
           "source": "github.com/ba0f3/luna-ztrust/proxy/internal/signing",
           "specifiers": [
             "signing"
           ]
+        },
+        {
+          "source": "github.com/spf13/cobra",
+          "specifiers": [
+            "cobra"
+          ]
         }
       ],
       "exports": [],
-      "totalLines": 78,
+      "totalLines": 90,
       "hasStructuralAnalysis": true
     },
-    "proxy/go.sum": {
-      "filePath": "proxy/go.sum",
-      "contentHash": "c9362fc24a04c8ff14faaf4799defced40b37757dbdd1475909ebfaf81021f24",
+    "proxy/cmd/luna-proxy/status.go": {
+      "filePath": "proxy/cmd/luna-proxy/status.go",
+      "contentHash": "4286314923671c876bc4352ae7f934f29ba5f6ffcf1920b6187c0aa081c91b4f",
+      "functions": [
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "runStatus",
+          "params": [
+            "_",
+            "_"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "resolveSocket",
+          "params": [],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/control/client",
+          "specifiers": [
+            "client"
+          ]
+        },
+        {
+          "source": "github.com/spf13/cobra",
+          "specifiers": [
+            "cobra"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 44,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/go.mod": {
+      "filePath": "proxy/go.mod",
+      "contentHash": "844a2c8090a772de01e0590018f8f7d884633ff2a5912543a47b5d478528e35b",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 10,
+      "totalLines": 33,
+      "hasStructuralAnalysis": false
+    },
+    "proxy/go.sum": {
+      "filePath": "proxy/go.sum",
+      "contentHash": "94f5a5b7ea2fc6b9991057c692d8f54906394b4e15fd719715d95ae805e419aa",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 60,
       "hasStructuralAnalysis": false
     },
     "proxy/internal/api/admin_handler_test.go": {
       "filePath": "proxy/internal/api/admin_handler_test.go",
-      "contentHash": "0157293efe92d9d1c598089727f213c57ecdd5a59c4f37e2f55aa91bec9100ef",
+      "contentHash": "340957d8b223e7b98f884e582a31d435225c9079598b7a28f1d0895b8bf6831b",
       "functions": [
         {
           "name": "startAdminServer",
@@ -638,12 +1961,12 @@
           "lineCount": 14
         },
         {
-          "name": "TestAdmin_UnsealAndSealStatus",
+          "name": "TestAdmin_UnsealAndSealStatusGone",
           "params": [
             "t"
           ],
           "exported": true,
-          "lineCount": 41
+          "lineCount": 28
         },
         {
           "name": "TestAdmin_UnsealRejectsOversizedBody",
@@ -818,35 +2141,35 @@
         }
       ],
       "exports": [
-        "TestAdmin_UnsealAndSealStatus",
+        "TestAdmin_UnsealAndSealStatusGone",
         "TestAdmin_UnsealRejectsOversizedBody",
         "TestAdmin_UnsealForbiddenForAutomationCert",
         "TestSign_SealedReturns503"
       ],
-      "totalLines": 185,
+      "totalLines": 172,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/admin_handler.go": {
       "filePath": "proxy/internal/api/admin_handler.go",
-      "contentHash": "8b931232e89c156ff98b4a1d32affdaf0e7cff3e43bcecd2dd9e68088f519c84",
+      "contentHash": "e2137546b0d2e8a3837cd97ebadc227b402478221f5131852630f88963acb0f2",
       "functions": [
         {
           "name": "handleUnseal",
           "params": [
             "w",
-            "r"
+            "_"
           ],
           "exported": false,
-          "lineCount": 35
+          "lineCount": 3
         },
         {
           "name": "handleSealStatus",
           "params": [
             "w",
-            "r"
+            "_"
           ],
           "exported": false,
-          "lineCount": 4
+          "lineCount": 3
         },
         {
           "name": "withAdminMTLS",
@@ -868,26 +2191,7 @@
           "lineCount": 11
         }
       ],
-      "classes": [
-        {
-          "name": "unsealRequest",
-          "methods": [],
-          "properties": [
-            "Passphrase"
-          ],
-          "exported": false,
-          "lineCount": 3
-        },
-        {
-          "name": "sealStatusResponse",
-          "methods": [],
-          "properties": [
-            "Sealed"
-          ],
-          "exported": false,
-          "lineCount": 3
-        }
-      ],
+      "classes": [],
       "imports": [
         {
           "source": "crypto/x509",
@@ -896,38 +2200,14 @@
           ]
         },
         {
-          "source": "encoding/json",
-          "specifiers": [
-            "json"
-          ]
-        },
-        {
-          "source": "errors",
-          "specifiers": [
-            "errors"
-          ]
-        },
-        {
-          "source": "io",
-          "specifiers": [
-            "io"
-          ]
-        },
-        {
           "source": "net/http",
           "specifiers": [
             "http"
           ]
-        },
-        {
-          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
-          "specifiers": [
-            "keystore"
-          ]
         }
       ],
       "exports": [],
-      "totalLines": 89,
+      "totalLines": 41,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/callback.go": {
@@ -1040,7 +2320,7 @@
     },
     "proxy/internal/api/capabilities_handler.go": {
       "filePath": "proxy/internal/api/capabilities_handler.go",
-      "contentHash": "e66512fd5036cecb19c1184b95d7bd18663116735f47e0e4ee7e73eacc785589",
+      "contentHash": "c6ca1fd3866a0acb980382b1bd7c9759c03cdab9f4b10700e5125da2c3012b66",
       "functions": [
         {
           "name": "handleCapabilities",
@@ -1049,7 +2329,7 @@
             "r"
           ],
           "exported": false,
-          "lineCount": 10
+          "lineCount": 21
         }
       ],
       "classes": [
@@ -1060,10 +2340,22 @@
             "SignerMode",
             "LeaseSupported",
             "AllowedTTLSeconds",
-            "Sealed"
+            "Sealed",
+            "LoadedSigners"
           ],
           "exported": false,
-          "lineCount": 6
+          "lineCount": 7
+        },
+        {
+          "name": "loadedSignerEntry",
+          "methods": [],
+          "properties": [
+            "Fingerprint",
+            "PublicKey",
+            "Comment"
+          ],
+          "exported": false,
+          "lineCount": 5
         }
       ],
       "imports": [
@@ -1081,12 +2373,180 @@
         }
       ],
       "exports": [],
-      "totalLines": 25,
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/device_auth.go": {
+      "filePath": "proxy/internal/api/device_auth.go",
+      "contentHash": "6115aa5d98e7d3b8d1677b89052f6a310f3db0f5280401b540e047d9174f7b2c",
+      "functions": [
+        {
+          "name": "verifyDeviceSignature",
+          "params": [
+            "pub",
+            "payload",
+            "sigHex",
+            "now",
+            "ts"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "Error",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "writeDeviceAuthError",
+          "params": [
+            "w",
+            "err"
+          ],
+          "exported": false,
+          "lineCount": 8
+        }
+      ],
+      "classes": [
+        {
+          "name": "errDeviceAuth",
+          "methods": [
+            "Error"
+          ],
+          "properties": [
+            "msg"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "Error"
+      ],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/api/keys_pending_handler.go": {
+      "filePath": "proxy/internal/api/keys_pending_handler.go",
+      "contentHash": "bd5b31d39b116993a0fa971b1bf58347de85590ee32f5bbf8113ee060ea116e0",
+      "functions": [
+        {
+          "name": "handleMobileKeysPending",
+          "params": [
+            "w",
+            "r"
+          ],
+          "exported": false,
+          "lineCount": 68
+        }
+      ],
+      "classes": [
+        {
+          "name": "mobileKeysPendingSignPayload",
+          "methods": [],
+          "properties": [
+            "DeviceID",
+            "EncryptedPEM",
+            "Label",
+            "Comment",
+            "Timestamp"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "mobileKeysPendingRequest",
+          "methods": [],
+          "properties": [
+            "Signature"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "mobileKeysPendingResponse",
+          "methods": [],
+          "properties": [
+            "PendingID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "io",
+          "specifiers": [
+            "io"
+          ]
+        },
+        {
+          "source": "net/http",
+          "specifiers": [
+            "http"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 100,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/mobile_handler_test.go": {
       "filePath": "proxy/internal/api/mobile_handler_test.go",
-      "contentHash": "baedebf1ca52e99b329e5381005c1e12aacf1999c857562b741caf07819b9cfb",
+      "contentHash": "d680c1cd43f71fa73e9bb7f373ed7a9ba2c7f8bf053124f09707ada7a0dbafc5",
       "functions": [
         {
           "name": "TestMobileEnrollAndApprove",
@@ -1103,6 +2563,14 @@
           ],
           "exported": true,
           "lineCount": 34
+        },
+        {
+          "name": "TestMobileKeysPendingRequiresDeviceSignature",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 78
         }
       ],
       "classes": [],
@@ -1182,14 +2650,15 @@
       ],
       "exports": [
         "TestMobileEnrollAndApprove",
-        "TestMobileDeleteDevice"
+        "TestMobileDeleteDevice",
+        "TestMobileKeysPendingRequiresDeviceSignature"
       ],
-      "totalLines": 140,
+      "totalLines": 219,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/mobile_handler.go": {
       "filePath": "proxy/internal/api/mobile_handler.go",
-      "contentHash": "55b2a04d5afb2c09305f0c7d05194bce84822194f62a16b2c99eb8855e18dd6c",
+      "contentHash": "4c502835b2b90b96d14dba07bf171b149f75ddf52dd3e481bcaef748d6803dd5",
       "functions": [
         {
           "name": "handleMobileEnroll",
@@ -1216,7 +2685,7 @@
             "r"
           ],
           "exported": false,
-          "lineCount": 60
+          "lineCount": 48
         }
       ],
       "classes": [
@@ -1264,18 +2733,6 @@
       ],
       "imports": [
         {
-          "source": "crypto/ed25519",
-          "specifiers": [
-            "ed25519"
-          ]
-        },
-        {
-          "source": "encoding/hex",
-          "specifiers": [
-            "hex"
-          ]
-        },
-        {
           "source": "encoding/json",
           "specifiers": [
             "json"
@@ -1313,7 +2770,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 133,
+      "totalLines": 119,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/remote_addr_test.go": {
@@ -1373,20 +2830,22 @@
     },
     "proxy/internal/api/server.go": {
       "filePath": "proxy/internal/api/server.go",
-      "contentHash": "9d0a6f1faf23d3d13036b02d3d55aa3f6bfc51002d63ffed2bd040c5b547ad79",
+      "contentHash": "657385d75db7014c11d83ab11b664dc2906104bf42404b608b3e842d9b46431a",
       "functions": [
         {
           "name": "NewServer",
           "params": [
             "cfg",
             "ks",
+            "pending",
             "store",
             "replay",
-            "telegram"
+            "telegram",
+            "mob"
           ],
           "returnType": "http.Handler",
           "exported": true,
-          "lineCount": 23
+          "lineCount": 31
         },
         {
           "name": "withMTLS",
@@ -1495,10 +2954,11 @@
             "replay",
             "telegram",
             "mobile",
+            "pending",
             "push"
           ],
           "exported": false,
-          "lineCount": 9
+          "lineCount": 10
         }
       ],
       "imports": [
@@ -1594,12 +3054,12 @@
         "LoadTLSConfig",
         "NewHTTPServer"
       ],
-      "totalLines": 148,
+      "totalLines": 157,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/sign_handler_localkey_test.go": {
       "filePath": "proxy/internal/api/sign_handler_localkey_test.go",
-      "contentHash": "cc48e521a572e3c7cc4c484be2650d232ddb16cc25831c1c38c2e24bece97cbe",
+      "contentHash": "b5f56bce998633a129e90cd4dcfd068beaf2dea6f2aca0eef33b675582cf4ec2",
       "functions": [
         {
           "name": "startTestServerLocalKey",
@@ -1616,7 +3076,7 @@
             "t"
           ],
           "exported": true,
-          "lineCount": 26
+          "lineCount": 30
         },
         {
           "name": "buildSignBodyWithAgentData",
@@ -1624,11 +3084,12 @@
             "t",
             "user",
             "ip",
-            "data"
+            "data",
+            "hostFP"
           ],
           "returnType": "[]byte",
           "exported": false,
-          "lineCount": 14
+          "lineCount": 15
         }
       ],
       "classes": [],
@@ -1691,12 +3152,12 @@
       "exports": [
         "TestLocalKeySignReturnsSignature"
       ],
-      "totalLines": 70,
+      "totalLines": 75,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/sign_handler_test.go": {
       "filePath": "proxy/internal/api/sign_handler_test.go",
-      "contentHash": "05e1fd07bde20759942ccad664d8f2e3fc96dd2bc489713d09ac5372fe7decd4",
+      "contentHash": "18ff0fb8095a3407f8a43ff3bb03c5b6866ce69803e151cc48a9f411fe876e35",
       "functions": [
         {
           "name": "testCADir",
@@ -1752,7 +3213,7 @@
           ],
           "returnType": "*testEnv",
           "exported": false,
-          "lineCount": 32
+          "lineCount": 33
         },
         {
           "name": "signPoP",
@@ -1915,10 +3376,11 @@
           "properties": [
             "ts",
             "store",
+            "ks",
             "client"
           ],
           "exported": false,
-          "lineCount": 5
+          "lineCount": 6
         }
       ],
       "imports": [
@@ -2096,12 +3558,12 @@
         "TestApproveIssuesLocalCACert",
         "TestDevBypassIssuesLocalCACert"
       ],
-      "totalLines": 488,
+      "totalLines": 490,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/sign_handler.go": {
       "filePath": "proxy/internal/api/sign_handler.go",
-      "contentHash": "4b18b788eb6340cbbe9745617caf97fb20f907cbdeeeb85c4b63e6294d1e56c1",
+      "contentHash": "54f6d07c1c9139bb4e1c9b5ef4d47e8987b7ba73f375f83c35b350c8e67f9c9a",
       "functions": [
         {
           "name": "handleSign",
@@ -2110,7 +3572,7 @@
             "r"
           ],
           "exported": false,
-          "lineCount": 85
+          "lineCount": 93
         },
         {
           "name": "handleWait",
@@ -2139,6 +3601,15 @@
           ],
           "exported": false,
           "lineCount": 12
+        },
+        {
+          "name": "resolveHostKeyFingerprint",
+          "params": [
+            "req"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 13
         },
         {
           "name": "writeWaitError",
@@ -2223,6 +3694,12 @@
           ]
         },
         {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
           "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
           "specifiers": [
             "lease"
@@ -2230,7 +3707,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 182,
+      "totalLines": 205,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/api/sign_log_test.go": {
@@ -2749,7 +4226,7 @@
     },
     "proxy/internal/approval/store_test.go": {
       "filePath": "proxy/internal/approval/store_test.go",
-      "contentHash": "c730d7959c98b2cbc68cb1288e4667adf273cac80d098110d1341f965e213c90",
+      "contentHash": "af5875bfeb51f361943fe776045657c9e1a4fe57de5a76c4909a128bbef14bfd",
       "functions": [
         {
           "name": "IssueCert",
@@ -2854,7 +4331,7 @@
     },
     "proxy/internal/approval/store.go": {
       "filePath": "proxy/internal/approval/store.go",
-      "contentHash": "0a77da8ada6bfc9629ade03c79bf4034a53fdf02c857b28832a40f6fa341c905",
+      "contentHash": "3e5c41207b47119c76945efebd73523ee56366b3ab5a19d710f6f9db795f628d",
       "functions": [
         {
           "name": "NewStore",
@@ -2919,11 +4396,12 @@
             "publicKey",
             "sourceIP",
             "clientCertFP",
-            "agentSignData"
+            "agentSignData",
+            "hostKeyFP"
           ],
           "returnType": "(*Transaction, <-chan Result)",
           "exported": true,
-          "lineCount": 34
+          "lineCount": 35
         },
         {
           "name": "Approve",
@@ -2941,11 +4419,12 @@
             "ctx",
             "lookup",
             "publicKey",
-            "agentSignData"
+            "agentSignData",
+            "hostKeyFP"
           ],
           "returnType": "(Result, bool)",
           "exported": true,
-          "lineCount": 29
+          "lineCount": 30
         },
         {
           "name": "CreateInstantApproved",
@@ -2970,7 +4449,7 @@
             "approverChatID"
           ],
           "exported": false,
-          "lineCount": 25
+          "lineCount": 31
         },
         {
           "name": "issueForTransaction",
@@ -2981,7 +4460,7 @@
           ],
           "returnType": "(Result, error)",
           "exported": false,
-          "lineCount": 46
+          "lineCount": 50
         },
         {
           "name": "getEntry",
@@ -3076,11 +4555,12 @@
             "SourceIP",
             "ClientCertFP",
             "AgentSignData",
+            "HostKeyFingerprint",
             "State",
             "CreatedAt"
           ],
           "exported": true,
-          "lineCount": 11
+          "lineCount": 12
         },
         {
           "name": "Result",
@@ -3198,6 +4678,12 @@
           ]
         },
         {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
           "source": "github.com/ba0f3/luna-ztrust/proxy/internal/lease",
           "specifiers": [
             "lease"
@@ -3233,7 +4719,7 @@
         "Wait",
         "ClientCertFP"
       ],
-      "totalLines": 425,
+      "totalLines": 439,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/approval/telegram_test.go": {
@@ -3734,7 +5220,7 @@
     },
     "proxy/internal/auth/pipeline.go": {
       "filePath": "proxy/internal/auth/pipeline.go",
-      "contentHash": "bfbfafc64028cb2f23a87aa0784b86974a3b1a5e631c1864c3e88dcfe8c698fe",
+      "contentHash": "da3a935a3c9b03e2b4de2da65f1c09202c7e14e0bb1ea8c628f005c0579b8c7c",
       "functions": [
         {
           "name": "ValidateSignRequest",
@@ -3772,10 +5258,12 @@
             "Timestamp",
             "PopSignature",
             "AgentSignData",
+            "HostPublicKey",
+            "HostKeyFingerprint",
             "BodyMAC"
           ],
           "exported": true,
-          "lineCount": 9
+          "lineCount": 11
         }
       ],
       "imports": [
@@ -3821,7 +5309,7 @@
         "ValidateSignRequest",
         "ValidateTimestampAt"
       ],
-      "totalLines": 66,
+      "totalLines": 68,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/auth/pop.go": {
@@ -4028,9 +5516,42 @@
       "totalLines": 93,
       "hasStructuralAnalysis": true
     },
+    "proxy/internal/config/certs.go": {
+      "filePath": "proxy/internal/config/certs.go",
+      "contentHash": "88fc5a24529d5ac38e9ccec5e46f07e499bff85b309d1e40bf08e6ee44348d52",
+      "functions": [
+        {
+          "name": "defaultCertPath",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
     "proxy/internal/config/config.go": {
       "filePath": "proxy/internal/config/config.go",
-      "contentHash": "feaef332c3ebc067db8ec59537a863e5cfe8aca5d926ad26e3d972a10b25c682",
+      "contentHash": "6152960bf7ec2b6a0f8fe78f5414eda15b3f46e17d2557cf976c776a3e747e27",
       "functions": [],
       "classes": [
         {
@@ -4039,16 +5560,23 @@
           "properties": [
             "Env",
             "ApprovalTimeout",
+            "ListenAddr",
             "TelegramBotToken",
             "TelegramWebhookSecret",
             "TelegramChatID",
             "AdminClientOU",
             "KeyPath",
             "SignerMode",
-            "AllowedTTLSeconds"
+            "AllowedTTLSeconds",
+            "MTLSServerCert",
+            "MTLSServerKey",
+            "MTLSClientCA",
+            "FCMCredentials",
+            "ControlSocket",
+            "ControlSocketGroup"
           ],
           "exported": true,
-          "lineCount": 11
+          "lineCount": 18
         }
       ],
       "imports": [
@@ -4062,12 +5590,1541 @@
       "exports": [
         "Config"
       ],
-      "totalLines": 17,
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/load_merge_test.go": {
+      "filePath": "proxy/internal/config/load_merge_test.go",
+      "contentHash": "c2290b29d8ede2062b4c2c6516c30c120497dac04db4cafb405b4a9a001b25b8",
+      "functions": [
+        {
+          "name": "TestLoadMergesYAMLExtension",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "TestLoadMergesConfigFilesInOrder",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 48
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLoadMergesYAMLExtension",
+        "TestLoadMergesConfigFilesInOrder"
+      ],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/load_test.go": {
+      "filePath": "proxy/internal/config/load_test.go",
+      "contentHash": "39b0476dc7b206450c3dced280f012c8f6874fb21a7f3d48493d1847baba78c9",
+      "functions": [
+        {
+          "name": "chdirIsolated",
+          "params": [
+            "t"
+          ],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "TestLoadDefaults",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "TestLoadEnvOverride",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "TestLoadInvalidApprovalTimeout",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "clearProxyEnv",
+          "params": [
+            "t"
+          ],
+          "exported": false,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLoadDefaults",
+        "TestLoadEnvOverride",
+        "TestLoadInvalidApprovalTimeout"
+      ],
+      "totalLines": 116,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/load.go": {
+      "filePath": "proxy/internal/config/load.go",
+      "contentHash": "79faa7626e281ed9d798cd7699de1a6d08be5e853e0250ba8d39396a1f58e1b1",
+      "functions": [
+        {
+          "name": "Load",
+          "params": [],
+          "returnType": "(Config, error)",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "newViper",
+          "params": [],
+          "returnType": "(*viper.Viper, error)",
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "configFromViper",
+          "params": [
+            "v"
+          ],
+          "returnType": "(Config, error)",
+          "exported": false,
+          "lineCount": 52
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/spf13/viper",
+          "specifiers": [
+            "viper"
+          ]
+        },
+        {
+          "source": "github.com/subosito/gotenv",
+          "specifiers": [
+            "gotenv"
+          ]
+        }
+      ],
+      "exports": [
+        "Load"
+      ],
+      "totalLines": 131,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/mtls_test.go": {
+      "filePath": "proxy/internal/config/mtls_test.go",
+      "contentHash": "14a42890b82f81f333cb20030c12f8b3fe4e3394d076fc30caf6786f5d75926b",
+      "functions": [
+        {
+          "name": "TestLoadRequiresMTLSOutsideDev",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestLoadRejectsTestdataCAInProduction",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "TestLoadDevAllowsDefaultMTLS",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLoadRequiresMTLSOutsideDev",
+        "TestLoadRejectsTestdataCAInProduction",
+        "TestLoadDevAllowsDefaultMTLS"
+      ],
+      "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/mtls.go": {
+      "filePath": "proxy/internal/config/mtls.go",
+      "contentHash": "49823d9f24d36b8f69f6b8bba3d6b944c6744c2894442af3eaaa896a4c6d73c2",
+      "functions": [
+        {
+          "name": "isDevOrTestEnv",
+          "params": [
+            "env"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "validateMTLS",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 33
+        },
+        {
+          "name": "rejectTestdataCAPath",
+          "params": [
+            "name",
+            "path"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/paths_test.go": {
+      "filePath": "proxy/internal/config/paths_test.go",
+      "contentHash": "bf93307bf79f7d24eb1cf0eefbcb3a2ec24a0bfef9eb2664e33b18a69a864525",
+      "functions": [
+        {
+          "name": "TestDefaultControlSocketUsesXDGRuntimeDir",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "TestDefaultControlSocketUsesHomeWhenNoXDG",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestDefaultControlSocketUsesXDGRuntimeDir",
+        "TestDefaultControlSocketUsesHomeWhenNoXDG"
+      ],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/config/paths.go": {
+      "filePath": "proxy/internal/config/paths.go",
+      "contentHash": "7bc23797025043202b829c8ba6f9dcc72870505dbd70c1d68daaa1d0a1691796",
+      "functions": [
+        {
+          "name": "userLunaConfigDir",
+          "params": [],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "DefaultControlSocket",
+          "params": [],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "proxyConfigPaths",
+          "params": [],
+          "returnType": "[]string",
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "mergeConfigFiles",
+          "params": [
+            "v",
+            "paths"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "github.com/spf13/viper",
+          "specifiers": [
+            "viper"
+          ]
+        }
+      ],
+      "exports": [
+        "DefaultControlSocket"
+      ],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/client/client.go": {
+      "filePath": "proxy/internal/control/client/client.go",
+      "contentHash": "afc0f88163c0da3a9a6edfe4e870f41f6f236c9219bb741b5a6b87d70b56f4ec",
+      "functions": [
+        {
+          "name": "Call",
+          "params": [
+            "socketPath",
+            "op",
+            "data"
+          ],
+          "returnType": "(json.RawMessage, error)",
+          "exported": true,
+          "lineCount": 39
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bufio",
+          "specifiers": [
+            "bufio"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/control",
+          "specifiers": [
+            "control"
+          ]
+        }
+      ],
+      "exports": [
+        "Call"
+      ],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/ops_test.go": {
+      "filePath": "proxy/internal/control/ops_test.go",
+      "contentHash": "f5d2beee9a0023468ddd30cc6ed7cd1830a21b61b48e36df22f47733d5f05fb0",
+      "functions": [
+        {
+          "name": "testServer",
+          "params": [
+            "t",
+            "signerMode"
+          ],
+          "returnType": "*Server",
+          "exported": false,
+          "lineCount": 15
+        },
+        {
+          "name": "writeEncryptedKeyFile",
+          "params": [
+            "t",
+            "path"
+          ],
+          "returnType": "[]byte",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "reqData",
+          "params": [
+            "t",
+            "v"
+          ],
+          "returnType": "json.RawMessage",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "TestHandleStatusSealed",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "TestHandleKeyLoadAndList",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 39
+        },
+        {
+          "name": "TestHandleKeyLoadBadPassphrase",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "TestHandleKeyRemove",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "TestHandleKeyConfirmAndReject",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 35
+        },
+        {
+          "name": "TestHandleKeyConfirmRequiresLocalKeyMode",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "TestHandleKeyPendingList",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "TestHandleMobileEnrollListDelete",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 35
+        },
+        {
+          "name": "TestHandleUnknownOp",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "encoding/pem",
+          "specifiers": [
+            "pem"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/mobile",
+          "specifiers": [
+            "mobile"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestHandleStatusSealed",
+        "TestHandleKeyLoadAndList",
+        "TestHandleKeyLoadBadPassphrase",
+        "TestHandleKeyRemove",
+        "TestHandleKeyConfirmAndReject",
+        "TestHandleKeyConfirmRequiresLocalKeyMode",
+        "TestHandleKeyPendingList",
+        "TestHandleMobileEnrollListDelete",
+        "TestHandleUnknownOp"
+      ],
+      "totalLines": 282,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/ops.go": {
+      "filePath": "proxy/internal/control/ops.go",
+      "contentHash": "b11093ae776695b976758ba67eabc49b315c1c7d884ee416e730033b027c9322",
+      "functions": [
+        {
+          "name": "NewServer",
+          "params": [
+            "deps"
+          ],
+          "returnType": "*Server",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "handle",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "statusData",
+          "params": [],
+          "returnType": "json.RawMessage",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "handleKeyLoad",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "keyListData",
+          "params": [],
+          "returnType": "json.RawMessage",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "handleKeyRemove",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "handleKeyConfirm",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "handleKeyReject",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "pendingListData",
+          "params": [],
+          "returnType": "json.RawMessage",
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "handleMobileEnroll",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "mobileListData",
+          "params": [],
+          "returnType": "json.RawMessage",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "handleMobileDelete",
+          "params": [
+            "req"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "ok",
+          "params": [
+            "id",
+            "data"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "fail",
+          "params": [
+            "id",
+            "msg",
+            "code"
+          ],
+          "returnType": "Response",
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [
+        {
+          "name": "ServerDeps",
+          "methods": [],
+          "properties": [
+            "Config",
+            "Keystore",
+            "Mobile",
+            "Pending"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Server",
+          "methods": [
+            "handle",
+            "statusData",
+            "handleKeyLoad",
+            "keyListData",
+            "handleKeyRemove",
+            "handleKeyConfirm",
+            "handleKeyReject",
+            "pendingListData",
+            "handleMobileEnroll",
+            "mobileListData",
+            "handleMobileDelete",
+            "ok",
+            "fail"
+          ],
+          "properties": [
+            "deps"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "keyLoadData",
+          "methods": [],
+          "properties": [
+            "Path",
+            "Passphrase",
+            "Comment"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "keyRemoveData",
+          "methods": [],
+          "properties": [
+            "Fingerprint"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "keyConfirmData",
+          "methods": [],
+          "properties": [
+            "PendingID",
+            "Passphrase"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "keyRejectData",
+          "methods": [],
+          "properties": [
+            "PendingID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "mobileEnrollData",
+          "methods": [],
+          "properties": [
+            "Label",
+            "DevicePubKey"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "mobileDeleteData",
+          "methods": [],
+          "properties": [
+            "DeviceID"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "log",
+          "specifiers": [
+            "log"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/approval",
+          "specifiers": [
+            "approval"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/config",
+          "specifiers": [
+            "config"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/mobile",
+          "specifiers": [
+            "mobile"
+          ]
+        }
+      ],
+      "exports": [
+        "ServerDeps",
+        "Server",
+        "NewServer"
+      ],
+      "totalLines": 238,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/peer_linux.go": {
+      "filePath": "proxy/internal/control/peer_linux.go",
+      "contentHash": "9d0921b63eddec206ce4ebc0b738cdc62497338887e352199cd20f4a4d84c6d4",
+      "functions": [
+        {
+          "name": "peerAllowed",
+          "params": [
+            "conn",
+            "groupName"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 33
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/user",
+          "specifiers": [
+            "user"
+          ]
+        },
+        {
+          "source": "syscall",
+          "specifiers": [
+            "syscall"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 46,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/peer_stub.go": {
+      "filePath": "proxy/internal/control/peer_stub.go",
+      "contentHash": "d25a229779a2048ccd5151ab3b0b41da542895300e53e52a9a1ee8cae363f405",
+      "functions": [
+        {
+          "name": "peerAllowed",
+          "params": [
+            "_",
+            "_"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/secret_test.go": {
+      "filePath": "proxy/internal/control/secret_test.go",
+      "contentHash": "005b4e8a63ebea1c280fbbfec88f85c6754b736c01af510f6d77b5fe952a57e4",
+      "functions": [
+        {
+          "name": "TestZeroString",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        }
+      ],
+      "exports": [
+        "TestZeroString"
+      ],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/secret.go": {
+      "filePath": "proxy/internal/control/secret.go",
+      "contentHash": "8593b8ce568853aa1683cc85a0cd233a0e43ffb3a1bdbd7c00826f2c9e3d3dbd",
+      "functions": [
+        {
+          "name": "ZeroBytes",
+          "params": [
+            "b"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ZeroString",
+          "params": [
+            "s"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "ZeroBytes",
+        "ZeroString"
+      ],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/server.go": {
+      "filePath": "proxy/internal/control/server.go",
+      "contentHash": "2a1c35310973053a694c3fcd067c9f193485e9ed5d1e8253f5bb5127a6fbd319",
+      "functions": [
+        {
+          "name": "ServeUnix",
+          "params": [
+            "path",
+            "group"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "serveConn",
+          "params": [
+            "conn",
+            "group"
+          ],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "writeResponse",
+          "params": [
+            "conn",
+            "resp"
+          ],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bufio",
+          "specifiers": [
+            "bufio"
+          ]
+        },
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "net",
+          "specifiers": [
+            "net"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/user",
+          "specifiers": [
+            "user"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        }
+      ],
+      "exports": [
+        "ServeUnix"
+      ],
+      "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/control/types.go": {
+      "filePath": "proxy/internal/control/types.go",
+      "contentHash": "41625e9a1f73d9389c1e3492130c2014502959f5428d5d848327c8b71a928f49",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Request",
+          "methods": [],
+          "properties": [
+            "Op",
+            "ID",
+            "Data"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "Response",
+          "methods": [],
+          "properties": [
+            "OK",
+            "ID",
+            "Data",
+            "Error",
+            "Code"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "imports": [
+        {
+          "source": "encoding/json",
+          "specifiers": [
+            "json"
+          ]
+        }
+      ],
+      "exports": [
+        "Request",
+        "Response"
+      ],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/fingerprint_test.go": {
+      "filePath": "proxy/internal/keystore/fingerprint_test.go",
+      "contentHash": "3b29a13dc3d0e8b2c1ab66b257c8e372e4225a6644585515e4d260fe8c1efe84",
+      "functions": [
+        {
+          "name": "TestFingerprint_MatchesSSHKeygen",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TestFingerprint_Deterministic",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "TestParseFingerprintHint",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "loadTestPubKey",
+          "params": [
+            "t",
+            "name"
+          ],
+          "returnType": "ssh.PublicKey",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "sshKeygenSHA256Fingerprint",
+          "params": [
+            "pubPath"
+          ],
+          "returnType": "(string, error)",
+          "exported": false,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "os/exec",
+          "specifiers": [
+            "exec"
+          ]
+        },
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestFingerprint_MatchesSSHKeygen",
+        "TestFingerprint_Deterministic",
+        "TestParseFingerprintHint"
+      ],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/fingerprint.go": {
+      "filePath": "proxy/internal/keystore/fingerprint.go",
+      "contentHash": "2847074c39d49660c1df9ff728ccc9ddf375d29e56beafb1e02568cedf2531f6",
+      "functions": [
+        {
+          "name": "Fingerprint",
+          "params": [
+            "pub"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "NormalizeFingerprintInput",
+          "params": [
+            "s"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "ParseFingerprintHint",
+          "params": [
+            "s"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "fingerprintDigest",
+          "params": [
+            "raw"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "decodeFingerprintBase64",
+          "params": [
+            "s"
+          ],
+          "returnType": "([]byte, error)",
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/sha256",
+          "specifiers": [
+            "sha256"
+          ]
+        },
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "encoding/hex",
+          "specifiers": [
+            "hex"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "strings",
+          "specifiers": [
+            "strings"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "Fingerprint",
+        "NormalizeFingerprintInput",
+        "ParseFingerprintHint"
+      ],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/keystore_pool_test.go": {
+      "filePath": "proxy/internal/keystore/keystore_pool_test.go",
+      "contentHash": "4c7e61b1641df74c9826a775516dabbb5cc384fa351f8fff62c9714af9a7e920",
+      "functions": [
+        {
+          "name": "TestKeystore_LocalKeyPool_GetByFingerprint",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "TestKeystore_SSHSignerRejectsLocalKeyMode",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "path/filepath",
+          "specifiers": [
+            "filepath"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        }
+      ],
+      "exports": [
+        "TestKeystore_LocalKeyPool_GetByFingerprint",
+        "TestKeystore_SSHSignerRejectsLocalKeyMode"
+      ],
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/keystore/keystore_test.go": {
       "filePath": "proxy/internal/keystore/keystore_test.go",
-      "contentHash": "3a055bbea36fcb009d7497844785edec703ace8882a4b105e9c446f593c9c838",
+      "contentHash": "177219793dbf6896cd89b6bfa84c28ce991294aeaa66320a479b118140fa710d",
       "functions": [
         {
           "name": "writeEncryptedKeyFile",
@@ -4188,7 +7245,7 @@
     },
     "proxy/internal/keystore/keystore.go": {
       "filePath": "proxy/internal/keystore/keystore.go",
-      "contentHash": "c1cce5e225a9d9e91a9424811db891ff10372fe035449880cc448ed4a40abbe1",
+      "contentHash": "ddb888e1791dc94fd0237fc5c139b31b35c11b17d7c2e5a44ca0d3cb426776ea",
       "functions": [
         {
           "name": "New",
@@ -4198,18 +7255,50 @@
           "lineCount": 3
         },
         {
+          "name": "NewWithMode",
+          "params": [
+            "mode"
+          ],
+          "returnType": "*Keystore",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "Mode",
+          "params": [],
+          "returnType": "Mode",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
           "name": "Available",
           "params": [],
           "returnType": "bool",
           "exported": true,
-          "lineCount": 5
+          "lineCount": 10
         },
         {
           "name": "SSHSigner",
           "params": [],
           "returnType": "(ssh.Signer, error)",
           "exported": true,
-          "lineCount": 8
+          "lineCount": 11
+        },
+        {
+          "name": "SignerForFingerprint",
+          "params": [
+            "fingerprint"
+          ],
+          "returnType": "(ssh.Signer, error)",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "ListSigners",
+          "params": [],
+          "returnType": "[]SignerInfo",
+          "exported": true,
+          "lineCount": 21
         },
         {
           "name": "Unseal",
@@ -4219,7 +7308,55 @@
           ],
           "returnType": "error",
           "exported": true,
-          "lineCount": 57
+          "lineCount": 4
+        },
+        {
+          "name": "LoadPEMFile",
+          "params": [
+            "path",
+            "passphrase",
+            "comment"
+          ],
+          "returnType": "(fingerprint string, err error)",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "LoadPEMBytes",
+          "params": [
+            "pemBytes",
+            "passphrase",
+            "comment"
+          ],
+          "returnType": "(fingerprint string, err error)",
+          "exported": true,
+          "lineCount": 43
+        },
+        {
+          "name": "RemoveSigner",
+          "params": [
+            "fingerprint"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "checkUnsealLock",
+          "params": [],
+          "returnType": "error",
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "parseEncryptedPEM",
+          "params": [
+            "pemBytes",
+            "pass"
+          ],
+          "returnType": "(ssh.Signer, error)",
+          "exported": false,
+          "lineCount": 23
         },
         {
           "name": "recordUnsealFailure",
@@ -4232,19 +7369,28 @@
         {
           "name": "Keystore",
           "methods": [
+            "Mode",
             "Available",
             "SSHSigner",
+            "SignerForFingerprint",
+            "ListSigners",
             "Unseal",
+            "LoadPEMFile",
+            "LoadPEMBytes",
+            "RemoveSigner",
+            "checkUnsealLock",
             "recordUnsealFailure"
           ],
           "properties": [
+            "mode",
             "mu",
-            "signer",
+            "caSigner",
+            "pool",
             "unsealFails",
             "unsealLockedUntil"
           ],
           "exported": true,
-          "lineCount": 6
+          "lineCount": 9
         }
       ],
       "imports": [
@@ -4300,11 +7446,18 @@
       "exports": [
         "Keystore",
         "New",
+        "NewWithMode",
+        "Mode",
         "Available",
         "SSHSigner",
-        "Unseal"
+        "SignerForFingerprint",
+        "ListSigners",
+        "Unseal",
+        "LoadPEMFile",
+        "LoadPEMBytes",
+        "RemoveSigner"
       ],
-      "totalLines": 122,
+      "totalLines": 254,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/keystore/mlock_linux.go": {
@@ -4406,16 +7559,458 @@
       "totalLines": 14,
       "hasStructuralAnalysis": true
     },
+    "proxy/internal/keystore/pending.go": {
+      "filePath": "proxy/internal/keystore/pending.go",
+      "contentHash": "d16e5ecfeb46d011e130cfd3a7e80769868add43a2b519be5309921e748405a2",
+      "functions": [
+        {
+          "name": "NewPendingStore",
+          "params": [],
+          "returnType": "*PendingStore",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Add",
+          "params": [
+            "deviceID",
+            "label",
+            "comment",
+            "blob"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "Get",
+          "params": [
+            "id"
+          ],
+          "returnType": "(*PendingKey, error)",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Delete",
+          "params": [
+            "id"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "List",
+          "params": [],
+          "returnType": "[]PendingKey",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Count",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "purgeExpiredLocked",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "PendingKey",
+          "methods": [],
+          "properties": [
+            "ID",
+            "DeviceID",
+            "Label",
+            "Comment",
+            "Blob",
+            "ExpiresAt"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "PendingStore",
+          "methods": [
+            "Add",
+            "Get",
+            "Delete",
+            "List",
+            "Count",
+            "purgeExpiredLocked"
+          ],
+          "properties": [
+            "mu",
+            "entries",
+            "byDev"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "github.com/oklog/ulid/v2",
+          "specifiers": [
+            "v2"
+          ]
+        }
+      ],
+      "exports": [
+        "PendingKey",
+        "PendingStore",
+        "NewPendingStore",
+        "Add",
+        "Get",
+        "Delete",
+        "List",
+        "Count"
+      ],
+      "totalLines": 129,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/pool_test.go": {
+      "filePath": "proxy/internal/keystore/pool_test.go",
+      "contentHash": "76a97ed75df96165a18a31ef7efed8d199152a2ef567d91516394d39ffc1ef90",
+      "functions": [
+        {
+          "name": "TestLocalKeyPool_AddListRemove",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 44
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "crypto/ed25519",
+          "specifiers": [
+            "ed25519"
+          ]
+        },
+        {
+          "source": "crypto/rand",
+          "specifiers": [
+            "rand"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "TestLocalKeyPool_AddListRemove"
+      ],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/pool.go": {
+      "filePath": "proxy/internal/keystore/pool.go",
+      "contentHash": "a7d5d8d793d83b23119d8a9279d5e5484388baba14d57ab34082bf9da0208656",
+      "functions": [
+        {
+          "name": "NewLocalKeyPool",
+          "params": [],
+          "returnType": "*LocalKeyPool",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Add",
+          "params": [
+            "signer",
+            "comment"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Remove",
+          "params": [
+            "fingerprint"
+          ],
+          "returnType": "error",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Get",
+          "params": [
+            "fingerprint"
+          ],
+          "returnType": "(ssh.Signer, error)",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "List",
+          "params": [],
+          "returnType": "[]SignerInfo",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "Available",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "Len",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [
+        {
+          "name": "SignerInfo",
+          "methods": [],
+          "properties": [
+            "Fingerprint",
+            "PublicKey",
+            "Comment"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "loadedSigner",
+          "methods": [],
+          "properties": [
+            "signer",
+            "comment"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "LocalKeyPool",
+          "methods": [
+            "Add",
+            "Remove",
+            "Get",
+            "List",
+            "Available",
+            "Len"
+          ],
+          "properties": [
+            "mu",
+            "signers"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "sync",
+          "specifiers": [
+            "sync"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "SignerInfo",
+        "LocalKeyPool",
+        "NewLocalKeyPool",
+        "Add",
+        "Remove",
+        "Get",
+        "List",
+        "Available",
+        "Len"
+      ],
+      "totalLines": 105,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/resolve_test.go": {
+      "filePath": "proxy/internal/keystore/resolve_test.go",
+      "contentHash": "d9d7d6231d350e87693130b58db5745bc4eaf6949c276bdc37c45af5f4009097",
+      "functions": [
+        {
+          "name": "TestResolveHostKeyFingerprintFromHint",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "TestResolveHostKeyFingerprintFromWire",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "TestResolveHostKeyFingerprintMismatch",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "testing",
+          "specifiers": [
+            "testing"
+          ]
+        },
+        {
+          "source": "github.com/ba0f3/luna-ztrust/proxy/internal/keystore",
+          "specifiers": [
+            "keystore"
+          ]
+        }
+      ],
+      "exports": [
+        "TestResolveHostKeyFingerprintFromHint",
+        "TestResolveHostKeyFingerprintFromWire",
+        "TestResolveHostKeyFingerprintMismatch"
+      ],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "proxy/internal/keystore/resolve.go": {
+      "filePath": "proxy/internal/keystore/resolve.go",
+      "contentHash": "3b3a44607e429f2345c1a5db2804c15631d09bcbc8269e68aa5efcc5589b1283",
+      "functions": [
+        {
+          "name": "ResolveHostKeyFingerprint",
+          "params": [
+            "hostPubB64",
+            "fpHint"
+          ],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "SoleFingerprint",
+          "params": [],
+          "returnType": "(string, error)",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "encoding/base64",
+          "specifiers": [
+            "base64"
+          ]
+        },
+        {
+          "source": "errors",
+          "specifiers": [
+            "errors"
+          ]
+        },
+        {
+          "source": "fmt",
+          "specifiers": [
+            "fmt"
+          ]
+        },
+        {
+          "source": "golang.org/x/crypto/ssh",
+          "specifiers": [
+            "ssh"
+          ]
+        }
+      ],
+      "exports": [
+        "ResolveHostKeyFingerprint",
+        "SoleFingerprint"
+      ],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
     "proxy/internal/lease/key.go": {
       "filePath": "proxy/internal/lease/key.go",
-      "contentHash": "3bcc8a4b46b7f4674e918ddcab4ae466a0901d147d93b5c6f7a26be946e8dba1",
+      "contentHash": "25978ee2c22d05324079b85d54824564ce6b812a981507be30452e7c9ce7b132",
       "functions": [
         {
           "name": "lookupString",
           "params": [],
           "returnType": "string",
           "exported": false,
-          "lineCount": 3
+          "lineCount": 9
         },
         {
           "name": "String",
@@ -4430,11 +8025,12 @@
             "clientCertFP",
             "targetUser",
             "targetIP",
-            "sourceIP"
+            "sourceIP",
+            "hostKeyFingerprint"
           ],
           "returnType": "LookupKey",
           "exported": true,
-          "lineCount": 8
+          "lineCount": 9
         },
         {
           "name": "NewFullKey",
@@ -4475,10 +8071,11 @@
             "ClientCertFP",
             "TargetUser",
             "TargetIP",
-            "SourceIP"
+            "SourceIP",
+            "HostKeyFingerprint"
           ],
           "exported": true,
-          "lineCount": 6
+          "lineCount": 7
         },
         {
           "name": "FullKey",
@@ -4515,12 +8112,12 @@
         "FormatApproverChatID",
         "FormatApproverDeviceID"
       ],
-      "totalLines": 54,
+      "totalLines": 62,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/lease/store_index_test.go": {
       "filePath": "proxy/internal/lease/store_index_test.go",
-      "contentHash": "6350049cb05a336ad2b3cfabd60f9f25b22607c1aee4b7eb8050dd54ea6e3b5d",
+      "contentHash": "c523d7d7cea71b6bfde9620ef90cc6ba6288533465dc35e2fa96fe4f28aed598",
       "functions": [
         {
           "name": "TestFindActive_UsesLookupIndex",
@@ -4560,7 +8157,7 @@
     },
     "proxy/internal/lease/store_test.go": {
       "filePath": "proxy/internal/lease/store_test.go",
-      "contentHash": "8943067ce53177debe9cfad910af677c237f31d26bc4d0718fb929fd3427ecd4",
+      "contentHash": "d294e0910f49a1d445d65e06c07e482b3addc90139fa785e376ed73d83dfd73d",
       "functions": [
         {
           "name": "TestLeaseKey_DifferentApproverSeparate",
@@ -4577,6 +8174,14 @@
           ],
           "exported": true,
           "lineCount": 7
+        },
+        {
+          "name": "TestLeaseKey_DifferentHostKeySeparate",
+          "params": [
+            "t"
+          ],
+          "exported": true,
+          "lineCount": 11
         },
         {
           "name": "TestFindActive_ExpiredIgnored",
@@ -4611,9 +8216,10 @@
       "exports": [
         "TestLeaseKey_DifferentApproverSeparate",
         "TestLeaseKey_DeterministicLookup",
+        "TestLeaseKey_DifferentHostKeySeparate",
         "TestFindActive_ExpiredIgnored"
       ],
-      "totalLines": 47,
+      "totalLines": 59,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/lease/store.go": {
@@ -4871,7 +8477,7 @@
     },
     "proxy/internal/mobile/store.go": {
       "filePath": "proxy/internal/mobile/store.go",
-      "contentHash": "eeb746099e59903ebcb93b40cfd95f48221820b555d27b4144e04309952c8730",
+      "contentHash": "c90db665cf07db194de3cdce0e42af0070c49f0fda96ce8c6ca8d4b4ca4c07e8",
       "functions": [
         {
           "name": "NewStore",
@@ -4898,6 +8504,13 @@
           "returnType": "(*Device, bool)",
           "exported": true,
           "lineCount": 6
+        },
+        {
+          "name": "List",
+          "params": [],
+          "returnType": "[]*Device",
+          "exported": true,
+          "lineCount": 9
         },
         {
           "name": "Delete",
@@ -4927,6 +8540,7 @@
           "methods": [
             "Enroll",
             "Get",
+            "List",
             "Delete"
           ],
           "properties": [
@@ -4987,9 +8601,10 @@
         "NewStore",
         "Enroll",
         "Get",
+        "List",
         "Delete"
       ],
-      "totalLines": 79,
+      "totalLines": 90,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/signing/local_ca_test.go": {
@@ -5183,7 +8798,7 @@
     },
     "proxy/internal/signing/local_key_test.go": {
       "filePath": "proxy/internal/signing/local_key_test.go",
-      "contentHash": "f0270bd4a02e601a32799c05d75a1263829b1e52b0ff0e310e484feb1c10b283",
+      "contentHash": "3b6ca7750be985533297499be06f844828219c4a6bd50e249b769bd3999c3e0c",
       "functions": [
         {
           "name": "writeEncryptedKeyForHost",
@@ -5196,12 +8811,22 @@
           "lineCount": 12
         },
         {
+          "name": "loadHostKeyPool",
+          "params": [
+            "t",
+            "path"
+          ],
+          "returnType": "(*keystore.Keystore, string)",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
           "name": "TestLocalKey_SignAgent",
           "params": [
             "t"
           ],
           "exported": true,
-          "lineCount": 24
+          "lineCount": 25
         },
         {
           "name": "TestLocalKey_SignAgentMatchesHostedKey",
@@ -5209,7 +8834,7 @@
             "t"
           ],
           "exported": true,
-          "lineCount": 30
+          "lineCount": 27
         }
       ],
       "classes": [],
@@ -5279,12 +8904,12 @@
         "TestLocalKey_SignAgent",
         "TestLocalKey_SignAgentMatchesHostedKey"
       ],
-      "totalLines": 85,
+      "totalLines": 93,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/signing/local_key.go": {
       "filePath": "proxy/internal/signing/local_key.go",
-      "contentHash": "da36f4ea09a90daed3e5868f1818f237827485e7a3130747ec7770e6b2d3a652",
+      "contentHash": "91dbe2d7eaabd4e15b3924bcb29b06a1ab8826d322b1865c4aa867e0727fd108",
       "functions": [
         {
           "name": "NewLocalKey",
@@ -5299,11 +8924,12 @@
           "name": "SignAgent",
           "params": [
             "_",
+            "hostFP",
             "data"
           ],
           "returnType": "([]byte, error)",
           "exported": true,
-          "lineCount": 14
+          "lineCount": 17
         }
       ],
       "classes": [
@@ -5350,7 +8976,7 @@
         "NewLocalKey",
         "SignAgent"
       ],
-      "totalLines": 36,
+      "totalLines": 39,
       "hasStructuralAnalysis": true
     },
     "proxy/internal/signing/signer.go": {
@@ -5413,9 +9039,71 @@
       "totalLines": 27,
       "hasStructuralAnalysis": true
     },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "c2be6e87dc63c52a6339931a2b125f23208b11d2e1dac0f9ac831d3ceb02fb51",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 171,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/gen-test-ca.sh": {
+      "filePath": "scripts/gen-test-ca.sh",
+      "contentHash": "27fca66a6225327855d15986513bc549593075c98a5e82c7d44b8c4070fe742c",
+      "functions": [
+        {
+          "name": "cleanup",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "ca_key_matches_cert",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "wipe_ca_material",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "ensure_ca",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/gen-test-ssh-ca.sh": {
+      "filePath": "scripts/gen-test-ssh-ca.sh",
+      "contentHash": "2c75d7e27f4efacdf41fdf4259fc9be365ddd15d83963c135937012492f336ad",
+      "functions": [
+        {
+          "name": "gen_encrypted",
+          "params": [],
+          "exported": false,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 37,
+      "hasStructuralAnalysis": true
+    },
     "sdk/capabilities.go": {
       "filePath": "sdk/capabilities.go",
-      "contentHash": "47dcdb23d6eb198448d118d48db1da75a8917edc51256943afaa197db7c147b9",
+      "contentHash": "9b2b3bafa89fb0c8d0d403056e5cc367eaad382b0831afa40d9637bbe2386225",
       "functions": [
         {
           "name": "FetchCapabilities",
@@ -5445,7 +9133,7 @@
       "exports": [
         "FetchCapabilities"
       ],
-      "totalLines": 16,
+      "totalLines": 19,
       "hasStructuralAnalysis": true
     },
     "sdk/client.go": {
@@ -5581,6 +9269,16 @@
       "exports": [],
       "totalLines": 2,
       "hasStructuralAnalysis": true
+    },
+    "sdk/go.mod": {
+      "filePath": "sdk/go.mod",
+      "contentHash": "cf8dafbce7304d801560f433cf662c093c5a01ef6ed4e1fa2db4f6d5f7bc4883",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": false
     },
     "sdk/go.sum": {
       "filePath": "sdk/go.sum",
@@ -5777,7 +9475,7 @@
     },
     "sdk/sign/capabilities.go": {
       "filePath": "sdk/sign/capabilities.go",
-      "contentHash": "98c86822361f74908ea05825559f9b32d84cd2f2252f4c6f42a2d1e8da7b3759",
+      "contentHash": "9d919a7ea505ccf656759ac6850bd05a9a46ccbf95fe92b9167e3356acfc0c3b",
       "functions": [
         {
           "name": "FetchCapabilities",
@@ -5791,16 +9489,28 @@
       ],
       "classes": [
         {
+          "name": "LoadedSigner",
+          "methods": [],
+          "properties": [
+            "Fingerprint",
+            "PublicKey",
+            "Comment"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
           "name": "Capabilities",
           "methods": [],
           "properties": [
             "SignerMode",
             "LeaseSupported",
             "AllowedTTLSeconds",
-            "Sealed"
+            "Sealed",
+            "LoadedSigners"
           ],
           "exported": true,
-          "lineCount": 6
+          "lineCount": 7
         }
       ],
       "imports": [
@@ -5830,10 +9540,11 @@
         }
       ],
       "exports": [
+        "LoadedSigner",
         "Capabilities",
         "FetchCapabilities"
       ],
-      "totalLines": 49,
+      "totalLines": 57,
       "hasStructuralAnalysis": true
     },
     "sdk/sign/client_test.go": {
@@ -6383,7 +10094,7 @@
     },
     "sdk/sign/e2e_test.go": {
       "filePath": "sdk/sign/e2e_test.go",
-      "contentHash": "23484b332d94a067128be2d36836b7684970293b817838d799471cbfc1ef9f81",
+      "contentHash": "863f75684685f131ce7e462ee662e01d7ddbafd461ffd5352429243f576c6312",
       "functions": [
         {
           "name": "TestE2ERequestCertificate",
@@ -6418,7 +10129,19 @@
             "pool"
           ],
           "exported": false,
-          "lineCount": 32
+          "lineCount": 7
+        },
+        {
+          "name": "e2eProxyUnsealed",
+          "params": [
+            "t",
+            "proxyURL",
+            "clientCert",
+            "pool"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 33
         },
         {
           "name": "e2eCADir",
@@ -6432,12 +10155,6 @@
       ],
       "classes": [],
       "imports": [
-        {
-          "source": "bytes",
-          "specifiers": [
-            "bytes"
-          ]
-        },
         {
           "source": "context",
           "specifiers": [
@@ -6526,7 +10243,7 @@
       "exports": [
         "TestE2ERequestCertificate"
       ],
-      "totalLines": 175,
+      "totalLines": 181,
       "hasStructuralAnalysis": true
     },
     "sdk/sign/hmac_test.go": {
@@ -6665,7 +10382,7 @@
     },
     "sdk/sign/request.go": {
       "filePath": "sdk/sign/request.go",
-      "contentHash": "a2ba54933675c5ab4a819e819f625d949407719edcad20367afe1661ad02a11e",
+      "contentHash": "86bcbaa376f8eefe1cf6ab55163f3991acdf111f972e1369da105a9eadc6b0ed",
       "functions": [],
       "classes": [
         {
@@ -6677,10 +10394,11 @@
             "TargetIP",
             "Timestamp",
             "PopSignature",
-            "AgentSignData"
+            "AgentSignData",
+            "HostKeyFingerprint"
           ],
           "exported": true,
-          "lineCount": 8
+          "lineCount": 9
         },
         {
           "name": "Response",
@@ -6718,10 +10436,11 @@
           "methods": [],
           "properties": [
             "TargetUser",
-            "TargetIP"
+            "TargetIP",
+            "HostKeyFingerprint"
           ],
           "exported": true,
-          "lineCount": 4
+          "lineCount": 5
         }
       ],
       "imports": [],
@@ -6732,12 +10451,12 @@
         "CertRequest",
         "SignatureRequest"
       ],
-      "totalLines": 37,
+      "totalLines": 39,
       "hasStructuralAnalysis": true
     },
     "sdk/sign/signature.go": {
       "filePath": "sdk/sign/signature.go",
-      "contentHash": "b7a10f47bc1339414a9487ddd48c07416a9dfc86efcdfc38c99fdffd576fd0f1",
+      "contentHash": "c02894f8ad81b62977d693102164ad6768e283a86571d7cf6af271d53dcd2d9a",
       "functions": [
         {
           "name": "RequestSignature",
@@ -6748,7 +10467,7 @@
           ],
           "returnType": "(*ssh.Signature, error)",
           "exported": true,
-          "lineCount": 53
+          "lineCount": 54
         }
       ],
       "classes": [],
@@ -6805,7 +10524,7 @@
       "exports": [
         "RequestSignature"
       ],
-      "totalLines": 69,
+      "totalLines": 70,
       "hasStructuralAnalysis": true
     },
     "sdk/sign/tls_test.go": {
@@ -6998,7 +10717,7 @@
     },
     "testdata/ca/admin-client.crt": {
       "filePath": "testdata/ca/admin-client.crt",
-      "contentHash": "c87cb116c3614933f4fbb6ed03f4acecb1d06095d2c897d92f5cca5226062fd8",
+      "contentHash": "e730c7748fb117e98ba40cf35dc3311b86532ed2990e8b396c18f10f7709e4bb",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -7018,7 +10737,7 @@
     },
     "testdata/ca/client.crt": {
       "filePath": "testdata/ca/client.crt",
-      "contentHash": "73a1aaad6dbbe8a52d0376ed99e16df0983b3c524511c3d466f8e1f88aad86c9",
+      "contentHash": "14cfaed5bf70acec41029a1b4181bf8c761eeffed986816afc3d24f546a1f434",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -7028,7 +10747,7 @@
     },
     "testdata/ca/server.crt": {
       "filePath": "testdata/ca/server.crt",
-      "contentHash": "a489c37b9cc30b2fb848f64fee4500417a0990d495f8d47b311a665f6ec4f224",
+      "contentHash": "ca95ad19e60ce422a7288cef0b0d7cf53d25aac528bb434ae3946361ea00d2a7",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -7038,7 +10757,7 @@
     },
     "testdata/ssh/ca.pub": {
       "filePath": "testdata/ssh/ca.pub",
-      "contentHash": "d3a1fb6961eefc73b12fd8bccf323b4b3816158cbae29cc263f00c4ac63190a8",
+      "contentHash": "efa7be4b92f989b8ecde21bc2cbd46f8671699570e81ee6cffe01fd80f305ac9",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -7048,7 +10767,7 @@
     },
     "testdata/ssh/host.pub": {
       "filePath": "testdata/ssh/host.pub",
-      "contentHash": "b2dc07c634df8c072e7f25bbdd0b7ffd4520dd6b9856920cb3ce00e014ceaf43",
+      "contentHash": "1c52d28438b743fd0f515c68a20e99ac5c4f1a72aa5258dd2c053da4d4730803",
       "functions": [],
       "classes": [],
       "imports": [],
