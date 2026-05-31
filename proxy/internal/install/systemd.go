@@ -5,21 +5,26 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"text/template"
+
+	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 )
 
 const proxyUnitName = "luna-proxy.service"
 
 // SystemdOptions configures luna-proxy systemd unit installation.
 type SystemdOptions struct {
-	BinaryPath string
-	ConfigPath string
-	User       string
-	Group      string
-	UnitPath   string
-	DryRun     bool
-	Enable     bool
+	BinaryPath     string
+	ConfigPath     string
+	User           string
+	Group          string
+	UnitPath       string
+	CertsDir       string
+	DryRun         bool
+	Enable         bool
+	SkipUserCreate bool
 }
 
 // DefaultProxySystemdOptions returns production-oriented defaults.
@@ -43,7 +48,6 @@ Wants=network-online.target
 Type=simple
 User={{ .User }}
 Group={{ .Group }}
-Environment=LUNA_CONFIG={{ .ConfigPath }}
 ExecStart={{ .BinaryPath }} serve
 Restart=on-failure
 RestartSec=5
@@ -91,6 +95,9 @@ func InstallProxySystemd(opts SystemdOptions) error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("install systemd: must run as root (e.g. sudo luna-proxy install systemd)")
 	}
+	if err := prepareServiceUser(opts); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(opts.UnitPath), 0o755); err != nil {
 		return fmt.Errorf("create unit directory: %w", err)
 	}
@@ -106,6 +113,32 @@ func InstallProxySystemd(opts SystemdOptions) error {
 		}
 	} else {
 		fmt.Printf("wrote %s\nrun: sudo systemctl daemon-reload && sudo systemctl enable --now %s\n", opts.UnitPath, proxyUnitName)
+	}
+	return nil
+}
+
+func prepareServiceUser(opts SystemdOptions) error {
+	if _, err := user.Lookup(opts.User); err == nil {
+		// User exists; still ensure dirs and cert group perms.
+	} else if opts.SkipUserCreate {
+		return fmt.Errorf("systemd user %q does not exist (create with: useradd --system --home-dir /var/lib/%[1]s --shell /usr/sbin/nologin --gid %[1]s %[1]s, or re-run without --skip-user-create)", opts.User)
+	} else if err := EnsureServiceUser(opts.User, opts.Group); err != nil {
+		return err
+	} else {
+		fmt.Printf("created system user %q\n", opts.User)
+	}
+	if err := EnsureLunaDirs(opts.User, opts.Group); err != nil {
+		return err
+	}
+	certsDir := opts.CertsDir
+	if certsDir == "" {
+		certsDir = config.DefaultCertsDir
+	}
+	if err := EnsureCertPermissions(certsDir, opts.Group); err != nil {
+		return fmt.Errorf("cert permissions: %w", err)
+	}
+	if err := EnsureDefaultProxyConfig(opts.ConfigPath, opts.User, opts.Group); err != nil {
+		return err
 	}
 	return nil
 }

@@ -24,7 +24,7 @@ var defaultAllowedTTLSeconds = []int{180, 300, 900}
 //
 //	./proxy.yml|.yaml, ~/.config/luna/proxy.yml|.yaml, /etc/luna/proxy.yml|.yaml
 //
-// Set LUNA_CONFIG to load a single explicit file instead.
+// Set LUNA_CONFIG to load a single explicit file when present (missing file is ignored).
 func Load() (Config, error) {
 	v, err := newViper()
 	if err != nil {
@@ -42,13 +42,10 @@ func newViper() (*viper.Viper, error) {
 	v.SetDefault("cli_client_ou", "luna-cli")
 	v.SetDefault("signer_mode", defaultSignerMode)
 	v.SetDefault("approval_timeout", defaultApprovalPeriod.String())
-	v.SetDefault("control_socket", DefaultControlSocket())
-	v.SetDefault("control_socket_group", "luna-admin")
 
 	if path := os.Getenv("LUNA_CONFIG"); path != "" {
-		v.SetConfigFile(path)
-		if err := v.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("read config %q: %w", path, err)
+		if err := readConfigFileIfExists(v, path); err != nil {
+			return nil, err
 		}
 	} else if err := mergeConfigFiles(v, proxyConfigPaths()); err != nil {
 		return nil, err
@@ -117,11 +114,38 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		cfg.SignerMode = defaultSignerMode
 	}
 	applyMTLSDefaults(&cfg)
-	if cfg.ControlSocket == "" {
-		cfg.ControlSocket = DefaultControlSocket()
-	}
+	applyRuntimeDefaults(&cfg)
 	if err := validateMTLS(cfg); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+func readConfigFileIfExists(v *viper.Viper, path string) error {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("stat config %q: %w", path, err)
+	}
+	v.SetConfigFile(path)
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("read config %q: %w", path, err)
+	}
+	return nil
+}
+
+func applyRuntimeDefaults(cfg *Config) {
+	if cfg.ControlSocketGroup == "" {
+		cfg.ControlSocketGroup = "luna-admin"
+	}
+	if isDevOrTestEnv(cfg.Env) {
+		if cfg.ControlSocket == "" {
+			cfg.ControlSocket = DefaultControlSocket()
+		}
+		return
+	}
+	if cfg.ControlSocket == "" {
+		cfg.ControlSocket = ProductionControlSocket
+	}
 }

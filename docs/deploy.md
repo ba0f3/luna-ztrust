@@ -107,15 +107,25 @@ Environment variables override YAML (see [README.md](../README.md)). Do **not** 
 
 ### 6. systemd (recommended)
 
-Install the unit (as root):
+Install the unit (as root). This creates the `luna` system user/group if missing and sets group read on `/etc/luna/certs/*.key`:
 
 ```bash
 sudo luna-proxy install systemd --enable
 ```
 
-Options: `--binary`, `--config`, `--user`, `--group`, `--dry-run` (print unit), `--enable` (daemon-reload + enable --now).
+If the unit fails with **status=217/USER**, the service user does not exist. Fix on an already-installed host:
 
-Manual equivalent: `RuntimeDirectory=luna` so `/run/luna` exists; `ExecStart=/usr/local/bin/luna-proxy serve`; `Environment=LUNA_CONFIG=/etc/luna/proxy.yml`.
+```bash
+sudo useradd --system --home-dir /var/lib/luna --shell /usr/sbin/nologin --gid luna luna
+sudo chgrp luna /etc/luna/certs/*.key && sudo chmod 640 /etc/luna/certs/*.key
+sudo systemctl restart luna-proxy
+```
+
+Or re-run `sudo luna-proxy install systemd --enable` with a newer binary that creates the user automatically.
+
+Options: `--binary`, `--config`, `--user`, `--group`, `--dry-run`, `--enable`, `--skip-user-create`.
+
+Manual equivalent: `RuntimeDirectory=luna` so `/run/luna` exists; `ExecStart=/usr/local/bin/luna-proxy serve`. Config merges `/etc/luna/proxy.yml` when present; `install systemd` writes a minimal file if missing. mTLS and control socket use production defaults without a config file.
 
 Add operators to `luna-admin` for control socket access:
 

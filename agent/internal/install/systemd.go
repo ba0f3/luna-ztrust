@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"text/template"
 )
@@ -13,13 +14,14 @@ const agentUnitName = "luna-agent.service"
 
 // SystemdOptions configures luna-agent systemd unit installation.
 type SystemdOptions struct {
-	BinaryPath string
-	ConfigPath string
-	User       string
-	Group      string
-	UnitPath   string
-	DryRun     bool
-	Enable     bool
+	BinaryPath     string
+	ConfigPath     string
+	User           string
+	Group          string
+	UnitPath       string
+	DryRun         bool
+	Enable         bool
+	SkipUserCreate bool
 }
 
 // DefaultAgentSystemdOptions returns production-oriented defaults.
@@ -43,7 +45,6 @@ Wants=network-online.target
 Type=simple
 User={{ .User }}
 Group={{ .Group }}
-Environment=LUNA_CONFIG={{ .ConfigPath }}
 ExecStart={{ .BinaryPath }}
 Restart=on-failure
 RestartSec=5
@@ -91,6 +92,9 @@ func InstallAgentSystemd(opts SystemdOptions) error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("install systemd: must run as root (e.g. sudo luna-agent install systemd)")
 	}
+	if err := prepareServiceUser(opts); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(opts.UnitPath), 0o755); err != nil {
 		return fmt.Errorf("create unit directory: %w", err)
 	}
@@ -108,6 +112,19 @@ func InstallAgentSystemd(opts SystemdOptions) error {
 		fmt.Printf("wrote %s\nrun: sudo systemctl daemon-reload && sudo systemctl enable --now %s\n", opts.UnitPath, agentUnitName)
 	}
 	return nil
+}
+
+func prepareServiceUser(opts SystemdOptions) error {
+	if _, err := user.Lookup(opts.User); err == nil {
+		// User exists.
+	} else if opts.SkipUserCreate {
+		return fmt.Errorf("systemd user %q does not exist (create with: useradd --system --home-dir /var/lib/%[1]s --shell /usr/sbin/nologin --gid %[1]s %[1]s, or re-run without --skip-user-create)", opts.User)
+	} else if err := EnsureServiceUser(opts.User, opts.Group); err != nil {
+		return err
+	} else {
+		fmt.Printf("created system user %q\n", opts.User)
+	}
+	return EnsureLunaDirs(opts.User, opts.Group)
 }
 
 func (o SystemdOptions) withDefaults() SystemdOptions {

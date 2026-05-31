@@ -38,9 +38,8 @@ func newAgentViper() (*viper.Viper, error) {
 	v.SetDefault("approval_timeout", defaultApprovalTimeout.String())
 
 	if path := os.Getenv("LUNA_CONFIG"); path != "" {
-		v.SetConfigFile(path)
-		if err := v.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("read config %q: %w", path, err)
+		if err := readAgentConfigFileIfExists(v, path); err != nil {
+			return nil, err
 		}
 	} else if err := mergeConfigFiles(v, agentConfigPaths()); err != nil {
 		return nil, err
@@ -117,4 +116,18 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		return Config{}, fmt.Errorf("missing required environment: %s", strings.Join(missing, ", "))
 	}
 	return cfg, nil
+}
+
+func readAgentConfigFileIfExists(v *viper.Viper, path string) error {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("stat config %q: %w", path, err)
+	}
+	v.SetConfigFile(path)
+	if err := v.ReadInConfig(); err != nil {
+		return fmt.Errorf("read config %q: %w", path, err)
+	}
+	return nil
 }

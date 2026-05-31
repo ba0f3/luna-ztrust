@@ -106,6 +106,47 @@ func TestLoadInvalidApprovalTimeout(t *testing.T) {
 	}
 }
 
+func TestLoadSkipsMissingLUNAConfig(t *testing.T) {
+	clearProxyEnv(t)
+	t.Setenv("LUNA_ENV", "dev")
+	t.Setenv("LUNA_CONFIG", filepath.Join(t.TempDir(), "missing-proxy.yml"))
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.ListenAddr != ":8443" {
+		t.Fatalf("ListenAddr = %q", cfg.ListenAddr)
+	}
+}
+
+func TestLoadProductionControlSocketDefault(t *testing.T) {
+	clearProxyEnv(t)
+	dir := t.TempDir()
+	cfgFile := filepath.Join(dir, "proxy.yml")
+	if err := os.WriteFile(cfgFile, []byte("signer_mode: local-ca\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"server.crt", "server.key", "ca.crt"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("dummy"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("LUNA_CONFIG", cfgFile)
+	t.Setenv("LUNA_ENV", "production")
+	t.Setenv("LUNA_MTLS_SERVER_CERT", filepath.Join(dir, "server.crt"))
+	t.Setenv("LUNA_MTLS_SERVER_KEY", filepath.Join(dir, "server.key"))
+	t.Setenv("LUNA_MTLS_CLIENT_CA", filepath.Join(dir, "ca.crt"))
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.ControlSocket != "/run/luna/control.sock" {
+		t.Fatalf("ControlSocket = %q, want /run/luna/control.sock", cfg.ControlSocket)
+	}
+}
+
 func clearProxyEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{

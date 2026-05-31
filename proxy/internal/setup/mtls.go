@@ -58,10 +58,22 @@ func GenerateMTLS(opts MTLSOptions) (MTLSResult, error) {
 	}
 	if opts.IncludeSampleClients {
 		outputs = append(outputs,
-			struct{ name string; mode os.FileMode }{"client.crt", 0o644},
-			struct{ name string; mode os.FileMode }{"client.key", 0o600},
-			struct{ name string; mode os.FileMode }{"admin-client.crt", 0o644},
-			struct{ name string; mode os.FileMode }{"admin-client.key", 0o600},
+			struct {
+				name string
+				mode os.FileMode
+			}{"client.crt", 0o644},
+			struct {
+				name string
+				mode os.FileMode
+			}{"client.key", 0o600},
+			struct {
+				name string
+				mode os.FileMode
+			}{"admin-client.crt", 0o644},
+			struct {
+				name string
+				mode os.FileMode
+			}{"admin-client.key", 0o600},
 		)
 	}
 	if !opts.Force {

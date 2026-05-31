@@ -17,12 +17,14 @@ func TestRenderAgentUnit(t *testing.T) {
 	}
 	for _, want := range []string{
 		"ExecStart=/opt/luna/luna-agent",
-		"Environment=LUNA_CONFIG=/etc/luna/agent.yml",
 		"User=luna",
 		"RuntimeDirectory=luna",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in:\n%s", want, body)
 		}
+	}
+	if strings.Contains(body, "LUNA_CONFIG") {
+		t.Fatalf("unit should not set LUNA_CONFIG:\n%s", body)
 	}
 }

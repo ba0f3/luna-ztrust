@@ -17,12 +17,14 @@ func TestRenderProxyUnit(t *testing.T) {
 	}
 	for _, want := range []string{
 		"ExecStart=/opt/luna/luna-proxy serve",
-		"Environment=LUNA_CONFIG=/etc/luna/proxy.yml",
 		"User=luna",
 		"RuntimeDirectory=luna",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in:\n%s", want, body)
 		}
+	}
+	if strings.Contains(body, "LUNA_CONFIG") {
+		t.Fatalf("unit should not set LUNA_CONFIG (optional config merge):\n%s", body)
 	}
 }

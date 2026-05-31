@@ -6,13 +6,14 @@ import (
 )
 
 var (
-	installBinary string
-	installConfig string
-	installUser   string
-	installGroup  string
-	installUnit   string
-	installDryRun bool
-	installEnable bool
+	installBinary   string
+	installConfig   string
+	installUser     string
+	installGroup    string
+	installUnit     string
+	installDryRun   bool
+	installEnable   bool
+	installSkipUser bool
 )
 
 var installCmd = &cobra.Command{
@@ -26,6 +27,7 @@ var installSystemdCmd = &cobra.Command{
 	Long: `Install a systemd unit for the luna-agent daemon.
 
 Requires root unless --dry-run (prints unit to stdout).
+Creates the luna system user/group if missing.
 
 Example:
   sudo luna-agent install systemd --enable
@@ -44,16 +46,18 @@ func init() {
 	f.StringVar(&installUnit, "unit-path", "", "unit file path (default /etc/systemd/system/luna-agent.service)")
 	f.BoolVar(&installDryRun, "dry-run", false, "print unit file instead of writing")
 	f.BoolVar(&installEnable, "enable", false, "systemctl daemon-reload && enable --now after install")
+	f.BoolVar(&installSkipUser, "skip-user-create", false, "do not create the service user/group (must already exist)")
 }
 
 func runInstallSystemd(_ *cobra.Command, _ []string) error {
 	return install.InstallAgentSystemd(install.SystemdOptions{
-		BinaryPath: installBinary,
-		ConfigPath: installConfig,
-		User:       installUser,
-		Group:      installGroup,
-		UnitPath:   installUnit,
-		DryRun:     installDryRun,
-		Enable:     installEnable,
+		BinaryPath:     installBinary,
+		ConfigPath:     installConfig,
+		User:           installUser,
+		Group:          installGroup,
+		UnitPath:       installUnit,
+		DryRun:         installDryRun,
+		Enable:         installEnable,
+		SkipUserCreate: installSkipUser,
 	})
 }

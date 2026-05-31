@@ -10,6 +10,12 @@ import (
 
 const defaultControlSocketName = "control.sock"
 
+// ProductionControlSocket is the default Unix control socket for systemd (RuntimeDirectory=luna).
+const ProductionControlSocket = "/run/luna/control.sock"
+
+// DefaultProxyConfigPath is the conventional production proxy.yml location.
+const DefaultProxyConfigPath = "/etc/luna/proxy.yml"
+
 const proxyConfigName = "proxy"
 
 func userLunaConfigDir() string {

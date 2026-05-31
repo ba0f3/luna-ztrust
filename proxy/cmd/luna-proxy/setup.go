@@ -12,16 +12,16 @@ import (
 )
 
 var (
-	setupMTLSDir       string
-	setupMTLSForce     bool
-	setupMTLSCACN      string
-	setupMTLSOrg       string
-	setupMTLSServerCN  string
-	setupMTLSDNS       []string
-	setupMTLSAdminOU   string
-	setupMTLSDays      int
+	setupMTLSDir         string
+	setupMTLSForce       bool
+	setupMTLSCACN        string
+	setupMTLSOrg         string
+	setupMTLSServerCN    string
+	setupMTLSDNS         []string
+	setupMTLSAdminOU     string
+	setupMTLSDays        int
 	setupMTLSSkipSamples bool
-	setupMTLSHints     bool
+	setupMTLSHints       bool
 )
 
 var setupCmd = &cobra.Command{
