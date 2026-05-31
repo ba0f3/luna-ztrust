@@ -16,8 +16,8 @@ import (
 )
 
 type cliEnrollRequest struct {
-	Label   string `json:"label"`
-	CSRPEM  string `json:"csr_pem"`
+	Label  string `json:"label"`
+	CSRPEM string `json:"csr_pem"`
 }
 
 type cliEnrollResponse struct {

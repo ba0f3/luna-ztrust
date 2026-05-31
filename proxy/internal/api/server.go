@@ -37,14 +37,14 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.Pendi
 		csrSigner, _ = cli.NewCSRSignerFromConfig(cfg)
 	}
 	s := &server{
-		cfg:       cfg,
-		keystore:  ks,
-		pending:   pending,
-		store:     store,
-		replay:    replay,
-		telegram:  telegram,
-		mobile:    mob,
-		push:      mobile.NewPushNotifier(cfg.FCMCredentials),
+		cfg:         cfg,
+		keystore:    ks,
+		pending:     pending,
+		store:       store,
+		replay:      replay,
+		telegram:    telegram,
+		mobile:      mob,
+		push:        mobile.NewPushNotifier(cfg.FCMCredentials),
 		cli:         cliStore,
 		csrSigner:   csrSigner,
 		loadLimiter: cli.NewLoadRateLimiter(),
@@ -69,14 +69,14 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.Pendi
 }
 
 type server struct {
-	cfg      config.Config
-	keystore *keystore.Keystore
-	store    *approval.Store
-	replay   *auth.ReplayLRU
-	telegram *approval.Notifier
-	mobile   *mobile.Store
-	pending  *keystore.PendingStore
-	push      mobile.Notifier
+	cfg         config.Config
+	keystore    *keystore.Keystore
+	store       *approval.Store
+	replay      *auth.ReplayLRU
+	telegram    *approval.Notifier
+	mobile      *mobile.Store
+	pending     *keystore.PendingStore
+	push        mobile.Notifier
 	cli         *cli.Store
 	csrSigner   *cli.CSRSigner
 	loadLimiter *cli.LoadRateLimiter
