@@ -23,7 +23,7 @@ type tlsConnKey struct{}
 
 // NewServer returns an HTTP handler for sign, wait, webhook, and health routes.
 // GET /healthz is registered without the mTLS gate: probes may use TLS without a client certificate.
-func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.PendingStore, store *approval.Store, replay *auth.ReplayLRU, telegram *approval.Notifier, mob *mobile.Store, cliStore *cli.Store, csrSigner *cli.CSRSigner) http.Handler {
+func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.PendingStore, store *approval.Store, replay *auth.ReplayLRU, telegram *approval.Notifier, mob *mobile.Store, cliStore *cli.Store, csrSigner *cli.CSRSigner, loadLimiter *cli.LoadRateLimiter) http.Handler {
 	if pending == nil {
 		pending = keystore.NewPendingStore()
 	}
@@ -36,6 +36,9 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.Pendi
 	if csrSigner == nil {
 		csrSigner, _ = cli.NewCSRSignerFromConfig(cfg)
 	}
+	if loadLimiter == nil {
+		loadLimiter = cli.NewLoadRateLimiter()
+	}
 	s := &server{
 		cfg:         cfg,
 		keystore:    ks,
@@ -47,7 +50,7 @@ func NewServer(cfg config.Config, ks *keystore.Keystore, pending *keystore.Pendi
 		push:        mobile.NewPushNotifier(cfg.FCMCredentials),
 		cli:         cliStore,
 		csrSigner:   csrSigner,
-		loadLimiter: cli.NewLoadRateLimiter(),
+		loadLimiter: loadLimiter,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealthz)

@@ -11,6 +11,7 @@ const (
 )
 
 // LoadRateLimiter limits successful remote key loads per enrolled device.
+// The limit is approximate under concurrent requests (best-effort abuse deterrent).
 type LoadRateLimiter struct {
 	mu    sync.Mutex
 	loads map[string][]time.Time
@@ -68,4 +69,14 @@ func (l *LoadRateLimiter) pruneLocked(deviceID string, cutoff time.Time) []time.
 		l.loads[deviceID] = times
 	}
 	return times
+}
+
+// Forget removes rate-limit history for deviceID (e.g. after device revocation).
+func (l *LoadRateLimiter) Forget(deviceID string) {
+	if deviceID == "" {
+		return
+	}
+	l.mu.Lock()
+	delete(l.loads, deviceID)
+	l.mu.Unlock()
 }

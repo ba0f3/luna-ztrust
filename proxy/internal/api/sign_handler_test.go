@@ -159,7 +159,7 @@ func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *te
 	}
 	store.SetLeases(lease.NewStore())
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil, cli.NewStore(), nil)
+	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil, cli.NewStore(), nil, nil)
 
 	serverTLS, clientTLS := loadTestTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)

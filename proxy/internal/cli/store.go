@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ErrNotFound   = errors.New("device not found")
-	ErrEmptyLabel = errors.New("device label required")
+	ErrNotFound            = errors.New("device not found")
+	ErrEmptyLabel          = errors.New("device label required")
+	ErrDuplicateFingerprint = errors.New("certificate fingerprint already enrolled")
 )
 
 // Device is an enrolled CLI operator client.
@@ -38,6 +39,13 @@ func (s *Store) Enroll(label, certFingerprint string) (*Device, error) {
 	if label == "" {
 		return nil, ErrEmptyLabel
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, d := range s.devices {
+		if d.CertFingerprint == certFingerprint {
+			return nil, ErrDuplicateFingerprint
+		}
+	}
 	id := "cli_" + ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
 	dev := &Device{
 		ID:              id,
@@ -45,9 +53,7 @@ func (s *Store) Enroll(label, certFingerprint string) (*Device, error) {
 		CertFingerprint: certFingerprint,
 		EnrolledAt:      time.Now().UTC(),
 	}
-	s.mu.Lock()
 	s.devices[id] = dev
-	s.mu.Unlock()
 	return dev, nil
 }
 

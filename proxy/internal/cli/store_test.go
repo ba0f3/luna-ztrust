@@ -7,6 +7,17 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/cli"
 )
 
+func TestStore_EnrollRejectsDuplicateFingerprint(t *testing.T) {
+	s := cli.NewStore()
+	if _, err := s.Enroll("laptop-a", "fp1"); err != nil {
+		t.Fatalf("first Enroll: %v", err)
+	}
+	_, err := s.Enroll("laptop-b", "fp1")
+	if !errors.Is(err, cli.ErrDuplicateFingerprint) {
+		t.Fatalf("second Enroll: %v, want ErrDuplicateFingerprint", err)
+	}
+}
+
 func TestStore_EnrollGetDelete(t *testing.T) {
 	s := cli.NewStore()
 	dev, err := s.Enroll("laptop", "abc123")

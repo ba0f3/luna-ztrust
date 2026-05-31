@@ -35,7 +35,7 @@ func startAdminServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) (*
 	store.SetIssuer(signing.NewLocalCA(ks))
 	store.SetLeases(lease.NewStore())
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil, cli.NewStore(), nil)
+	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil, cli.NewStore(), nil, nil)
 	serverTLS, adminTLS, autoTLS := loadAdminTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)
 	ts.TLS = serverTLS

@@ -84,6 +84,10 @@ func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		if errors.Is(err, cli.ErrDuplicateFingerprint) {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
 		http.Error(w, "enroll failed", http.StatusInternalServerError)
 		return
 	}
@@ -124,6 +128,9 @@ func (s *server) handleCLIDeleteDevice(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Error(w, "delete failed", http.StatusInternalServerError)
 		return
+	}
+	if s.loadLimiter != nil {
+		s.loadLimiter.Forget(id)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -5,6 +5,24 @@ import (
 	"time"
 )
 
+func TestLoadRateLimiter_ForgetClearsHistory(t *testing.T) {
+	l := NewLoadRateLimiter()
+	const id = "cli_forget"
+	for i := 0; i < loadRateLimitCount; i++ {
+		if !l.Allow(id) {
+			t.Fatalf("Allow %d: expected true", i+1)
+		}
+		l.RecordSuccess(id)
+	}
+	if l.Allow(id) {
+		t.Fatal("expected at limit before Forget")
+	}
+	l.Forget(id)
+	if !l.Allow(id) {
+		t.Fatal("expected Allow after Forget")
+	}
+}
+
 func TestLoadRateLimiter_AllowsUpToTenPerHour(t *testing.T) {
 	l := NewLoadRateLimiter()
 	const id = "cli_test"

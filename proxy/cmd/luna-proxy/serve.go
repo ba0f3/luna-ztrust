@@ -64,7 +64,8 @@ func runServe(_ *cobra.Command, _ []string) error {
 	})
 	cliStore := cli.NewStore()
 	csrSigner, _ := cli.NewCSRSignerFromConfig(cfg)
-	handler := api.NewServer(cfg, ks, pending, store, replay, telegram, mob, cliStore, csrSigner)
+	loadLimiter := cli.NewLoadRateLimiter()
+	handler := api.NewServer(cfg, ks, pending, store, replay, telegram, mob, cliStore, csrSigner, loadLimiter)
 	srv := api.NewHTTPServer(cfg.ListenAddr, handler, tlsCfg)
 
 	ctrlPath := socketPath
@@ -75,12 +76,13 @@ func runServe(_ *cobra.Command, _ []string) error {
 		ctrlPath = config.DefaultControlSocket()
 	}
 	ctrl := control.NewServer(control.ServerDeps{
-		Config:    cfg,
-		Keystore:  ks,
-		Mobile:    mob,
-		Pending:   pending,
-		Cli:       cliStore,
-		CSRSigner: csrSigner,
+		Config:      cfg,
+		Keystore:    ks,
+		Mobile:      mob,
+		Pending:     pending,
+		Cli:         cliStore,
+		CSRSigner:   csrSigner,
+		LoadLimiter: loadLimiter,
 	})
 	go func() {
 		log.Printf("luna-proxy control socket %s", ctrlPath)

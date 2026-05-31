@@ -19,8 +19,9 @@ type ServerDeps struct {
 	Keystore  *keystore.Keystore
 	Mobile    *mobile.Store
 	Pending   *keystore.PendingStore
-	Cli       *cli.Store
-	CSRSigner *cli.CSRSigner
+	Cli          *cli.Store
+	CSRSigner    *cli.CSRSigner
+	LoadLimiter  *cli.LoadRateLimiter
 }
 
 // Server handles control socket requests.
@@ -271,6 +272,9 @@ func (s *Server) handleCLIEnroll(req Request) Response {
 		if errors.Is(err, cli.ErrEmptyLabel) {
 			return s.fail(req.ID, err.Error(), "BAD_REQUEST")
 		}
+		if errors.Is(err, cli.ErrDuplicateFingerprint) {
+			return s.fail(req.ID, err.Error(), "CONFLICT")
+		}
 		return s.fail(req.ID, "enroll failed", "FORBIDDEN")
 	}
 
@@ -314,6 +318,9 @@ func (s *Server) handleCLIDelete(req Request) Response {
 	}
 	if err := s.deps.Cli.Delete(in.DeviceID); err != nil {
 		return s.fail(req.ID, err.Error(), "NOT_FOUND")
+	}
+	if s.deps.LoadLimiter != nil {
+		s.deps.LoadLimiter.Forget(in.DeviceID)
 	}
 	log.Printf("control: cli_delete device_id=%s", in.DeviceID)
 	return s.ok(req.ID, nil)
