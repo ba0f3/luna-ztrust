@@ -3,8 +3,6 @@ package httpclient
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -12,7 +10,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -53,7 +50,13 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 		return "", err
 	}
 
-	tlsCfg, host, err := tlsConfigFrom(cfg)
+	mtls := MTLSConfig{
+		ProxyURL: cfg.ProxyURL,
+		Cert:     cfg.CliCert,
+		Key:      cfg.CliKey,
+		CA:       cfg.CA,
+	}
+	tlsCfg, host, err := mtls.tlsConfigAndHost()
 	if err != nil {
 		return "", err
 	}
@@ -121,63 +124,6 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 		return "", fmt.Errorf("response missing fingerprint")
 	}
 	return out.Fingerprint, nil
-}
-
-func tlsConfigFrom(cfg Config) (*tls.Config, string, error) {
-	cert, err := tls.LoadX509KeyPair(cfg.CliCert, cfg.CliKey)
-	if err != nil {
-		return nil, "", fmt.Errorf("load cli cert/key: %w", err)
-	}
-
-	caPEM, err := os.ReadFile(cfg.CA)
-	if err != nil {
-		return nil, "", fmt.Errorf("read CA: %w", err)
-	}
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM(caPEM) {
-		return nil, "", fmt.Errorf("parse CA certificate")
-	}
-
-	serverName := "localhost"
-	if u, err := url.Parse(cfg.ProxyURL); err == nil {
-		if host := u.Hostname(); host != "" {
-			serverName = host
-		}
-	}
-	if serverName == "127.0.0.1" || serverName == "::1" {
-		serverName = "localhost"
-	}
-
-	tlsCfg := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      pool,
-		ServerName:   serverName,
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	host := serverName
-	if u, err := url.Parse(cfg.ProxyURL); err == nil && u.Host != "" {
-		host = u.Host
-	}
-	if !strings.Contains(host, ":") {
-		host = net.JoinHostPort(host, "443")
-	}
-
-	return tlsCfg, host, nil
-}
-
-func dialTLS(ctx context.Context, addr string, cfg *tls.Config) (*tls.Conn, error) {
-	var d net.Dialer
-	raw, err := d.DialContext(ctx, "tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	tc := tls.Client(raw, cfg)
-	if err := tc.Handshake(); err != nil {
-		raw.Close()
-		return nil, err
-	}
-	return tc, nil
 }
 
 func loadHTTPError(status int, body []byte) error {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ba0f3/luna-ztrust/proxy/internal/cli/httpclient"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/control/client"
 	"github.com/spf13/cobra"
 )
@@ -24,11 +26,13 @@ const (
 )
 
 var (
-	cliDir      string
-	cliForce    bool
-	cliLabel    string
-	cliCSRPath  string
-	cliCertPath string
+	cliDir             string
+	cliForce           bool
+	cliLabel           string
+	cliCSRPath         string
+	cliCertPath        string
+	cliEnrollAdminCert string
+	cliEnrollAdminKey  string
 )
 
 var cliCmd = &cobra.Command{
@@ -50,7 +54,7 @@ var cliCSRCmd = &cobra.Command{
 
 var cliEnrollCmd = &cobra.Command{
 	Use:   "enroll",
-	Short: "Enroll a CLI device via the control socket (admin)",
+	Short: "Enroll a CLI device (control socket on-host, or admin mTLS over HTTP)",
 	RunE:  runCLIEnroll,
 }
 
@@ -76,6 +80,10 @@ func init() {
 	cliEnrollCmd.Flags().StringVar(&cliLabel, "label", "", "device label")
 	cliEnrollCmd.Flags().StringVar(&cliCSRPath, "csr-file", "", "path to CSR PEM file")
 	cliEnrollCmd.Flags().StringVar(&cliCertPath, "cert-out", "", "path for issued client certificate (default cli.crt next to csr-file or in cwd)")
+	cliEnrollCmd.Flags().StringVar(&keyLoadProxyURL, "proxy-url", "", "proxy HTTPS base URL for remote enroll (admin mTLS)")
+	cliEnrollCmd.Flags().StringVar(&cliEnrollAdminCert, "admin-cert", "", "admin client certificate (OU=luna-admin)")
+	cliEnrollCmd.Flags().StringVar(&cliEnrollAdminKey, "admin-key", "", "admin client private key")
+	cliEnrollCmd.Flags().StringVar(&keyLoadCA, "ca", "", "mTLS CA certificate (optional; downloaded from GET /api/v1/mtls/ca)")
 	_ = cliEnrollCmd.MarkFlagRequired("label")
 	_ = cliEnrollCmd.MarkFlagRequired("csr-file")
 
@@ -131,15 +139,48 @@ func runCLICSR(_ *cobra.Command, _ []string) error {
 	return os.WriteFile(filepath.Join(dir, cliCSRFile), csrPEM, 0o644)
 }
 
-func runCLIEnroll(_ *cobra.Command, _ []string) error {
+func runCLIEnroll(cmd *cobra.Command, _ []string) error {
 	csrPEM, err := os.ReadFile(cliCSRPath)
 	if err != nil {
 		return err
 	}
 
-	path, err := resolveSocket()
+	prof, err := resolveCLIProfile(cmd)
 	if err != nil {
 		return err
+	}
+	if prof != nil {
+		ctx := context.Background()
+		prof.applyAdminDefaults(cliCSRPath)
+		if err := prof.validateAdminEnroll(); err != nil {
+			return err
+		}
+		if err := prof.ensureProfileCA(ctx); err != nil {
+			return fmt.Errorf("fetch CA: %w", err)
+		}
+		out, err := httpclient.Enroll(ctx, httpclient.MTLSConfig{
+			ProxyURL: prof.ProxyURL,
+			Cert:     prof.AdminCert,
+			Key:      prof.AdminKey,
+			CA:       prof.CA,
+		}, cliLabel, string(csrPEM))
+		if err != nil {
+			return err
+		}
+		certOut := cliCertPath
+		if certOut == "" {
+			certOut = defaultCLICertOut(cliCSRPath)
+		}
+		if err := os.WriteFile(certOut, []byte(out.CertificatePEM), 0o644); err != nil {
+			return err
+		}
+		fmt.Println(out.DeviceID)
+		return nil
+	}
+
+	path, err := resolveSocket()
+	if err != nil {
+		return fmt.Errorf("use --proxy-url with admin mTLS for remote enroll, or run on the proxy host with control socket access: %w", err)
 	}
 	data, err := client.Call(path, "cli.enroll", map[string]string{
 		"label":   cliLabel,

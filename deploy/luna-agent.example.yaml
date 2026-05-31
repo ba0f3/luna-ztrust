@@ -8,7 +8,7 @@
 #
 # Or manual:
 #   cp deploy/luna-agent.example.yaml /etc/luna/agent.yml
-#   sudo luna-agent install systemd --enable
+#   luna-agent install systemd --enable
 #
 # Or from repo root for local testing:
 #   cp deploy/luna-agent.example.yaml agent.yml

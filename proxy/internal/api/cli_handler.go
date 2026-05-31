@@ -98,6 +98,8 @@ func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("api: cli_enroll device_id=%s label=%s client_cert_fp=%s", dev.ID, dev.Label, fp)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(cliEnrollResponse{

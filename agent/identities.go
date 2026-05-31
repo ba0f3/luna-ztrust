@@ -56,7 +56,7 @@ func resolveLocalCAIdentities() ([]*agent.Key, error) {
 
 func resolveLocalKeyIdentities(caps sdk.Capabilities, cfg Config) ([]*agent.Key, error) {
 	if caps.Sealed {
-		return nil, fmt.Errorf("proxy keystore is sealed; unseal signing keys before starting luna-agent")
+		return nil, fmt.Errorf("proxy keystore is sealed; on the proxy host load a signing key: luna-proxy key load <encrypted-key>")
 	}
 	if len(caps.LoadedSigners) == 0 {
 		return nil, fmt.Errorf("no host signing keys loaded on proxy (use: luna-proxy key load)")

@@ -93,6 +93,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		cfg.SignerMode = SignerModeLocalKey
 	}
 	applyAgentDefaults(&cfg)
+	cfg.SocketPath = ResolveSocketPath(cfg.SocketPath)
 
 	var missing []string
 	if cfg.ProxyURL == "" {

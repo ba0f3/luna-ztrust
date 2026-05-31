@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 type capabilitiesResponse struct {
@@ -20,8 +21,10 @@ type loadedSignerEntry struct {
 }
 
 func (s *server) handleCapabilities(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	sealed := !s.keystore.Available()
 	var loaded []loadedSignerEntry
-	if s.keystore.Available() {
+	if !sealed {
 		for _, info := range s.keystore.ListSigners() {
 			loaded = append(loaded, loadedSignerEntry{
 				Fingerprint: info.Fingerprint,
@@ -30,13 +33,14 @@ func (s *server) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+	s.logCapabilitiesRequest(r, start, sealed, len(loaded))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(capabilitiesResponse{
 		SignerMode:        s.cfg.SignerMode,
 		LeaseSupported:    true,
 		AllowedTTLSeconds: s.cfg.AllowedTTLSeconds,
-		Sealed:            !s.keystore.Available(),
+		Sealed:            sealed,
 		LoadedSigners:     loaded,
 	})
 }

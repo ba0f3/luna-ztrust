@@ -46,7 +46,7 @@ func TestWriteAgentConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"proxy_url: https://luna.test:8443", "target_host: 10.0.0.1", ProductionAgentSocket} {
+	for _, want := range []string{"proxy_url: https://luna.test:8443", "target_host: 10.0.0.1", DefaultAgentSocket()} {
 		if !strings.Contains(string(body), want) {
 			t.Fatalf("missing %q in %s", want, body)
 		}

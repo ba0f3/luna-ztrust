@@ -35,6 +35,7 @@ type Options struct {
 	SkipVerify         bool
 	InstallSystemd     bool
 	SystemdEnable      bool
+	SystemdSystem      bool
 	SkipUserCreate     bool
 }
 
@@ -192,17 +193,16 @@ Or re-run with --ca-key /path/to/ca.key`, opts.ProxyURL, opts.CertsDir, opts.Cer
 	}
 
 	if opts.InstallSystemd {
-		fmt.Println("installing systemd unit")
-		if os.Geteuid() != 0 {
-			return Result{}, fmt.Errorf("install systemd: must run as root (sudo luna-agent setup ...)")
-		}
-		if err := install.EnsureCertPermissions(opts.CertsDir, "luna"); err != nil {
-			return Result{}, err
+		if opts.SystemdSystem {
+			fmt.Println("installing system systemd unit")
+		} else {
+			fmt.Println("installing user systemd unit")
 		}
 		if err := install.InstallAgentSystemd(install.SystemdOptions{
 			ConfigPath:     opts.ConfigPath,
 			Enable:         opts.SystemdEnable,
 			SkipUserCreate: opts.SkipUserCreate,
+			System:         opts.SystemdSystem,
 		}); err != nil {
 			return Result{}, err
 		}
@@ -271,7 +271,7 @@ func (o Options) withDefaults() Options {
 		o.SignerMode = "local-ca"
 	}
 	if o.AgentSocket == "" {
-		o.AgentSocket = ProductionAgentSocket
+		o.AgentSocket = DefaultAgentSocket()
 	}
 	if o.EnrollToken == "" {
 		o.EnrollToken = strings.TrimSpace(os.Getenv("LUNA_MTLS_ENROLL_TOKEN"))

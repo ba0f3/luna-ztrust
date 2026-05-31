@@ -269,23 +269,37 @@ Required fields: `proxy_url`, `mtls_*`, `target_user`, `target_host`, `signer_mo
 
 ### 5. systemd (persistent daemon)
 
+**User service (default, no sudo):**
+
 ```bash
-sudo luna-agent install systemd --enable
-sudo systemctl status luna-agent
+luna-agent install systemd --enable
+systemctl --user status luna-agent
+export SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/luna/agent.sock
 ```
 
 (`setup --install-systemd --enable` runs this as the final step.)
+
+**System service (optional, requires root):**
+
+```bash
+sudo luna-agent install systemd --system --enable
+sudo systemctl status luna-agent
+```
 
 ### 6. Use with SSH
 
 Per-user or session:
 
 ```bash
+# user systemd (default)
+export SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/luna/agent.sock
+
+# system systemd
 export SSH_AUTH_SOCK=/run/luna/agent.sock
 ssh deploy@203.0.113.10
 ```
 
-Ensure the connecting user can access the socket (e.g. group `luna` and `chmod 660` on the socket, or run the agent as the login user with a user-writable socket path).
+For a **user** unit, the socket is under `$XDG_RUNTIME_DIR/luna/agent.sock` (see `agent_socket` in `agent.yml`). For a **system** unit under the `luna` user, ensure the connecting user can access the socket (e.g. group `luna` and `chmod 660` on the socket).
 
 For `local-key`, **leave host key fingerprint blank** in normal setups. After mTLS, `luna-agent` calls `GET /api/v1/capabilities` on the proxy and advertises every loaded host signing key to OpenSSH. When the client picks a key, the agent sends that key's fingerprint on sign.
 
@@ -301,9 +315,10 @@ luna-proxy --socket /run/luna/control.sock key list
 ### 6. Verify
 
 ```bash
-systemctl is-active luna-agent
-ls -l /run/luna/agent.sock
-LUNA_DEBUG=1 journalctl -u luna-agent -f
+systemctl --user is-active luna-agent   # user unit
+# or: sudo systemctl is-active luna-agent   # system unit
+ls -l "${XDG_RUNTIME_DIR}/luna/agent.sock"
+journalctl --user -u luna-agent -f
 ```
 
 ---
@@ -314,9 +329,9 @@ LUNA_DEBUG=1 journalctl -u luna-agent -f
 |------|---------|
 | Binary version | `luna-proxy version` / `luna-agent version` (or `-v` / `--version`) |
 | Generate mTLS PKI | `sudo luna-proxy setup mtls --dir /etc/luna/certs` |
-| Agent guided setup | `sudo luna-agent setup --from-dir … --install-systemd --enable` |
+| Agent guided setup | `luna-agent setup --from-dir … --install-systemd --enable` |
 | Install proxy unit | `sudo luna-proxy install systemd --enable` |
-| Install agent unit | `sudo luna-agent install systemd --enable` |
+| Install agent unit | `luna-agent install systemd --enable` (user) or `sudo luna-agent install systemd --system --enable` |
 | Proxy status | `luna-proxy --socket /run/luna/control.sock status` |
 | Load signing key | `luna-proxy --socket /run/luna/control.sock key load …` |
 | Pull container | `docker pull ghcr.io/ba0f3/luna-ztrust/luna-proxy:TAG` |

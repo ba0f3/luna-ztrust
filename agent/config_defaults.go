@@ -29,7 +29,4 @@ func applyAgentDefaults(cfg *Config) {
 	if cfg.MTLSCA == "" {
 		cfg.MTLSCA = filepath.Join(certsDir, "ca.crt")
 	}
-	if cfg.SocketPath == "" || cfg.SocketPath == defaultSocketPath {
-		cfg.SocketPath = "/run/luna/agent.sock"
-	}
 }

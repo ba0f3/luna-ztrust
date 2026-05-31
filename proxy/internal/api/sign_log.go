@@ -19,12 +19,24 @@ import (
 var signLogOut io.Writer = os.Stderr
 
 type signLogEntry struct {
-	TxID         string `json:"tx_id,omitempty"`
-	ClientCertFP string `json:"client_cert_fp,omitempty"`
-	TargetUser   string `json:"target_user,omitempty"`
-	TargetIP     string `json:"target_ip,omitempty"`
-	Outcome      string `json:"outcome"`
-	LatencyMS    int64  `json:"latency_ms"`
+	Route         string `json:"route,omitempty"`
+	TxID          string `json:"tx_id,omitempty"`
+	ClientCertFP  string `json:"client_cert_fp,omitempty"`
+	SourceIP      string `json:"source_ip,omitempty"`
+	TargetUser    string `json:"target_user,omitempty"`
+	TargetIP      string `json:"target_ip,omitempty"`
+	Outcome       string `json:"outcome"`
+	Sealed        bool   `json:"sealed,omitempty"`
+	LoadedSigners int    `json:"loaded_signers,omitempty"`
+	SignerMode    string `json:"signer_mode,omitempty"`
+	LatencyMS     int64  `json:"latency_ms"`
+}
+
+// SwapSignLogOut replaces the access log sink for tests.
+func SwapSignLogOut(w io.Writer) func() {
+	old := signLogOut
+	signLogOut = w
+	return func() { signLogOut = old }
 }
 
 func emitSignLog(e signLogEntry) {
@@ -68,11 +80,30 @@ func signOutcomeFromAuthErr(err error) string {
 
 func (s *server) logSignRequest(r *http.Request, start time.Time, txID, targetUser, targetIP, outcome string) {
 	emitSignLog(signLogEntry{
+		Route:        "ssh/sign",
 		TxID:         txID,
 		ClientCertFP: clientCertFPFromRequest(r),
+		SourceIP:     clientIPFromRemoteAddr(r.RemoteAddr),
 		TargetUser:   targetUser,
 		TargetIP:     targetIP,
 		Outcome:      outcome,
 		LatencyMS:    time.Since(start).Milliseconds(),
+	})
+}
+
+func (s *server) logCapabilitiesRequest(r *http.Request, start time.Time, sealed bool, loadedCount int) {
+	outcome := "ok"
+	if sealed {
+		outcome = "sealed"
+	}
+	emitSignLog(signLogEntry{
+		Route:         "capabilities",
+		ClientCertFP:  clientCertFPFromRequest(r),
+		SourceIP:      clientIPFromRemoteAddr(r.RemoteAddr),
+		Outcome:       outcome,
+		Sealed:        sealed,
+		LoadedSigners: loadedCount,
+		SignerMode:    s.cfg.SignerMode,
+		LatencyMS:     time.Since(start).Milliseconds(),
 	})
 }

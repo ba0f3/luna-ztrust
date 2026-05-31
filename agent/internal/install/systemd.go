@@ -22,9 +22,12 @@ type SystemdOptions struct {
 	DryRun         bool
 	Enable         bool
 	SkipUserCreate bool
+	// System installs a system unit under /etc/systemd/system (requires root).
+	// Default is a user unit under ~/.config/systemd/user (no sudo).
+	System bool
 }
 
-// DefaultAgentSystemdOptions returns production-oriented defaults.
+// DefaultAgentSystemdOptions returns system-wide production defaults.
 func DefaultAgentSystemdOptions() SystemdOptions {
 	return SystemdOptions{
 		BinaryPath: "/usr/local/bin/luna-agent",
@@ -32,10 +35,23 @@ func DefaultAgentSystemdOptions() SystemdOptions {
 		User:       "luna",
 		Group:      "luna",
 		UnitPath:   filepath.Join("/etc/systemd/system", agentUnitName),
+		System:     true,
 	}
 }
 
-var agentUnitTemplate = template.Must(template.New("luna-agent").Parse(`[Unit]
+// DefaultAgentUserSystemdOptions returns per-user systemd defaults.
+func DefaultAgentUserSystemdOptions() SystemdOptions {
+	home, _ := os.UserHomeDir()
+	configDir := filepath.Join(home, ".config", "luna")
+	return SystemdOptions{
+		BinaryPath: defaultUserBinaryPath(),
+		ConfigPath: filepath.Join(configDir, "agent.yml"),
+		UnitPath:   filepath.Join(home, ".config", "systemd", "user", agentUnitName),
+		System:     false,
+	}
+}
+
+var agentSystemUnitTemplate = template.Must(template.New("luna-agent-system").Parse(`[Unit]
 Description=Luna Z-Trust SSH agent (SSH_AUTH_SOCK interceptor)
 Documentation=https://github.com/ba0f3/luna-ztrust/blob/main/docs/deploy.md
 After=network-online.target
@@ -46,14 +62,33 @@ Type=simple
 User={{ .User }}
 Group={{ .Group }}
 ExecStart={{ .BinaryPath }}
+Environment=LUNA_CONFIG={{ .ConfigPath }}
 Restart=on-failure
 RestartSec=5
 RuntimeDirectory=luna
 RuntimeDirectoryMode=0700
-# Set agent_socket: /run/luna/agent.sock in agent.yml (matches RuntimeDirectory).
 
 [Install]
 WantedBy=multi-user.target
+`))
+
+var agentUserUnitTemplate = template.Must(template.New("luna-agent-user").Parse(`[Unit]
+Description=Luna Z-Trust SSH agent (SSH_AUTH_SOCK interceptor)
+Documentation=https://github.com/ba0f3/luna-ztrust/blob/main/docs/deploy.md
+After=network-online.target default.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart={{ .BinaryPath }}
+Environment=LUNA_CONFIG={{ .ConfigPath }}
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=luna
+RuntimeDirectoryMode=0700
+
+[Install]
+WantedBy=default.target
 `))
 
 type agentUnitData struct {
@@ -67,12 +102,17 @@ type agentUnitData struct {
 func RenderAgentUnit(opts SystemdOptions) (string, error) {
 	opts = opts.withDefaults()
 	var buf bytes.Buffer
-	if err := agentUnitTemplate.Execute(&buf, agentUnitData{
+	data := agentUnitData{
 		BinaryPath: opts.BinaryPath,
 		ConfigPath: opts.ConfigPath,
 		User:       opts.User,
 		Group:      opts.Group,
-	}); err != nil {
+	}
+	tmpl := agentUserUnitTemplate
+	if opts.System {
+		tmpl = agentSystemUnitTemplate
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
@@ -89,8 +129,38 @@ func InstallAgentSystemd(opts SystemdOptions) error {
 		fmt.Print(body)
 		return nil
 	}
+	if opts.System {
+		return installAgentSystemUnit(opts, body)
+	}
+	return installAgentUserUnit(opts, body)
+}
+
+func installAgentUserUnit(opts SystemdOptions, body string) error {
+	if err := os.MkdirAll(filepath.Dir(opts.UnitPath), 0o755); err != nil {
+		return fmt.Errorf("create unit directory: %w", err)
+	}
+	if err := os.WriteFile(opts.UnitPath, []byte(body), 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", opts.UnitPath, err)
+	}
+	if opts.Enable {
+		if err := runSystemctlUser("daemon-reload"); err != nil {
+			return err
+		}
+		if err := runSystemctlUser("enable", "--now", agentUnitName); err != nil {
+			return err
+		}
+		fmt.Printf("enabled user service %s\n", agentUnitName)
+		printUserSSHAuthSockHint()
+	} else {
+		fmt.Printf("wrote %s\nrun: systemctl --user daemon-reload && systemctl --user enable --now %s\n", opts.UnitPath, agentUnitName)
+		printUserSSHAuthSockHint()
+	}
+	return nil
+}
+
+func installAgentSystemUnit(opts SystemdOptions, body string) error {
 	if os.Geteuid() != 0 {
-		return fmt.Errorf("install systemd: must run as root (e.g. sudo luna-agent install systemd)")
+		return fmt.Errorf("install system systemd unit requires root (sudo luna-agent install systemd --system), or omit --system for a user service")
 	}
 	if err := prepareServiceUser(opts); err != nil {
 		return err
@@ -114,6 +184,11 @@ func InstallAgentSystemd(opts SystemdOptions) error {
 	return nil
 }
 
+func printUserSSHAuthSockHint() {
+	fmt.Println("add to shell profile (or use the path from agent.yml agent_socket):")
+	fmt.Println("  export SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/luna/agent.sock")
+}
+
 func prepareServiceUser(opts SystemdOptions) error {
 	if _, err := user.Lookup(opts.User); err == nil {
 		// User exists.
@@ -131,23 +206,43 @@ func prepareServiceUser(opts SystemdOptions) error {
 }
 
 func (o SystemdOptions) withDefaults() SystemdOptions {
-	d := DefaultAgentSystemdOptions()
+	if o.System {
+		d := DefaultAgentSystemdOptions()
+		if o.BinaryPath == "" {
+			o.BinaryPath = d.BinaryPath
+		}
+		if o.ConfigPath == "" {
+			o.ConfigPath = d.ConfigPath
+		}
+		if o.User == "" {
+			o.User = d.User
+		}
+		if o.Group == "" {
+			o.Group = d.Group
+		}
+		if o.UnitPath == "" {
+			o.UnitPath = d.UnitPath
+		}
+		return o
+	}
+	d := DefaultAgentUserSystemdOptions()
 	if o.BinaryPath == "" {
 		o.BinaryPath = d.BinaryPath
 	}
 	if o.ConfigPath == "" {
 		o.ConfigPath = d.ConfigPath
 	}
-	if o.User == "" {
-		o.User = d.User
-	}
-	if o.Group == "" {
-		o.Group = d.Group
-	}
 	if o.UnitPath == "" {
 		o.UnitPath = d.UnitPath
 	}
 	return o
+}
+
+func defaultUserBinaryPath() string {
+	if exe, err := os.Executable(); err == nil && exe != "" {
+		return exe
+	}
+	return "luna-agent"
 }
 
 func runSystemctl(args ...string) error {
@@ -156,6 +251,16 @@ func runSystemctl(args ...string) error {
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("systemctl %s: %w", args[0], err)
+	}
+	return nil
+}
+
+func runSystemctlUser(args ...string) error {
+	cmd := exec.Command("systemctl", append([]string{"--user"}, args...)...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("systemctl --user %s: %w", args[0], err)
 	}
 	return nil
 }

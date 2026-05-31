@@ -27,9 +27,19 @@ func init() {
 }
 
 func Execute() {
+	silenceCLIUsage(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+}
+
+// silenceCLIUsage suppresses Cobra usage dumps on runtime errors (config, proxy, identities).
+func silenceCLIUsage(cmd *cobra.Command) {
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	for _, c := range cmd.Commands() {
+		silenceCLIUsage(c)
 	}
 }
 
@@ -67,6 +77,10 @@ func runAgent(_ *cobra.Command, _ []string) error {
 	if agent.DebugEnabled() {
 		log.Printf("luna-agent: signer_mode=%s target=%s@%s identities=%d",
 			signerMode, cfg.TargetUser, cfg.TargetHost, len(identities))
+	}
+
+	if err := agent.EnsureSocketDir(cfg.SocketPath); err != nil {
+		return err
 	}
 
 	if err := os.Remove(cfg.SocketPath); err != nil && !os.IsNotExist(err) {

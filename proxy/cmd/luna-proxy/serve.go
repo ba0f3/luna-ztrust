@@ -108,5 +108,10 @@ func runServe(_ *cobra.Command, _ []string) error {
 	}()
 
 	log.Printf("luna-proxy %s listening on %s (signer=%s)", version.String(), cfg.ListenAddr, cfg.SignerMode)
+	if !ks.Available() {
+		log.Printf("luna-proxy keystore sealed — POST /api/v1/ssh/sign returns 503 until a signing key is loaded (luna-proxy key load <encrypted-key>)")
+	} else {
+		log.Printf("luna-proxy keystore ready (%d signer(s) loaded)", len(ks.ListSigners()))
+	}
 	return srv.ListenAndServeTLS("", "")
 }

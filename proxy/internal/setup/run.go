@@ -35,6 +35,7 @@ func Run(opts Options) (Result, error) {
 	}
 	fmt.Printf("  wrote %d files under %s\n", len(mtlsRes.Files), opts.CertsDir)
 	fmt.Printf("  server certificate DNS names: %v\n", sans)
+	fmt.Printf("  remote CLI enroll (laptop): copy %s/admin-client.crt and admin-client.key\n", opts.CertsDir)
 
 	fmt.Println("step 2/3: write proxy.yml")
 	cfgRes, err := WriteProxyConfig(ProxyConfigOptions{

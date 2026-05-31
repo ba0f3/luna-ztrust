@@ -53,6 +53,9 @@ func TestGenerateMTLSForce(t *testing.T) {
 	if _, err := GenerateMTLS(MTLSOptions{Dir: dir, IncludeSampleClients: false}); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := os.Stat(filepath.Join(dir, "admin-client.crt")); err != nil {
+		t.Fatal("expected admin-client.crt without sample automation client")
+	}
 	if _, err := GenerateMTLS(MTLSOptions{Dir: dir, Force: true, IncludeSampleClients: false}); err != nil {
 		t.Fatal(err)
 	}

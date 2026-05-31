@@ -28,8 +28,8 @@ func TestLoadDefaultsAndRequired(t *testing.T) {
 	if cfg.ProxyURL != "https://proxy:8443" {
 		t.Fatalf("ProxyURL = %q", cfg.ProxyURL)
 	}
-	if cfg.SocketPath != "/run/luna/agent.sock" {
-		t.Fatalf("SocketPath = %q", cfg.SocketPath)
+	if cfg.SocketPath != agent.ResolveSocketPath("") {
+		t.Fatalf("SocketPath = %q, want %q", cfg.SocketPath, agent.ResolveSocketPath(""))
 	}
 	if cfg.SignerMode != agent.SignerModeLocalKey {
 		t.Fatalf("SignerMode = %q", cfg.SignerMode)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ba0f3/luna-ztrust/agent"
 	agentsetup "github.com/ba0f3/luna-ztrust/agent/internal/setup"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ var (
 	setupSkipVerify         bool
 	setupInstallSystemd     bool
 	setupSystemdEnable      bool
+	setupSystemdSystem      bool
 	setupSkipUserCreate     bool
 	setupNonInteractive     bool
 	setupAssumeYes          bool
@@ -74,14 +76,15 @@ func addSetupFlags(cmd *cobra.Command) {
 	f.StringVar(&setupTargetHost, "target-host", "", "SSH target host/IP for PoP")
 	f.StringVar(&setupSignerMode, "signer-mode", "", "local-ca or local-key (default local-ca)")
 	f.StringVar(&setupHostKeyFingerprint, "host-key-fingerprint", "", "optional local-key signer hint")
-	f.StringVar(&setupAgentSocket, "agent-socket", "", "agent Unix socket path (default /run/luna/agent.sock)")
+	f.StringVar(&setupAgentSocket, "agent-socket", "", "agent Unix socket (default: /run/luna/agent.sock as root/systemd, else XDG runtime)")
 	f.StringVar(&setupEnrollToken, "enroll-token", "", "proxy mTLS enroll token (or LUNA_MTLS_ENROLL_TOKEN)")
 	f.BoolVar(&setupFetchCA, "fetch-ca", false, "download ca.crt from GET /api/v1/mtls/ca")
 	f.BoolVar(&setupForce, "force", false, "overwrite existing cert files")
 	f.BoolVar(&setupSkipVerify, "skip-verify", false, "skip proxy capabilities check")
-	f.BoolVar(&setupInstallSystemd, "install-systemd", false, "install luna-agent.service")
-	f.BoolVar(&setupSystemdEnable, "enable", false, "with --install-systemd: systemctl enable --now")
-	f.BoolVar(&setupSkipUserCreate, "skip-user-create", false, "with --install-systemd: do not create luna user")
+	f.BoolVar(&setupInstallSystemd, "install-systemd", false, "install luna-agent user systemd unit")
+	f.BoolVar(&setupSystemdEnable, "enable", false, "with --install-systemd: systemctl --user enable --now")
+	f.BoolVar(&setupSystemdSystem, "system", false, "with --install-systemd: system unit (requires root)")
+	f.BoolVar(&setupSkipUserCreate, "skip-user-create", false, "with --install-systemd --system: do not create luna user")
 }
 
 func runSetupAll(_ *cobra.Command, _ []string) error {
@@ -99,8 +102,8 @@ func runSetupAll(_ *cobra.Command, _ []string) error {
 	} else if err := validateNonInteractive(opts); err != nil {
 		return err
 	}
-	if opts.InstallSystemd && os.Geteuid() != 0 {
-		return fmt.Errorf("install systemd requires root (sudo luna-agent setup)")
+	if opts.InstallSystemd && opts.SystemdSystem && os.Geteuid() != 0 {
+		return fmt.Errorf("install system systemd unit requires root (sudo luna-agent setup --install-systemd --system), or omit --system for a user service")
 	}
 	res, err := agentsetup.Run(opts)
 	if err != nil {
@@ -110,7 +113,7 @@ func runSetupAll(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	fmt.Printf("\nsetup complete: certs=%s config=%s\n", res.CertsDir, res.ConfigPath)
-	fmt.Println("use: export SSH_AUTH_SOCK=/run/luna/agent.sock")
+	fmt.Printf("use: export SSH_AUTH_SOCK=%s\n", agent.ResolveSocketPath(setupAgentSocket))
 	return nil
 }
 
@@ -135,6 +138,7 @@ func flagsToSetupOptions() agentsetup.Options {
 		SkipVerify:         setupSkipVerify,
 		InstallSystemd:     setupInstallSystemd,
 		SystemdEnable:      setupSystemdEnable,
+		SystemdSystem:      setupSystemdSystem,
 		SkipUserCreate:     setupSkipUserCreate,
 	}
 }

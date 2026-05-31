@@ -80,7 +80,7 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 		return Options{}, err
 	}
 
-	socketDefault := firstNonEmpty(opts.AgentSocket, existing.AgentSocket, ProductionAgentSocket)
+	socketDefault := firstNonEmpty(opts.AgentSocket, existing.AgentSocket, DefaultAgentSocket())
 	opts.AgentSocket, err = p.askString("Agent Unix socket path", socketDefault)
 	if err != nil {
 		return Options{}, err
@@ -139,21 +139,24 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 		}
 	}
 
-	if os.Geteuid() == 0 {
-		install, err := p.askYesNo("Install systemd service (luna-agent.service)?", !state.HasConfig || ioOpts.AssumeYes)
+	install, err := p.askYesNo("Install user systemd service (luna-agent.service)?", !state.HasConfig || ioOpts.AssumeYes)
+	if err != nil {
+		return Options{}, err
+	}
+	opts.InstallSystemd = install
+	if install {
+		enable, err := p.askYesNo("Enable and start service now (systemctl --user)?", true)
 		if err != nil {
 			return Options{}, err
 		}
-		opts.InstallSystemd = install
-		if install {
-			enable, err := p.askYesNo("Enable and start service now?", true)
+		opts.SystemdEnable = enable
+		if os.Geteuid() == 0 {
+			system, err := p.askYesNo("Install as system service under /etc/systemd/system instead?", false)
 			if err != nil {
 				return Options{}, err
 			}
-			opts.SystemdEnable = enable
+			opts.SystemdSystem = system
 		}
-	} else {
-		fmt.Fprintln(p.out, "Note: run with sudo to install systemd service.")
 	}
 
 	verify, err := p.askYesNo("Verify proxy connection after setup?", true)

@@ -23,8 +23,17 @@ func init() {
 }
 
 func Execute() {
+	silenceCLIUsage(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+}
+
+func silenceCLIUsage(cmd *cobra.Command) {
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	for _, c := range cmd.Commands() {
+		silenceCLIUsage(c)
 	}
 }

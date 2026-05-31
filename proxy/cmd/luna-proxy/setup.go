@@ -65,6 +65,12 @@ var setupMTLSCmd = &cobra.Command{
 	RunE:  runSetupMTLS,
 }
 
+var setupAdminClientCmd = &cobra.Command{
+	Use:   "admin-client",
+	Short: "Issue admin-client.crt/key from existing mTLS CA (for remote cli enroll)",
+	RunE:  runSetupAdminClient,
+}
+
 var setupConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Write proxy.yml only (advanced)",
@@ -73,7 +79,7 @@ var setupConfigCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(setupCmd)
-	setupCmd.AddCommand(setupMTLSCmd, setupConfigCmd)
+	setupCmd.AddCommand(setupMTLSCmd, setupAdminClientCmd, setupConfigCmd)
 
 	setupCmd.Flags().BoolVar(&setupNonInteractive, "non-interactive", false, "require flags; disable wizard")
 	setupCmd.Flags().BoolVarP(&setupAssumeYes, "yes", "y", false, "accept default confirmations")
@@ -105,6 +111,11 @@ func init() {
 	f.BoolVar(&setupMTLSSkipSamples, "skip-samples", false, "skip sample client certs")
 	f.BoolVar(&setupMTLSHints, "hints", true, "print proxy.yml path hints")
 	f.BoolVar(&setupMTLSWriteConfig, "write-config", false, "deprecated; use luna-proxy setup")
+
+	af := setupAdminClientCmd.Flags()
+	af.StringVar(&setupMTLSDir, "dir", "", "mTLS directory containing ca.crt and ca.key")
+	af.BoolVar(&setupMTLSForce, "force", false, "overwrite existing admin-client files")
+	af.StringVar(&setupMTLSAdminOU, "admin-ou", "", "admin client OU (default luna-admin)")
 
 	cf := setupConfigCmd.Flags()
 	cf.StringVar(&setupConfigPath, "path", "", "proxy.yml path")
@@ -197,6 +208,30 @@ func runSetupMTLS(_ *cobra.Command, _ []string) error {
 		fmt.Println()
 		fmt.Print(setup.ProxyYAMLHints(dir))
 	}
+	return nil
+}
+
+func runSetupAdminClient(_ *cobra.Command, _ []string) error {
+	dir := setupMTLSDir
+	if dir == "" {
+		dir = defaultSetupDir()
+	}
+	res, err := setup.GenerateAdminClient(setup.AdminClientOptions{
+		Dir:           dir,
+		Force:         setupMTLSForce,
+		AdminClientOU: setupMTLSAdminOU,
+	})
+	if err != nil {
+		if errors.Is(err, setup.ErrExists) {
+			return fmt.Errorf("%w — re-run with --force", err)
+		}
+		return err
+	}
+	fmt.Printf("wrote admin client material to %s\n", dir)
+	for _, p := range res.Files {
+		fmt.Printf("  %s\n", p)
+	}
+	fmt.Println("copy admin-client.crt and admin-client.key to laptops for: luna-proxy cli enroll --proxy-url ...")
 	return nil
 }
 

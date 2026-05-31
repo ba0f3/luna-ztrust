@@ -61,7 +61,7 @@ func (o ConfigOptions) withDefaults() ConfigOptions {
 		o.CertsDir = DefaultCertsDir
 	}
 	if o.AgentSocket == "" {
-		o.AgentSocket = ProductionAgentSocket
+		o.AgentSocket = DefaultAgentSocket()
 	}
 	if o.SignerMode == "" {
 		o.SignerMode = "local-ca"

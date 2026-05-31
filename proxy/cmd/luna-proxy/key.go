@@ -70,7 +70,7 @@ func init() {
 	keyLoadCmd.Flags().StringVar(&keyLoadProxyURL, "proxy-url", "", "proxy HTTPS base URL for remote key load")
 	keyLoadCmd.Flags().StringVar(&keyLoadCliCert, "cli-cert", "", "enrolled CLI client certificate (mTLS)")
 	keyLoadCmd.Flags().StringVar(&keyLoadCliKey, "cli-key", "", "CLI client private key (mTLS)")
-	keyLoadCmd.Flags().StringVar(&keyLoadCA, "ca", "", "mTLS CA certificate for the proxy")
+	keyLoadCmd.Flags().StringVar(&keyLoadCA, "ca", "", "mTLS CA certificate (optional; downloaded from GET /api/v1/mtls/ca)")
 	keyLoadCmd.Flags().StringVar(&keyLoadLabel, "label", "", "signer label (required for remote key load)")
 	keyConfirmCmd.Flags().BoolVar(&passphraseStdin, "passphrase-stdin", false, "read passphrase from stdin")
 	keyCmd.AddCommand(keyLoadCmd, keyListCmd, keyRemoveCmd, keyConfirmCmd, keyRejectCmd)
@@ -89,14 +89,18 @@ func runKeyLoad(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if prof != nil {
-		if err := prof.validate(); err != nil {
+		ctx := context.Background()
+		if err := prof.validateKeyLoad(); err != nil {
 			return err
+		}
+		if err := prof.ensureProfileCA(ctx); err != nil {
+			return fmt.Errorf("fetch CA: %w", err)
 		}
 		label := keyLoadLabel
 		if label == "" {
 			return fmt.Errorf("--label is required for remote key load")
 		}
-		fp, err := httpclient.Load(context.Background(), httpclient.Config{
+		fp, err := httpclient.Load(ctx, httpclient.Config{
 			ProxyURL: prof.ProxyURL,
 			CliCert:  prof.CliCert,
 			CliKey:   prof.CliKey,

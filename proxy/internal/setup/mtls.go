@@ -55,6 +55,8 @@ func GenerateMTLS(opts MTLSOptions) (MTLSResult, error) {
 		{"ca.key", 0o400},
 		{"server.crt", 0o644},
 		{"server.key", 0o400},
+		{"admin-client.crt", 0o644},
+		{"admin-client.key", 0o600},
 	}
 	if opts.IncludeSampleClients {
 		outputs = append(outputs,
@@ -66,14 +68,6 @@ func GenerateMTLS(opts MTLSOptions) (MTLSResult, error) {
 				name string
 				mode os.FileMode
 			}{"client.key", 0o600},
-			struct {
-				name string
-				mode os.FileMode
-			}{"admin-client.crt", 0o644},
-			struct {
-				name string
-				mode os.FileMode
-			}{"admin-client.key", 0o600},
 		)
 	}
 	if !opts.Force {
@@ -140,6 +134,32 @@ func GenerateMTLS(opts MTLSOptions) (MTLSResult, error) {
 	}
 	written = append(written, w...)
 
+	adminKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return MTLSResult{}, fmt.Errorf("generate admin client key: %w", err)
+	}
+	adminTemplate := &x509.Certificate{
+		SerialNumber: mustSerial(),
+		Subject: pkix.Name{
+			CommonName:         "Luna Admin Client",
+			Organization:       []string{opts.Organization},
+			OrganizationalUnit: []string{opts.AdminClientOU},
+		},
+		NotBefore:   notBefore,
+		NotAfter:    notAfter,
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+	adminDER, err := x509.CreateCertificate(rand.Reader, adminTemplate, caCert, &adminKey.PublicKey, caKey)
+	if err != nil {
+		return MTLSResult{}, fmt.Errorf("sign admin client certificate: %w", err)
+	}
+	w, err = writePair(opts.Dir, "admin-client", 0o644, 0o600, adminDER, adminKey)
+	if err != nil {
+		return MTLSResult{}, err
+	}
+	written = append(written, w...)
+
 	if opts.IncludeSampleClients {
 		clientKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
@@ -158,32 +178,6 @@ func GenerateMTLS(opts MTLSOptions) (MTLSResult, error) {
 			return MTLSResult{}, fmt.Errorf("sign client certificate: %w", err)
 		}
 		w, err = writePair(opts.Dir, "client", 0o644, 0o600, clientDER, clientKey)
-		if err != nil {
-			return MTLSResult{}, err
-		}
-		written = append(written, w...)
-
-		adminKey, err := rsa.GenerateKey(rand.Reader, 2048)
-		if err != nil {
-			return MTLSResult{}, fmt.Errorf("generate admin client key: %w", err)
-		}
-		adminTemplate := &x509.Certificate{
-			SerialNumber: mustSerial(),
-			Subject: pkix.Name{
-				CommonName:         "Luna Admin Client",
-				Organization:       []string{opts.Organization},
-				OrganizationalUnit: []string{opts.AdminClientOU},
-			},
-			NotBefore:   notBefore,
-			NotAfter:    notAfter,
-			KeyUsage:    x509.KeyUsageDigitalSignature,
-			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-		}
-		adminDER, err := x509.CreateCertificate(rand.Reader, adminTemplate, caCert, &adminKey.PublicKey, caKey)
-		if err != nil {
-			return MTLSResult{}, fmt.Errorf("sign admin client certificate: %w", err)
-		}
-		w, err = writePair(opts.Dir, "admin-client", 0o644, 0o600, adminDER, adminKey)
 		if err != nil {
 			return MTLSResult{}, err
 		}
