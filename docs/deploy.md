@@ -197,9 +197,32 @@ Use the same [release archive](#github-releases-binaries) as the proxy, or copy 
 sudo install -m 0755 luna-agent /usr/local/bin/luna-agent
 ```
 
-### 2. mTLS client identity
+### 2. Guided setup (recommended)
 
-Issue an automation client certificate (not `luna-admin` or `luna-cli` unless that device is enrolled for CLI key load). Typical layout:
+Run the interactive wizard (repeatable; re-run pre-fills from existing `agent.yml`):
+
+```bash
+sudo luna-agent setup
+```
+
+Press Enter to accept defaults shown in `[brackets]`. Use `-y` to skip the final confirmation.
+
+**Non-interactive** (scripts/CI):
+
+```bash
+sudo luna-agent setup --non-interactive \
+  --from-dir ./luna-certs \
+  --proxy-url https://luna.example:8443 \
+  --target-user deploy \
+  --target-host 203.0.113.10 \
+  --install-systemd --enable
+```
+
+Copy certs from proxy (after `luna-proxy setup mtls` on the central host) — the wizard option **Copy from directory** or:
+
+### 3. Manual mTLS layout (alternative)
+
+Issue an automation client certificate (not `luna-admin` or `luna-cli`). Typical layout:
 
 ```
 /etc/luna/certs/client.crt
@@ -207,32 +230,28 @@ Issue an automation client certificate (not `luna-admin` or `luna-cli` unless th
 /etc/luna/certs/ca.crt
 ```
 
-### 3. Configuration
+### 4. Manual configuration
 
 ```bash
-sudo useradd --system --home-dir /var/lib/luna --shell /usr/sbin/nologin luna
-sudo install -d -o luna -g luna -m 0750 /etc/luna /etc/luna/certs
 sudo cp deploy/luna-agent.example.yaml /etc/luna/agent.yml
 sudo chmod 600 /etc/luna/agent.yml
 sudo chown luna:luna /etc/luna/agent.yml
 ```
 
-Required fields: `proxy_url`, `mtls_*`, `target_user`, `target_host`, `signer_mode` (must match proxy). Socket for production:
-
-```yaml
-agent_socket: /run/luna/agent.sock
-```
+Required fields: `proxy_url`, `mtls_*`, `target_user`, `target_host`, `signer_mode` (must match proxy). Paths default to `/etc/luna/certs/` and socket `/run/luna/agent.sock` when unset.
 
 `target_host` is the SSH destination used for PoP (OpenSSH does not pass the remote host into `Sign`).
 
-### 4. systemd (persistent daemon)
+### 5. systemd (persistent daemon)
 
 ```bash
 sudo luna-agent install systemd --enable
 sudo systemctl status luna-agent
 ```
 
-### 5. Use with SSH
+(`setup --install-systemd --enable` runs this as the final step.)
+
+### 6. Use with SSH
 
 Per-user or session:
 
@@ -242,6 +261,19 @@ ssh deploy@203.0.113.10
 ```
 
 Ensure the connecting user can access the socket (e.g. group `luna` and `chmod 660` on the socket, or run the agent as the login user with a user-writable socket path).
+
+For `local-key`, the wizard may ask for **host key fingerprint** — skip it (Enter) unless the proxy has **multiple** host signing keys loaded. To look up a fingerprint on the central host:
+
+```bash
+luna-proxy --socket /run/luna/control.sock key list
+```
+
+Or from the host `.pub` file (same format as `ssh-keygen -lf`):
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+# use the SHA256:... value, with or without the SHA256: prefix
+```
 
 For `local-key`, set `host_key_fingerprint` or `hosted_public_key` when multiple host keys are loaded on the proxy.
 
@@ -261,6 +293,7 @@ LUNA_DEBUG=1 journalctl -u luna-agent -f
 |------|---------|
 | Binary version | `luna-proxy version` / `luna-agent version` (or `-v` / `--version`) |
 | Generate mTLS PKI | `sudo luna-proxy setup mtls --dir /etc/luna/certs` |
+| Agent guided setup | `sudo luna-agent setup --from-dir … --install-systemd --enable` |
 | Install proxy unit | `sudo luna-proxy install systemd --enable` |
 | Install agent unit | `sudo luna-agent install systemd --enable` |
 | Proxy status | `luna-proxy --socket /run/luna/control.sock status` |

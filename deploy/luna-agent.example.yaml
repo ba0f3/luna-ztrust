@@ -1,8 +1,13 @@
 # Luna Z-Trust — luna-agent on a client/automation host
 #
 # Setup:
+#   sudo luna-agent setup --from-dir ./certs-from-proxy \
+#     --proxy-url https://luna-proxy.example.com:8443 \
+#     --target-user deploy --target-host 203.0.113.10 \
+#     --install-systemd --enable
+#
+# Or manual:
 #   cp deploy/luna-agent.example.yaml /etc/luna/agent.yml
-#   chmod 600 /etc/luna/agent.yml
 #   sudo luna-agent install systemd --enable
 #
 # Or from repo root for local testing:

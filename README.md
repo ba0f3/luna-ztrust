@@ -223,10 +223,10 @@ See [docs/superpowers/specs/2026-05-31-cli-remote-key-load-design.md](docs/super
 
 Agent socket: `/run/luna/agent.sock` (mode `0600`).
 
-Persistent daemon (Linux, root):
+Persistent daemon — interactive setup (Linux, root):
 
 ```bash
-sudo luna-agent install systemd --enable
+sudo luna-agent setup
 export SSH_AUTH_SOCK=/run/luna/agent.sock
 ```
 

@@ -124,7 +124,10 @@ func prepareServiceUser(opts SystemdOptions) error {
 	} else {
 		fmt.Printf("created system user %q\n", opts.User)
 	}
-	return EnsureLunaDirs(opts.User, opts.Group)
+	if err := EnsureLunaDirs(opts.User, opts.Group); err != nil {
+		return err
+	}
+	return EnsureCertPermissions("/etc/luna/certs", opts.Group)
 }
 
 func (o SystemdOptions) withDefaults() SystemdOptions {

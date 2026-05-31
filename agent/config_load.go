@@ -92,6 +92,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 	if cfg.SignerMode == "" {
 		cfg.SignerMode = SignerModeLocalKey
 	}
+	applyAgentDefaults(&cfg)
 
 	var missing []string
 	if cfg.ProxyURL == "" {
