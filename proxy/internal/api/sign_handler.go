@@ -109,10 +109,16 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData, hostKeyFP)
 	if s.cfg.Env != "dev" {
-		if s.telegram != nil {
+		if s.telegram != nil && s.telegram.Configured() {
 			go func() {
-				_ = s.telegram.Notify(context.Background(), tx)
+				if err := s.telegram.Notify(context.Background(), tx); err != nil {
+					s.logTelegramEvent("notify", tx.ID, "failed", err.Error())
+				} else {
+					s.logTelegramEvent("notify", tx.ID, "sent", "")
+				}
 			}()
+		} else {
+			s.logTelegramEvent("notify", tx.ID, "skipped_unconfigured", "telegram_bot_token or telegram_chat_id missing")
 		}
 		go func() {
 			_ = s.push.NotifyPending(context.Background(), tx)

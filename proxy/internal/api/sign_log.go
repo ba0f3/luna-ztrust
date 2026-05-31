@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -106,4 +107,17 @@ func (s *server) logCapabilitiesRequest(r *http.Request, start time.Time, sealed
 		SignerMode:    s.cfg.SignerMode,
 		LatencyMS:     time.Since(start).Milliseconds(),
 	})
+}
+
+func (s *server) logTelegramEvent(route, txID, outcome, detail string) {
+	emitSignLog(signLogEntry{
+		Route:   route,
+		TxID:    txID,
+		Outcome: outcome,
+	})
+	if detail != "" {
+		log.Printf("telegram %s tx_id=%s outcome=%s detail=%s", route, txID, outcome, detail)
+		return
+	}
+	log.Printf("telegram %s tx_id=%s outcome=%s", route, txID, outcome)
 }

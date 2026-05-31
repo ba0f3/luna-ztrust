@@ -80,7 +80,6 @@ func NewServer(deps ServerDeps) http.Handler {
 	mux.HandleFunc("GET /api/v1/capabilities", s.withMTLS(s.handleCapabilities))
 	mux.HandleFunc("POST /api/v1/ssh/sign", s.withMTLS(s.handleSign))
 	mux.HandleFunc("GET /api/v1/ssh/sign/{tx_id}/wait", s.withMTLS(s.handleWait))
-	mux.HandleFunc("POST /api/v1/telegram/webhook", s.handleTelegramWebhook)
 	mux.HandleFunc("POST /api/v1/mobile/enroll", s.withAdminMTLS(s.handleMobileEnroll))
 	mux.HandleFunc("DELETE /api/v1/mobile/devices/{device_id}", s.withAdminMTLS(s.handleMobileDeleteDevice))
 	mux.HandleFunc("POST /api/v1/mobile/approve", s.withMTLS(s.handleMobileApprove))

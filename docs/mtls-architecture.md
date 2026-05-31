@@ -63,7 +63,9 @@ The listener uses `ClientAuth: tls.VerifyClientCertIfGiven`. Application middlew
 |------------|--------|-------------|
 | `withMTLS` | `POST /api/v1/ssh/sign`, `GET /api/v1/ssh/sign/{tx_id}/wait`, `GET /api/v1/capabilities`, `POST /api/v1/mobile/approve`, `POST /api/v1/mobile/keys/pending` | Valid client cert from internal CA |
 | `withAdminMTLS` | `POST /api/v1/mobile/enroll`, `DELETE /api/v1/mobile/devices/{device_id}` | Client cert with admin OU (e.g. `luna-admin`) |
-| *(none)* | `GET /healthz`, `POST /api/v1/telegram/webhook` | No client cert |
+| *(none)* | `GET /healthz`, `GET /api/v1/mtls/ca`, `POST /api/v1/mtls/enroll` | No client cert |
+
+Telegram approve/deny uses **outbound long polling** to `api.telegram.org` (no inbound webhook route).
 
 `withMTLS` rejects missing peer certs with `401`. `withAdminMTLS` additionally checks the certificate **Organizational Unit** (`proxy/internal/api/admin_handler.go`).
 
@@ -132,7 +134,7 @@ sequenceDiagram
 | **Stolen client cert + key files** | Possession of `LUNA_MTLS_KEY` (and cert) authenticates as that automation identity until revocation. mTLS is possession-based, not HSM-bound. |
 | **Admin client cert compromise** | Admin OU can enroll/revoke mobile devices; cannot unseal via HTTP (control socket only). |
 | **Mobile replay within ~30s** | Device Ed25519 + timestamp; no sign-pipeline replay LRU on those routes. |
-| **Telegram webhook** | Validated by webhook secret, not mTLS. |
+| **Telegram OOB approval** | Outbound long poll to `api.telegram.org`; chat ID allowlist on callback handling. |
 | **Local agent socket** | `LUNA_AGENT_SOCKET` / `/run/luna/agent.sock` uses Unix permissions and peer policy, not TLS. |
 | **TLS exporter / MAC keys in logs** | Must never be logged (see AGENTS.md). |
 

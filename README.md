@@ -239,7 +239,6 @@ export SSH_AUTH_SOCK=/run/luna/agent.sock
 | `GET` | `/api/v1/capabilities` | mTLS: signer mode, TTLs, sealed |
 | `POST` | `/api/v1/ssh/sign` | Create transaction; `202` + `tx_id` |
 | `GET` | `/api/v1/ssh/sign/{tx_id}/wait` | Block until cert/signature or error |
-| `POST` | `/api/v1/telegram/webhook` | Telegram approval callback |
 | `POST` | `/api/v1/mobile/enroll` | Admin mTLS: register device |
 | `POST` | `/api/v1/mobile/approve` | mTLS + device signature |
 | `POST` | `/api/v1/mobile/keys/pending` | Enrolled mobile device: upload encrypted key for local confirmation |

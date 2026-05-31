@@ -70,6 +70,9 @@ func TestNotifierIdempotent(t *testing.T) {
 
 func TestNotifierNoOpWhenUnconfigured(t *testing.T) {
 	n := approval.NewNotifier(approval.NotifierConfig{})
+	if n.Configured() {
+		t.Fatal("expected unconfigured")
+	}
 	tx := &approval.Transaction{ID: "tx_01"}
 	if err := n.Notify(context.Background(), tx); err != nil {
 		t.Fatal(err)

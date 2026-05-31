@@ -45,7 +45,6 @@ approval_timeout: 60s
 # Set a long random token; pass to luna-agent setup as --enroll-token or LUNA_MTLS_ENROLL_TOKEN
 # mtls_enroll_token: "change-me-to-a-long-random-secret"
 telegram_bot_token: ""
-telegram_webhook_secret: ""
 telegram_chat_id: ""
 
 # Mobile push (P5 — stub until implemented)

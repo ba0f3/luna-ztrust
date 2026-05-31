@@ -148,7 +148,6 @@ func renderProxyConfig(enrollToken string, opts ProxyConfigOptions) string {
 	fmt.Fprintf(&b, "approval_timeout: %s\n\n", opts.ApprovalTimeout)
 
 	fmt.Fprintf(&b, "telegram_bot_token: %s\n", yamlQuote(opts.TelegramBotToken))
-	fmt.Fprintf(&b, "telegram_webhook_secret: %s\n", yamlQuote(opts.TelegramWebhookSecret))
 	fmt.Fprintf(&b, "telegram_chat_id: %s\n\n", yamlQuote(opts.TelegramChatID))
 
 	fmt.Fprintf(&b, "mtls_enroll_token: %s\n\n", yamlQuote(enrollToken))

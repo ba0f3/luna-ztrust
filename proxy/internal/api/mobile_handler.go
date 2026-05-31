@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/mobile"
 )
@@ -107,8 +108,8 @@ func (s *server) handleMobileApprove(w http.ResponseWriter, r *http.Request) {
 
 	ttl := time.Duration(req.TTLSeconds) * time.Second
 	if ttl <= 0 {
-		ttl = DefaultTTLFromAllowed(s.cfg.AllowedTTLSeconds)
-	} else if !ttlAllowed(req.TTLSeconds, s.cfg.AllowedTTLSeconds) {
+		ttl = approval.DefaultTTLFromAllowed(s.cfg.AllowedTTLSeconds)
+	} else if !approval.TTLAllowed(req.TTLSeconds, s.cfg.AllowedTTLSeconds) {
 		http.Error(w, "ttl not allowed", http.StatusBadRequest)
 		return
 	}

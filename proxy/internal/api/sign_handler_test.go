@@ -494,3 +494,37 @@ func TestDevBypassIssuesLocalCACert(t *testing.T) {
 	}
 	t.Fatal("dev auto-approve did not complete")
 }
+
+func TestSign_SecondRequestUsesLease(t *testing.T) {
+	cfg := config.Config{
+		ApprovalTimeout:   60 * time.Second,
+		TelegramChatID:    "99",
+		AllowedTTLSeconds: []int{300},
+	}
+	env := startTestServer(t, cfg, nil)
+
+	body := buildSignBody(t, "deploy", "10.0.0.5")
+	txID := postSign(t, env, body)
+	env.store.Approve(txID, 300*time.Second, "telegram:99")
+
+	waitResp, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID + "/wait")
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitResp.Body.Close()
+	if waitResp.StatusCode != http.StatusOK {
+		t.Fatalf("first wait %d", waitResp.StatusCode)
+	}
+
+	_, clientTLS := loadTestTLSConfigs(t)
+	env.client = newMTLSClient(t, env.ts, clientTLS)
+	txID2 := postSign(t, env, buildSignBody(t, "deploy", "10.0.0.5"))
+	waitResp2, err := env.client.http.Get(env.ts.URL + "/api/v1/ssh/sign/" + txID2 + "/wait")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer waitResp2.Body.Close()
+	if waitResp2.StatusCode != http.StatusOK {
+		t.Fatalf("lease wait status = %d, want 200", waitResp2.StatusCode)
+	}
+}

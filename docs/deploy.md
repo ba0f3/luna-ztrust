@@ -49,7 +49,7 @@ Make the package public once in GitHub **Packages** settings, or authenticate wi
 - Linux host (control socket uses peer credentials; production should be Linux)
 - Internal mTLS CA: server cert/key, client CA (`ca.crt`)
 - Encrypted OpenSSH signing key (CA for `local-ca`, or host key for `local-key`)
-- Telegram bot + webhook for production approval (omit only in dev with `LUNA_ENV=dev` on the **proxy process**)
+- Telegram bot for production approval via outbound long polling (omit only in dev with `LUNA_ENV=dev` on the **proxy process**)
 
 ### 2. OS user and directories
 
@@ -66,7 +66,7 @@ Interactive wizard — hostname in mTLS SAN, full `proxy.yml`, Telegram in produ
 sudo luna-proxy setup
 ```
 
-Prompts include: environment (`production` / `dev`), **public hostname**, signer mode, encrypted key path, **Telegram bot token / webhook secret / chat ID** (required in production), cert paths, optional systemd install.
+Prompts include: environment (`production` / `dev`), **public hostname**, signer mode, encrypted key path, **Telegram bot token / chat ID** (required in production), cert paths, optional systemd install.
 
 Non-interactive example:
 
@@ -74,7 +74,6 @@ Non-interactive example:
 sudo luna-proxy setup --non-interactive --yes \
   --hostname luna.example.com \
   --telegram-bot-token "$TELEGRAM_BOT_TOKEN" \
-  --telegram-webhook-secret "$TELEGRAM_WEBHOOK_SECRET" \
   --telegram-chat-id "$TELEGRAM_CHAT_ID" \
   --install-systemd --enable
 ```
@@ -157,6 +156,33 @@ sudo luna-proxy --socket /run/luna/control.sock status
 ```
 
 `POST /api/v1/admin/unseal` returns `410 Gone`; use the control socket only.
+
+### 7b. Telegram approval (production)
+
+The proxy uses **outbound long polling** (`getUpdates`) to receive inline Approve/Deny button presses. No public webhook endpoint is required — the proxy only makes outbound HTTPS calls to `api.telegram.org`.
+
+Configure in `proxy.yml`:
+
+- `telegram_bot_token`
+- `telegram_chat_id`
+
+On startup, `luna-proxy serve` clears any existing Telegram webhook and starts long polling. Each sign request logs JSON to stderr (`outcome: accepted`); Telegram events log as `telegram notify …` / `telegram poll …`.
+
+Check proxy logs after a sign attempt:
+
+```bash
+sudo journalctl -u luna-proxy -f
+```
+
+Common issues:
+
+| Symptom | Likely cause |
+|---------|----------------|
+| `skipped_unconfigured` in logs | Empty `telegram_bot_token` or `telegram_chat_id` in `/etc/luna/proxy.yml` |
+| `dev mode: auto-approve` at startup | `env: dev` or `LUNA_ENV=dev` on proxy — Telegram OOB is disabled |
+| `outcome: sealed` | Signing key not loaded (`luna-proxy key load …`) |
+| Message arrives but buttons do nothing | Wrong chat ID, or proxy cannot reach `api.telegram.org` outbound |
+| No sign logs at all | Agent not reaching proxy (TLS, mTLS, wrong URL) |
 
 ### 8. Firewall and ingress
 

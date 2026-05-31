@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -31,6 +32,11 @@ type NotifierConfig struct {
 	AllowedTTLSeconds []int
 	BaseURL           string // optional; defaults to telegramAPIBase
 	Client            *http.Client
+}
+
+// Configured reports whether outbound Telegram notifications can be sent.
+func (n *Notifier) Configured() bool {
+	return n != nil && n.token != "" && n.chatID != ""
 }
 
 // NewNotifier returns a notifier. When BotToken or ChatID is empty, Notify is a no-op.
@@ -138,4 +144,52 @@ func (n *Notifier) forgetSent(txID string) {
 	n.mu.Lock()
 	delete(n.sent, txID)
 	n.mu.Unlock()
+}
+
+// DeleteWebhook clears any Telegram webhook so getUpdates long polling works.
+func DeleteWebhook(ctx context.Context, cfg NotifierConfig) error {
+	token := strings.TrimSpace(cfg.BotToken)
+	if token == "" {
+		return fmt.Errorf("telegram bot token not configured")
+	}
+
+	base := cfg.BaseURL
+	if base == "" {
+		base = telegramAPIBase
+	}
+	client := cfg.Client
+	if client == nil {
+		client = &http.Client{Timeout: 15 * time.Second}
+	}
+
+	reqURL := fmt.Sprintf("%s/bot%s/deleteWebhook", base, token)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader("{}"))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	slurp, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("telegram deleteWebhook: %s: %s", resp.Status, slurp)
+	}
+	var ack struct {
+		OK          bool   `json:"ok"`
+		Description string `json:"description"`
+	}
+	if err := json.Unmarshal(slurp, &ack); err != nil {
+		return fmt.Errorf("telegram deleteWebhook response: %w", err)
+	}
+	if !ack.OK {
+		if ack.Description != "" {
+			return fmt.Errorf("telegram deleteWebhook: %s", ack.Description)
+		}
+		return fmt.Errorf("telegram deleteWebhook: not ok")
+	}
+	return nil
 }

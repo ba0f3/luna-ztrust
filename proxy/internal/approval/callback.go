@@ -1,4 +1,4 @@
-package api
+package approval
 
 import (
 	"strconv"
@@ -27,7 +27,7 @@ func ParseCallbackData(data string, allowedTTLs []int) (action, txID string, ttl
 		txID = parts[1]
 		if len(parts) >= 3 {
 			sec, err := strconv.Atoi(parts[2])
-			if err != nil || !ttlAllowed(sec, allowedTTLs) {
+			if err != nil || !TTLAllowed(sec, allowedTTLs) {
 				return "", "", 0, false
 			}
 			return action, txID, time.Duration(sec) * time.Second, true
@@ -38,7 +38,8 @@ func ParseCallbackData(data string, allowedTTLs []int) (action, txID string, ttl
 	}
 }
 
-func ttlAllowed(sec int, allowed []int) bool {
+// TTLAllowed reports whether sec is in the configured approval TTL list.
+func TTLAllowed(sec int, allowed []int) bool {
 	for _, a := range allowed {
 		if a == sec {
 			return true
@@ -53,4 +54,17 @@ func DefaultTTLFromAllowed(allowed []int) time.Duration {
 		return time.Duration(allowed[0]) * time.Second
 	}
 	return 5 * time.Minute
+}
+
+// ChatAllowed reports whether chatID matches configured TELEGRAM_CHAT_ID.
+func ChatAllowed(configuredChatID string, chatID int64) bool {
+	configuredChatID = strings.TrimSpace(configuredChatID)
+	if configuredChatID == "" {
+		return false
+	}
+	allowed, err := strconv.ParseInt(configuredChatID, 10, 64)
+	if err != nil {
+		return false
+	}
+	return chatID == allowed
 }

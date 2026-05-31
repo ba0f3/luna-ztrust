@@ -74,11 +74,6 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 	if err != nil {
 		return Options{}, err
 	}
-	opts.TelegramWebhookSecret, err = p.askString("Telegram webhook secret",
-		firstNonEmpty(opts.TelegramWebhookSecret, existing.TelegramWebhookSecret))
-	if err != nil {
-		return Options{}, err
-	}
 	opts.TelegramChatID, err = p.askString("Telegram chat ID",
 		firstNonEmpty(opts.TelegramChatID, existing.TelegramChatID))
 	if err != nil {

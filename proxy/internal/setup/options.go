@@ -86,9 +86,6 @@ func (o Options) Validate() error {
 		if strings.TrimSpace(o.TelegramBotToken) == "" {
 			return fmt.Errorf("telegram_bot_token is required in production (or choose env=dev for lab only)")
 		}
-		if strings.TrimSpace(o.TelegramWebhookSecret) == "" {
-			return fmt.Errorf("telegram_webhook_secret is required in production")
-		}
 		if strings.TrimSpace(o.TelegramChatID) == "" {
 			return fmt.Errorf("telegram_chat_id is required in production")
 		}

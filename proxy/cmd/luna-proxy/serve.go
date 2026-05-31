@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/api"
@@ -107,11 +109,42 @@ func runServe(_ *cobra.Command, _ []string) error {
 		}
 	}()
 
-	log.Printf("luna-proxy %s listening on %s (signer=%s)", version.String(), cfg.ListenAddr, cfg.SignerMode)
+	log.Printf("luna-proxy %s listening on %s (signer=%s env=%s)", version.String(), cfg.ListenAddr, cfg.SignerMode, envLabel(cfg.Env))
+	logTelegramStartup(cfg, telegram)
+	if cfg.Env != "dev" && telegram.Configured() {
+		poller := approval.NewPoller(approval.PollerConfig{
+			NotifierConfig: approval.NotifierConfig{
+				BotToken:          cfg.TelegramBotToken,
+				ChatID:            cfg.TelegramChatID,
+				AllowedTTLSeconds: cfg.AllowedTTLSeconds,
+			},
+			Store: store,
+		})
+		go poller.Run(context.Background())
+	}
 	if !ks.Available() {
 		log.Printf("luna-proxy keystore sealed — POST /api/v1/ssh/sign returns 503 until a signing key is loaded (luna-proxy key load <encrypted-key>)")
 	} else {
 		log.Printf("luna-proxy keystore ready (%d signer(s) loaded)", len(ks.ListSigners()))
 	}
 	return srv.ListenAndServeTLS("", "")
+}
+
+func envLabel(env string) string {
+	if strings.TrimSpace(env) == "" {
+		return "production"
+	}
+	return env
+}
+
+func logTelegramStartup(cfg config.Config, telegram *approval.Notifier) {
+	if cfg.Env == "dev" {
+		log.Printf("luna-proxy dev mode: sign requests auto-approve; telegram OOB disabled")
+		return
+	}
+	if telegram == nil || !telegram.Configured() {
+		log.Printf("luna-proxy WARNING: telegram_bot_token or telegram_chat_id missing — approval notifications disabled")
+		return
+	}
+	log.Printf("luna-proxy telegram long polling enabled (chat_id=%s)", cfg.TelegramChatID)
 }

@@ -21,7 +21,6 @@ var (
 	setupSignerMode      string
 	setupKeyPath         string
 	setupTelegramToken   string
-	setupTelegramSecret  string
 	setupTelegramChat    string
 	setupCertsDir        string
 	setupConfigPath      string
@@ -90,7 +89,6 @@ func init() {
 	setupCmd.Flags().StringVar(&setupSignerMode, "signer-mode", "", "local-ca or local-key")
 	setupCmd.Flags().StringVar(&setupKeyPath, "key-path", "", "encrypted signing key path")
 	setupCmd.Flags().StringVar(&setupTelegramToken, "telegram-bot-token", "", "Telegram bot token")
-	setupCmd.Flags().StringVar(&setupTelegramSecret, "telegram-webhook-secret", "", "Telegram webhook secret")
 	setupCmd.Flags().StringVar(&setupTelegramChat, "telegram-chat-id", "", "Telegram chat ID")
 	setupCmd.Flags().StringVar(&setupCertsDir, "dir", "", "mTLS cert directory")
 	setupCmd.Flags().StringVar(&setupConfigPath, "config", "", "proxy.yml path")
@@ -148,23 +146,22 @@ func runSetupAll(_ *cobra.Command, _ []string) error {
 
 func flagsToSetupOptions() setup.Options {
 	return setup.Options{
-		Env:                   setupEnv,
-		Hostname:              setupHostname,
-		ListenAddr:            setupListen,
-		SignerMode:            setupSignerMode,
-		KeyPath:               setupKeyPath,
-		TelegramBotToken:      setupTelegramToken,
-		TelegramWebhookSecret: setupTelegramSecret,
-		TelegramChatID:        setupTelegramChat,
-		CertsDir:              setupCertsDir,
-		ConfigPath:            setupConfigPath,
-		EnrollToken:           setupEnrollToken,
-		Force:                 setupForce,
-		InstallSystemd:        setupInstallSystemd,
-		SystemdEnable:         setupSystemdEnable,
-		SkipUserCreate:        setupSkipUserCreate,
-		IncludeLocalhostSAN:   true,
-		SkipSampleClients:     true,
+		Env:                 setupEnv,
+		Hostname:            setupHostname,
+		ListenAddr:          setupListen,
+		SignerMode:          setupSignerMode,
+		KeyPath:             setupKeyPath,
+		TelegramBotToken:    setupTelegramToken,
+		TelegramChatID:      setupTelegramChat,
+		CertsDir:            setupCertsDir,
+		ConfigPath:          setupConfigPath,
+		EnrollToken:         setupEnrollToken,
+		Force:               setupForce,
+		InstallSystemd:      setupInstallSystemd,
+		SystemdEnable:       setupSystemdEnable,
+		SkipUserCreate:      setupSkipUserCreate,
+		IncludeLocalhostSAN: true,
+		SkipSampleClients:   true,
 	}
 }
 
