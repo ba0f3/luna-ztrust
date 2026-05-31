@@ -1,14 +1,33 @@
 package config_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
 )
 
+func chdirIsolated(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	cfgFile := filepath.Join(dir, "test-proxy.yaml")
+	if err := os.WriteFile(cfgFile, []byte("signer_mode: local-ca\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LUNA_CONFIG", cfgFile)
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+}
+
 func TestLoadDefaults(t *testing.T) {
 	clearProxyEnv(t)
+	chdirIsolated(t)
+	t.Setenv("LUNA_ENV", "dev")
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -30,6 +49,7 @@ func TestLoadDefaults(t *testing.T) {
 
 func TestLoadEnvOverride(t *testing.T) {
 	clearProxyEnv(t)
+	chdirIsolated(t)
 	t.Setenv("LUNA_ENV", "dev")
 	t.Setenv("LUNA_LISTEN_ADDR", ":9443")
 	t.Setenv("LUNA_SIGNER_MODE", "local-key")
@@ -63,6 +83,7 @@ func TestLoadEnvOverride(t *testing.T) {
 
 func TestLoadInvalidApprovalTimeout(t *testing.T) {
 	clearProxyEnv(t)
+	chdirIsolated(t)
 	t.Setenv("LUNA_APPROVAL_TIMEOUT", "not-a-duration")
 
 	_, err := config.Load()

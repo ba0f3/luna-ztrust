@@ -37,12 +37,13 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 	}
 
 	body, err := json.Marshal(Request{
-		PublicKey:     string(ssh.MarshalAuthorizedKey(sshPub)),
-		TargetUser:    req.TargetUser,
-		TargetIP:      req.TargetIP,
-		Timestamp:     ts,
-		PopSignature:  popSig,
-		AgentSignData: base64.StdEncoding.EncodeToString(signData),
+		PublicKey:          string(ssh.MarshalAuthorizedKey(sshPub)),
+		TargetUser:         req.TargetUser,
+		TargetIP:           req.TargetIP,
+		Timestamp:          ts,
+		PopSignature:       popSig,
+		AgentSignData:      base64.StdEncoding.EncodeToString(signData),
+		HostKeyFingerprint: req.HostKeyFingerprint,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)

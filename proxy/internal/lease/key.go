@@ -7,14 +7,21 @@ import (
 
 // LookupKey identifies a client session for lease reuse (excludes approver).
 type LookupKey struct {
-	ClientCertFP string
-	TargetUser   string
-	TargetIP     string
-	SourceIP     string
+	ClientCertFP       string
+	TargetUser         string
+	TargetIP           string
+	SourceIP           string
+	HostKeyFingerprint string // local-key: binds lease to approved hosted key
 }
 
 func (k LookupKey) lookupString() string {
-	return strings.Join([]string{k.ClientCertFP, k.TargetUser, k.TargetIP, k.SourceIP}, "|")
+	return strings.Join([]string{
+		k.ClientCertFP,
+		k.TargetUser,
+		k.TargetIP,
+		k.SourceIP,
+		k.HostKeyFingerprint,
+	}, "|")
 }
 
 // FullKey is the complete lease identity including the approver.
@@ -28,12 +35,13 @@ func (k FullKey) String() string {
 }
 
 // NewLookupKey builds a lookup key from sign request context.
-func NewLookupKey(clientCertFP, targetUser, targetIP, sourceIP string) LookupKey {
+func NewLookupKey(clientCertFP, targetUser, targetIP, sourceIP, hostKeyFingerprint string) LookupKey {
 	return LookupKey{
-		ClientCertFP: clientCertFP,
-		TargetUser:   targetUser,
-		TargetIP:     targetIP,
-		SourceIP:     sourceIP,
+		ClientCertFP:       clientCertFP,
+		TargetUser:         targetUser,
+		TargetIP:           targetIP,
+		SourceIP:           sourceIP,
+		HostKeyFingerprint: hostKeyFingerprint,
 	}
 }
 

@@ -137,6 +137,7 @@ func newMTLSClient(t *testing.T, ts *httptest.Server, clientTLS *tls.Config) *mt
 type testEnv struct {
 	ts     *httptest.Server
 	store  *approval.Store
+	ks     *keystore.Keystore
 	client *mtlsClient
 }
 
@@ -145,7 +146,7 @@ func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *te
 	if ks == nil {
 		ks = keystore.New()
 	}
-	if cfg.Env != "production" {
+	if cfg.Env != "production" && !ks.Available() {
 		unsealTestKeystore(t, ks)
 	}
 	store := approval.NewStore(cfg.ApprovalTimeout)
@@ -157,7 +158,7 @@ func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *te
 	}
 	store.SetLeases(lease.NewStore())
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, ks, store, replay, nil)
+	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil)
 
 	serverTLS, clientTLS := loadTestTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)
@@ -169,6 +170,7 @@ func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *te
 	return &testEnv{
 		ts:     ts,
 		store:  store,
+		ks:     ks,
 		client: newMTLSClient(t, ts, clientTLS),
 	}
 }

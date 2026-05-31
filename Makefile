@@ -1,4 +1,4 @@
-.PHONY: test testdata e2e-up e2e-down e2e-wait e2e-test fmt fmt-check lint build update ci
+.PHONY: test testdata e2e-up e2e-down e2e-wait e2e-unseal e2e-test fmt fmt-check lint build update ci
 
 MODULES := agent proxy sdk
 E2E_PROXY_URL ?= https://localhost:8443
@@ -67,5 +67,9 @@ e2e-wait:
 	echo "e2e proxy not ready at $(E2E_PROXY_URL)"; \
 	exit 1
 
-e2e-test:
+e2e-unseal:
+	@echo test-pass | $(COMPOSE) exec -T luna-proxy \
+		luna-proxy --socket /run/luna/control.sock key load /etc/luna/ssh/encrypted_ca.key --passphrase-stdin
+
+e2e-test: e2e-unseal
 	LUNA_PROXY_URL=$(E2E_PROXY_URL) go test -tags=e2e ./sdk/sign/... -count=1 -v

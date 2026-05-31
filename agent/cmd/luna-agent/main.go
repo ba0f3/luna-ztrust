@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/ba0f3/luna-ztrust/agent"
 	"github.com/ba0f3/luna-ztrust/sdk"
@@ -30,14 +29,24 @@ func main() {
 		ProxyURL:   cfg.ProxyURL,
 		TLSCert:    tlsCert,
 		TLSRootCAs: tlsCA,
-		Timeout:    90 * time.Second,
+		Timeout:    cfg.ApprovalTimeout,
 		SignerMode: signerMode,
 	})
 	if err != nil {
 		log.Fatalf("sdk client: %v", err)
 	}
 
-	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost)
+	identities, err := agent.ResolveIdentities(client, cfg)
+	if err != nil {
+		log.Fatalf("identities: %v", err)
+	}
+
+	la := agent.NewLunaAgent(client, signerMode, cfg.TargetUser, cfg.TargetHost, cfg.HostKeyFingerprint, identities, cfg.ApprovalTimeout)
+
+	if agent.DebugEnabled() {
+		log.Printf("luna-agent: signer_mode=%s target=%s@%s identities=%d",
+			signerMode, cfg.TargetUser, cfg.TargetHost, len(identities))
+	}
 
 	if err := os.Remove(cfg.SocketPath); err != nil && !os.IsNotExist(err) {
 		log.Fatalf("remove socket: %v", err)

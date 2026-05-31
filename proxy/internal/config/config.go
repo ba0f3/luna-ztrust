@@ -18,4 +18,6 @@ type Config struct {
 	MTLSServerKey         string
 	MTLSClientCA          string
 	FCMCredentials        string
+	ControlSocket         string
+	ControlSocketGroup    string
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defaultControlSocketName = "control.sock"
+
 const proxyConfigName = "proxy"
 
 func userLunaConfigDir() string {
@@ -19,6 +21,19 @@ func userLunaConfigDir() string {
 		return filepath.Join(".config", "luna")
 	}
 	return filepath.Join(home, ".config", "luna")
+}
+
+// DefaultControlSocket returns a user-writable path for dev/non-root runs.
+// Production systemd units should set control_socket explicitly (e.g. /run/luna/control.sock
+// with RuntimeDirectory=luna).
+func DefaultControlSocket() string {
+	if dir := os.Getenv("XDG_RUNTIME_DIR"); dir != "" {
+		return filepath.Join(dir, "luna", defaultControlSocketName)
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(home, ".local", "run", "luna", defaultControlSocketName)
+	}
+	return filepath.Join("/run", "luna", defaultControlSocketName)
 }
 
 // proxyConfigPaths returns config file paths in merge order (later entries override earlier).

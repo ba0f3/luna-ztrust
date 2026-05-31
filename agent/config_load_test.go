@@ -31,7 +31,7 @@ func TestLoadDefaultsAndRequired(t *testing.T) {
 	if cfg.SocketPath != "/run/luna/agent.sock" {
 		t.Fatalf("SocketPath = %q", cfg.SocketPath)
 	}
-	if cfg.SignerMode != agent.SignerModeLocalCA {
+	if cfg.SignerMode != agent.SignerModeLocalKey {
 		t.Fatalf("SignerMode = %q", cfg.SignerMode)
 	}
 }

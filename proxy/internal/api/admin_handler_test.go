@@ -34,7 +34,7 @@ func startAdminServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) (*
 	store.SetIssuer(signing.NewLocalCA(ks))
 	store.SetLeases(lease.NewStore())
 	replay := auth.NewReplayLRU(60*time.Second, 1000)
-	handler := api.NewServer(cfg, ks, store, replay, nil)
+	handler := api.NewServer(cfg, ks, nil, store, replay, nil, nil)
 	serverTLS, adminTLS, autoTLS := loadAdminTLSConfigs(t)
 	ts := httptest.NewUnstartedServer(handler)
 	ts.TLS = serverTLS
@@ -78,13 +78,9 @@ func writeEncryptedKeyFileAPI(t *testing.T, path string) {
 	}
 }
 
-func TestAdmin_UnsealAndSealStatus(t *testing.T) {
-	dir := t.TempDir()
-	keyPath := filepath.Join(dir, "ca.key")
-	writeEncryptedKeyFileAPI(t, keyPath)
-
+func TestAdmin_UnsealAndSealStatusGone(t *testing.T) {
 	ks := keystore.New()
-	cfg := config.Config{AdminClientOU: "luna-admin", KeyPath: keyPath}
+	cfg := config.Config{AdminClientOU: "luna-admin"}
 	ts, adminClient, _ := startAdminServer(t, cfg, ks)
 
 	body, _ := json.Marshal(map[string]string{"passphrase": "test-pass"})
@@ -95,12 +91,9 @@ func TestAdmin_UnsealAndSealStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusGone {
 		b, _ := io.ReadAll(resp.Body)
 		t.Fatalf("unseal %d: %s", resp.StatusCode, b)
-	}
-	if !ks.Available() {
-		t.Fatal("expected unsealed keystore")
 	}
 
 	req2, _ := http.NewRequest(http.MethodGet, ts.URL+"/api/v1/admin/seal-status", nil)
@@ -109,14 +102,8 @@ func TestAdmin_UnsealAndSealStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp2.Body.Close()
-	var status struct {
-		Sealed bool `json:"sealed"`
-	}
-	if err := json.NewDecoder(resp2.Body).Decode(&status); err != nil {
-		t.Fatal(err)
-	}
-	if status.Sealed {
-		t.Fatal("expected sealed=false")
+	if resp2.StatusCode != http.StatusGone {
+		t.Fatalf("seal-status %d", resp2.StatusCode)
 	}
 }
 
@@ -133,8 +120,8 @@ func TestAdmin_UnsealRejectsOversizedBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusRequestEntityTooLarge {
-		t.Fatalf("expected 413, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusGone {
+		t.Fatalf("expected 410, got %d", resp.StatusCode)
 	}
 }
 

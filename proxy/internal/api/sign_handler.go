@@ -10,6 +10,7 @@ import (
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/auth"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 )
 
@@ -74,7 +75,6 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 
 	clientFP := clientCertFPFromRequest(r)
 	sourceIP := clientIPFromRemoteAddr(r.RemoteAddr)
-	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP)
 
 	if s.cfg.SignerMode == approval.SignerModeLocalKey && req.AgentSignData == "" {
 		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "missing_agent_sign_data")
@@ -87,8 +87,17 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hostKeyFP, err := s.resolveHostKeyFingerprint(&req)
+	if err != nil {
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_host_key")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP, hostKeyFP)
+
 	if s.cfg.Env != "dev" {
-		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData); ok {
+		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData, hostKeyFP); ok {
 			tx := s.store.CreateInstantApproved(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, res)
 			s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "lease_hit")
 			w.Header().Set("Content-Type", "application/json")
@@ -98,7 +107,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData)
+	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData, hostKeyFP)
 	if s.cfg.Env != "dev" {
 		if s.telegram != nil {
 			go func() {
@@ -163,6 +172,20 @@ func writeAuthError(w http.ResponseWriter, err error) {
 	default:
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+}
+
+func (s *server) resolveHostKeyFingerprint(req *auth.SignRequest) (string, error) {
+	if s.cfg.SignerMode != approval.SignerModeLocalKey {
+		return "", nil
+	}
+	fp, err := keystore.ResolveHostKeyFingerprint(req.HostPublicKey, req.HostKeyFingerprint)
+	if err == nil {
+		return fp, nil
+	}
+	if errors.Is(err, keystore.ErrAmbiguousSigner) {
+		return s.keystore.SoleFingerprint()
+	}
+	return "", err
 }
 
 func writeWaitError(w http.ResponseWriter, err error) {

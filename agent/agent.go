@@ -5,7 +5,9 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"errors"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/ba0f3/luna-ztrust/sdk"
 	"golang.org/x/crypto/ssh"
@@ -26,36 +28,51 @@ type AccessProvider interface {
 
 // LunaAgent implements the OpenSSH ssh-agent protocol by blocking Sign until credentials are ready.
 type LunaAgent struct {
-	provider   AccessProvider
-	signerMode string
-	targetUser string
-	targetHost string
+	provider           AccessProvider
+	signerMode         string
+	targetUser         string
+	targetHost         string
+	hostKeyFingerprint string
+	approvalTimeout    time.Duration
+	identities         []*agent.Key
 
 	mu     sync.Mutex
 	locked bool
 }
 
 // NewLunaAgent returns an agent that signs via provider using the configured target identity.
-func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost string) *LunaAgent {
+// identities must be non-empty for OpenSSH to use the agent (see ResolveIdentities).
+func NewLunaAgent(provider AccessProvider, signerMode, targetUser, targetHost, hostKeyFingerprint string, identities []*agent.Key, approvalTimeout time.Duration) *LunaAgent {
 	if signerMode == "" {
 		signerMode = SignerModeLocalCA
 	}
+	if approvalTimeout <= 0 {
+		approvalTimeout = defaultApprovalTimeout
+	}
 	return &LunaAgent{
-		provider:   provider,
-		signerMode: signerMode,
-		targetUser: targetUser,
-		targetHost: targetHost,
+		provider:           provider,
+		signerMode:         signerMode,
+		targetUser:         targetUser,
+		targetHost:         targetHost,
+		hostKeyFingerprint: hostKeyFingerprint,
+		approvalTimeout:    approvalTimeout,
+		identities:         identities,
 	}
 }
 
-// List returns no preloaded keys; credentials are obtained on demand during Sign.
+// List returns identities advertised to OpenSSH for authentication attempts.
 func (a *LunaAgent) List() ([]*agent.Key, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.locked {
 		return nil, nil
 	}
-	return []*agent.Key{}, nil
+	out := make([]*agent.Key, len(a.identities))
+	copy(out, a.identities)
+	if DebugEnabled() {
+		log.Printf("luna-agent: LIST %d identities", len(out))
+	}
+	return out, nil
 }
 
 // Sign blocks until provider returns credentials, then returns the SSH signature.
@@ -71,14 +88,28 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 		mode = p
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), a.approvalTimeout)
+	defer cancel()
+
 	if mode == SignerModeLocalKey {
-		return a.provider.RequestSignature(context.Background(), sdk.SignatureRequest{
-			TargetUser: a.targetUser,
-			TargetIP:   a.targetHost,
+		fp := a.hostKeyFingerprint
+		if pub != nil {
+			fp = PublicKeyFingerprint(pub)
+		}
+		if DebugEnabled() {
+			log.Printf("luna-agent: SIGN local-key user=%s host=%s fp=%s", a.targetUser, a.targetHost, fp)
+		}
+		return a.provider.RequestSignature(ctx, sdk.SignatureRequest{
+			TargetUser:         a.targetUser,
+			TargetIP:           a.targetHost,
+			HostKeyFingerprint: fp,
 		}, data)
 	}
 
-	cert, priv, err := a.provider.RequestCertificate(context.Background(), sdk.CertRequest{
+	if DebugEnabled() {
+		log.Printf("luna-agent: SIGN local-ca user=%s host=%s", a.targetUser, a.targetHost)
+	}
+	cert, priv, err := a.provider.RequestCertificate(ctx, sdk.CertRequest{
 		TargetUser: a.targetUser,
 		TargetIP:   a.targetHost,
 	})

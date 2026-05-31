@@ -66,6 +66,17 @@ func (s *Store) Get(id string) (*Device, bool) {
 	return dev, ok
 }
 
+// List returns all enrolled devices.
+func (s *Store) List() []*Device {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]*Device, 0, len(s.devices))
+	for _, d := range s.devices {
+		out = append(out, d)
+	}
+	return out
+}
+
 // Delete removes a device.
 func (s *Store) Delete(id string) error {
 	s.mu.Lock()

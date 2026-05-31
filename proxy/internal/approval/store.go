@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/keystore"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/signing"
 	"github.com/oklog/ulid/v2"
@@ -35,15 +36,16 @@ const DefaultDevCertTTL = 5 * time.Minute
 
 // Transaction is a pending or terminal SSH sign approval request.
 type Transaction struct {
-	ID            string
-	TargetUser    string
-	TargetIP      string
-	PublicKey     string
-	SourceIP      string
-	ClientCertFP  string
-	AgentSignData string
-	State         State
-	CreatedAt     time.Time
+	ID                 string
+	TargetUser         string
+	TargetIP           string
+	PublicKey          string
+	SourceIP           string
+	ClientCertFP       string
+	AgentSignData      string
+	HostKeyFingerprint string
+	State              State
+	CreatedAt          time.Time
 }
 
 // Result is delivered to waiters when a transaction reaches a terminal state.
@@ -136,19 +138,20 @@ func newTxID() string {
 
 // Create registers a pending transaction and returns its metadata and result channel.
 // When cfg.Env is "dev", auto-approves via the configured signer.
-func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData string) (*Transaction, <-chan Result) {
+func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData, hostKeyFP string) (*Transaction, <-chan Result) {
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
-		ID:            id,
-		TargetUser:    targetUser,
-		TargetIP:      targetIP,
-		PublicKey:     publicKey,
-		SourceIP:      sourceIP,
-		ClientCertFP:  clientCertFP,
-		AgentSignData: agentSignData,
-		State:         StatePending,
-		CreatedAt:     time.Now(),
+		ID:                 id,
+		TargetUser:         targetUser,
+		TargetIP:           targetIP,
+		PublicKey:          publicKey,
+		SourceIP:           sourceIP,
+		ClientCertFP:       clientCertFP,
+		AgentSignData:      agentSignData,
+		HostKeyFingerprint: hostKeyFP,
+		State:              StatePending,
+		CreatedAt:          time.Now(),
 	}
 	ch := make(chan Result, 1)
 	entry := &txEntry{
@@ -180,7 +183,7 @@ func (s *Store) Approve(txID string, ttl time.Duration, approverChatID string) {
 }
 
 // IssueFromLease signs immediately when an active session lease matches lookup.
-func (s *Store) IssueFromLease(ctx context.Context, lookup lease.LookupKey, publicKey, agentSignData string) (Result, bool) {
+func (s *Store) IssueFromLease(ctx context.Context, lookup lease.LookupKey, publicKey, agentSignData, hostKeyFP string) (Result, bool) {
 	s.mu.Lock()
 	leases := s.leases
 	s.mu.Unlock()
@@ -196,11 +199,12 @@ func (s *Store) IssueFromLease(ctx context.Context, lookup lease.LookupKey, publ
 		return Result{}, false
 	}
 	tx := &Transaction{
-		PublicKey:     publicKey,
-		TargetUser:    lookup.TargetUser,
-		TargetIP:      lookup.TargetIP,
-		SourceIP:      lookup.SourceIP,
-		AgentSignData: agentSignData,
+		PublicKey:          publicKey,
+		TargetUser:         lookup.TargetUser,
+		TargetIP:           lookup.TargetIP,
+		SourceIP:           lookup.SourceIP,
+		AgentSignData:      agentSignData,
+		HostKeyFingerprint: hostKeyFP,
 	}
 	res, err := s.issueForTransaction(ctx, tx, time.Now().Add(remaining))
 	if err != nil {
@@ -254,7 +258,13 @@ func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Dur
 	s.mu.Unlock()
 	leaseExpires := until
 	if leases != nil && approverChatID != "" && entry.tx.ClientCertFP != "" {
-		lookup := lease.NewLookupKey(entry.tx.ClientCertFP, entry.tx.TargetUser, entry.tx.TargetIP, entry.tx.SourceIP)
+		lookup := lease.NewLookupKey(
+			entry.tx.ClientCertFP,
+			entry.tx.TargetUser,
+			entry.tx.TargetIP,
+			entry.tx.SourceIP,
+			entry.tx.HostKeyFingerprint,
+		)
 		leases.Put(lease.NewFullKey(lookup, approverChatID), until)
 	}
 	res.LeaseExpiresAt = leaseExpires
@@ -280,7 +290,11 @@ func (s *Store) issueForTransaction(ctx context.Context, tx *Transaction, until 
 		if err != nil {
 			return Result{}, err
 		}
-		blob, err := keySigner.SignAgent(ctx, data)
+		hostFP := tx.HostKeyFingerprint
+		if hostFP == "" {
+			return Result{}, keystore.ErrAmbiguousSigner
+		}
+		blob, err := keySigner.SignAgent(ctx, hostFP, data)
 		if err != nil {
 			return Result{}, err
 		}
