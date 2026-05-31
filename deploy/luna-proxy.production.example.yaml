@@ -1,6 +1,8 @@
 # Luna Z-Trust — production central server (luna-proxy)
 #
-# Setup:
+# Setup (recommended):
+#   sudo luna-proxy setup
+# Or copy and edit manually:
 #   cp deploy/luna-proxy.production.example.yaml /etc/luna/proxy.yml
 #   chmod 600 /etc/luna/proxy.yml
 #   Edit paths and Telegram values; do NOT put the key passphrase here.

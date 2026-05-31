@@ -58,37 +58,44 @@ sudo useradd --system --home-dir /var/lib/luna --shell /usr/sbin/nologin luna
 sudo install -d -o luna -g luna -m 0750 /etc/luna /etc/luna/certs /etc/luna/ssh
 ```
 
-### 3. First-time mTLS CA (built-in)
+### 3. Guided setup (recommended)
 
-Generate CA, server, and sample client certificates (no OpenSSL required):
+Interactive wizard — hostname in mTLS SAN, full `proxy.yml`, Telegram in production, enroll token for agents:
 
 ```bash
-sudo luna-proxy setup mtls --dir /etc/luna/certs \
-  --san luna.example.com --san localhost
+sudo luna-proxy setup
 ```
+
+Prompts include: environment (`production` / `dev`), **public hostname**, signer mode, encrypted key path, **Telegram bot token / webhook secret / chat ID** (required in production), cert paths, optional systemd install.
+
+Non-interactive example:
+
+```bash
+sudo luna-proxy setup --non-interactive --yes \
+  --hostname luna.example.com \
+  --telegram-bot-token "$TELEGRAM_BOT_TOKEN" \
+  --telegram-webhook-secret "$TELEGRAM_WEBHOOK_SECRET" \
+  --telegram-chat-id "$TELEGRAM_CHAT_ID" \
+  --install-systemd --enable
+```
+
+Save the printed **mtls_enroll_token** for `luna-agent setup` on client hosts.
+
+### 4. Advanced: mTLS or config only
+
+```bash
+sudo luna-proxy setup mtls --dir /etc/luna/certs --san luna.example.com --san localhost
+```
+
+**Do not** use localhost-only `--san` for production — remote agents will fail TLS verification.
 
 | File | Purpose |
 |------|---------|
-| `ca.crt` / `ca.key` | Issuing CA (`mtls_ca_*` for CLI enroll; `mtls_client_ca` for client auth) |
-| `server.crt` / `server.key` | Proxy listener (`mtls_server_*`) |
-| `client.crt` / `client.key` | Sample automation client (copy paths into agent config) |
-| `admin-client.crt` / `.key` | Sample admin client (`OU=luna-admin`) for control-socket enroll |
+| `ca.crt` / `ca.key` | Issuing CA |
+| `server.crt` / `server.key` | Proxy listener (SAN must include your public hostname) |
+| `client.crt` / `client.key` | Sample automation client (lab only) |
 
-Use `--skip-samples` for CA + server only. Re-run with `--force` to replace. **`luna-proxy serve` uses `/etc/luna/certs/` by default** when mTLS paths are unset (same layout as `setup mtls`).
-
-Write `proxy.yml` with a generated agent bootstrap token (recommended before first `serve`):
-
-```bash
-sudo luna-proxy setup config
-# or combined with mTLS generation:
-sudo luna-proxy setup mtls --dir /etc/luna/certs --write-config
-```
-
-Save the printed **mtls_enroll_token** — agent hosts need it for `luna-agent setup`.
-
-For development/CI, `make testdata` still uses `scripts/gen-test-ca.sh` under `testdata/ca/` (`LUNA_ENV=dev`).
-
-### 4. Place signing key and adjust ownership
+### 5. Place signing key and adjust ownership
 
 | Path | Mode | Owner |
 |------|------|-------|
@@ -98,41 +105,17 @@ For development/CI, `make testdata` still uses `scripts/gen-test-ca.sh` under `t
 | `/etc/luna/certs/ca.key` | 0400 | root:luna |
 | `/etc/luna/ssh/encrypted_ca.key` | 0400 | root:luna |
 
-### 5. Configuration
+### 6. systemd and start
 
-Generate production `proxy.yml` (includes random `mtls_enroll_token` for agent enrollment):
-
-```bash
-sudo luna-proxy setup config
-```
-
-Or copy the example and add the token manually:
-
-```bash
-sudo cp deploy/luna-proxy.production.example.yaml /etc/luna/proxy.yml
-```
-sudo chmod 600 /etc/luna/proxy.yml
-sudo chown luna:luna /etc/luna/proxy.yml
-```
-
-Edit `listen_addr`, `signer_mode`, and Telegram fields. mTLS paths default to `/etc/luna/certs/` after `setup mtls` — override in YAML only for a non-default cert directory. Set the control socket for systemd:
-
-```yaml
-control_socket: /run/luna/control.sock
-control_socket_group: luna-admin
-```
-
-Environment variables override YAML (see [README.md](../README.md)). Do **not** set `env: dev` in production.
-
-### 6. systemd (recommended)
-
-Install the unit (as root). This creates the `luna` system user/group if missing and sets group read on `/etc/luna/certs/*.key`:
+`luna-proxy setup` can install systemd. Or separately (requires existing `proxy.yml` from setup):
 
 ```bash
 sudo luna-proxy install systemd --enable
 ```
 
-If the unit fails with **status=217/USER**, the service user does not exist. Fix on an already-installed host:
+Environment variables override YAML (see [README.md](../README.md)). Do **not** set `env: dev` in production.
+
+Install notes:
 
 ```bash
 sudo useradd --system --home-dir /var/lib/luna --shell /usr/sbin/nologin --gid luna luna
@@ -144,7 +127,14 @@ Or re-run `sudo luna-proxy install systemd --enable` with a newer binary that cr
 
 Options: `--binary`, `--config`, `--user`, `--group`, `--dry-run`, `--enable`, `--skip-user-create`.
 
-Manual equivalent: `RuntimeDirectory=luna` so `/run/luna` exists; `ExecStart=/usr/local/bin/luna-proxy serve`. Config merges `/etc/luna/proxy.yml` when present; `install systemd` writes a minimal file if missing. mTLS and control socket use production defaults without a config file.
+If the unit fails with **status=217/USER**, the service user does not exist:
+
+```bash
+sudo useradd --system --home-dir /var/lib/luna --shell /usr/sbin/nologin --gid luna luna
+sudo systemctl restart luna-proxy
+```
+
+Manual equivalent: `RuntimeDirectory=luna`; `ExecStart=/usr/local/bin/luna-proxy serve`.
 
 Add operators to `luna-admin` for control socket access:
 

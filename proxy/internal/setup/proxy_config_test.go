@@ -31,8 +31,11 @@ func TestWriteProxyConfig(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "proxy.yml")
 	res, err := setup.WriteProxyConfig(setup.ProxyConfigOptions{
-		Path:  path,
-		Force: true,
+		Path:             path,
+		Force:            true,
+		Env:              "dev",
+		Hostname:         "test.local",
+		TelegramBotToken: "bot123",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -48,8 +51,11 @@ func TestWriteProxyConfig(t *testing.T) {
 	if !strings.Contains(s, `mtls_enroll_token: "`+res.EnrollToken+`"`) {
 		t.Fatalf("missing token in config: %s", s)
 	}
-	if !strings.Contains(s, `listen_addr: ":8443"`) {
-		t.Fatalf("missing listen_addr: %s", s)
+	if !strings.Contains(s, `env: "dev"`) {
+		t.Fatalf("missing env: %s", s)
+	}
+	if !strings.Contains(s, `telegram_bot_token: "bot123"`) {
+		t.Fatalf("missing telegram: %s", s)
 	}
 }
 

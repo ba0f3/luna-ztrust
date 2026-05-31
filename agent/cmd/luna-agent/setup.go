@@ -22,6 +22,7 @@ var (
 	setupTargetHost         string
 	setupSignerMode         string
 	setupHostKeyFingerprint string
+	setupAgentSocket        string
 	setupEnrollToken        string
 	setupFetchCA            bool
 	setupForce              bool
@@ -73,6 +74,7 @@ func addSetupFlags(cmd *cobra.Command) {
 	f.StringVar(&setupTargetHost, "target-host", "", "SSH target host/IP for PoP")
 	f.StringVar(&setupSignerMode, "signer-mode", "", "local-ca or local-key (default local-ca)")
 	f.StringVar(&setupHostKeyFingerprint, "host-key-fingerprint", "", "optional local-key signer hint")
+	f.StringVar(&setupAgentSocket, "agent-socket", "", "agent Unix socket path (default /run/luna/agent.sock)")
 	f.StringVar(&setupEnrollToken, "enroll-token", "", "proxy mTLS enroll token (or LUNA_MTLS_ENROLL_TOKEN)")
 	f.BoolVar(&setupFetchCA, "fetch-ca", false, "download ca.crt from GET /api/v1/mtls/ca")
 	f.BoolVar(&setupForce, "force", false, "overwrite existing cert files")
@@ -126,6 +128,7 @@ func flagsToSetupOptions() agentsetup.Options {
 		TargetHost:         setupTargetHost,
 		SignerMode:         setupSignerMode,
 		HostKeyFingerprint: setupHostKeyFingerprint,
+		AgentSocket:        setupAgentSocket,
 		EnrollToken:        setupEnrollToken,
 		FetchCA:            setupFetchCA,
 		Force:              setupForce,

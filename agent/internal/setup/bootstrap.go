@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	mtlsCAPath        = "/api/v1/mtls/ca"
-	mtlsEnrollPath    = "/api/v1/mtls/enroll"
-	enrollTokenHeader = "X-Luna-Enroll-Token"
+	mtlsCAPath          = "/api/v1/mtls/ca"
+	mtlsEnrollPath      = "/api/v1/mtls/enroll"
+	enrollTokenHeader   = "X-Luna-Enroll-Token"
 	defaultProbeTimeout = 10 * time.Second
 )
 

@@ -26,6 +26,7 @@ type Options struct {
 	TargetHost         string
 	SignerMode         string
 	HostKeyFingerprint string
+	AgentSocket        string
 	EnrollToken        string
 	EnrollViaProxy     bool
 	FetchCA            bool
@@ -165,6 +166,7 @@ Or re-run with --ca-key /path/to/ca.key`, opts.ProxyURL, opts.CertsDir, opts.Cer
 		CertsDir:           opts.CertsDir,
 		TargetUser:         opts.TargetUser,
 		TargetHost:         opts.TargetHost,
+		AgentSocket:        opts.AgentSocket,
 		HostKeyFingerprint: opts.HostKeyFingerprint,
 		Force:              opts.Force || opts.RewriteConfig,
 	})
@@ -265,6 +267,9 @@ func (o Options) withDefaults() Options {
 	}
 	if o.SignerMode == "" {
 		o.SignerMode = "local-ca"
+	}
+	if o.AgentSocket == "" {
+		o.AgentSocket = ProductionAgentSocket
 	}
 	if o.EnrollToken == "" {
 		o.EnrollToken = strings.TrimSpace(os.Getenv("LUNA_MTLS_ENROLL_TOKEN"))

@@ -80,6 +80,19 @@ func RunInteractive(ioOpts InteractiveOptions) (Options, error) {
 		return Options{}, err
 	}
 
+	socketDefault := firstNonEmpty(opts.AgentSocket, existing.AgentSocket, ProductionAgentSocket)
+	opts.AgentSocket, err = p.askString("Agent Unix socket path", socketDefault)
+	if err != nil {
+		return Options{}, err
+	}
+
+	if strings.TrimSpace(opts.TargetHost) == "" {
+		return Options{}, fmt.Errorf("SSH target host/IP is required")
+	}
+	if strings.TrimSpace(opts.TargetUser) == "" {
+		return Options{}, fmt.Errorf("SSH target user is required")
+	}
+
 	if opts.SignerMode == "local-key" {
 		fmt.Fprintln(p.out, "  Host keys are discovered from GET /api/v1/capabilities after mTLS (all loaded signers).")
 		fmt.Fprintln(p.out, "  Leave fingerprint blank to offer every key loaded on the proxy.")
@@ -318,6 +331,7 @@ func loadExistingConfig(path string) Options {
 		TargetUser:         v.GetString("target_user"),
 		TargetHost:         v.GetString("target_host"),
 		HostKeyFingerprint: v.GetString("host_key_fingerprint"),
+		AgentSocket:        v.GetString("agent_socket"),
 		CertsDir:           certsDir,
 		ConfigPath:         path,
 	}
