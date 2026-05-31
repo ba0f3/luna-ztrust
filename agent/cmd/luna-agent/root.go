@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/ba0f3/luna-ztrust/agent"
+	"github.com/ba0f3/luna-ztrust/agent/internal/version"
 	"github.com/ba0f3/luna-ztrust/sdk"
 	"github.com/spf13/cobra"
 	sshagent "golang.org/x/crypto/ssh/agent"
@@ -82,7 +83,7 @@ func runAgent(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("chmod socket: %w", err)
 	}
 
-	log.Printf("luna-agent listening on %s", cfg.SocketPath)
+	log.Printf("luna-agent %s listening on %s", version.String(), cfg.SocketPath)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

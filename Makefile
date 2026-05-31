@@ -3,6 +3,19 @@
 MODULES := agent proxy sdk
 E2E_PROXY_URL ?= https://localhost:8443
 
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+PROXY_LDFLAGS := -s -w \
+	-X github.com/ba0f3/luna-ztrust/proxy/internal/version.Version=$(VERSION) \
+	-X github.com/ba0f3/luna-ztrust/proxy/internal/version.Commit=$(COMMIT) \
+	-X github.com/ba0f3/luna-ztrust/proxy/internal/version.Date=$(DATE)
+AGENT_LDFLAGS := -s -w \
+	-X github.com/ba0f3/luna-ztrust/agent/internal/version.Version=$(VERSION) \
+	-X github.com/ba0f3/luna-ztrust/agent/internal/version.Commit=$(COMMIT) \
+	-X github.com/ba0f3/luna-ztrust/agent/internal/version.Date=$(DATE)
+
 COMPOSE := docker compose -f deploy/docker-compose.e2e.yml
 
 fmt:
@@ -37,8 +50,8 @@ update:
 
 build:
 	go work sync
-	(cd proxy && CGO_ENABLED=0 go build -o ../bin/luna-proxy ./cmd/luna-proxy)
-	(cd agent && CGO_ENABLED=0 go build -o ../bin/luna-agent ./cmd/luna-agent)
+	(cd proxy && CGO_ENABLED=0 go build -ldflags "$(PROXY_LDFLAGS)" -o ../bin/luna-proxy ./cmd/luna-proxy)
+	(cd agent && CGO_ENABLED=0 go build -ldflags "$(AGENT_LDFLAGS)" -o ../bin/luna-agent ./cmd/luna-agent)
 
 ci: fmt-check lint test build
 

@@ -228,6 +228,7 @@ LUNA_DEBUG=1 journalctl -u luna-agent -f
 
 | Task | Command |
 |------|---------|
+| Binary version | `luna-proxy version` / `luna-agent version` (or `-v` / `--version`) |
 | Install proxy unit | `sudo luna-proxy install systemd --enable` |
 | Install agent unit | `sudo luna-agent install systemd --enable` |
 | Proxy status | `luna-proxy --socket /run/luna/control.sock status` |

@@ -15,6 +15,7 @@ import (
 	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/mobile"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/signing"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -106,6 +107,6 @@ func runServe(_ *cobra.Command, _ []string) error {
 		}
 	}()
 
-	log.Printf("luna-proxy listening on %s (signer=%s)", cfg.ListenAddr, cfg.SignerMode)
+	log.Printf("luna-proxy %s listening on %s (signer=%s)", version.String(), cfg.ListenAddr, cfg.SignerMode)
 	return srv.ListenAndServeTLS("", "")
 }

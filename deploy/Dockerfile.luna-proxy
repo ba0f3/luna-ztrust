@@ -7,7 +7,14 @@ COPY proxy/ proxy/
 
 WORKDIR /build/proxy
 ENV GOWORK=off
-RUN CGO_ENABLED=0 go build -o /out/luna-proxy ./cmd/luna-proxy
+ARG VERSION=dev
+ARG COMMIT=none
+ARG DATE=unknown
+RUN CGO_ENABLED=0 go build -ldflags "-s -w \
+	-X github.com/ba0f3/luna-ztrust/proxy/internal/version.Version=${VERSION} \
+	-X github.com/ba0f3/luna-ztrust/proxy/internal/version.Commit=${COMMIT} \
+	-X github.com/ba0f3/luna-ztrust/proxy/internal/version.Date=${DATE}" \
+	-o /out/luna-proxy ./cmd/luna-proxy
 
 FROM debian:bookworm-slim
 
