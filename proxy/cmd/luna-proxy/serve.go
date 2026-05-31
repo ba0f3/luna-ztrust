@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -65,7 +66,7 @@ func runServe(_ *cobra.Command, _ []string) error {
 	cliStore := cli.NewStore()
 	csrSigner, csrErr := cli.NewCSRSignerFromConfig(cfg)
 	if csrErr != nil {
-		log.Printf("luna-proxy: CLI CSR signer config: %v", csrErr)
+		return fmt.Errorf("CLI CSR signer: %w", csrErr)
 	}
 	loadLimiter := cli.NewLoadRateLimiter()
 	handler := api.NewServer(api.ServerDeps{

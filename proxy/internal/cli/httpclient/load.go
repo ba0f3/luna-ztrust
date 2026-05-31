@@ -46,6 +46,8 @@ type loadErrorResponse struct {
 }
 
 // Load uploads a local encrypted PEM to POST /api/v1/cli/keys/load over mTLS.
+// Each call dials a fresh TLS session (sharedTLSConn is one-shot per Load) so
+// HMAC and the HTTP request use the same exporter key.
 func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, label string) (string, error) {
 	pemBytes, err := os.ReadFile(pemPath)
 	if err != nil {
