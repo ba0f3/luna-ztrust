@@ -22,7 +22,7 @@ func verifyDeviceSignature(pub ed25519.PublicKey, payload []byte, sigHex string,
 }
 
 var (
-	errTimestampOutOfRange   = errDeviceAuth{msg: "timestamp out of range"}
+	errTimestampOutOfRange    = errDeviceAuth{msg: "timestamp out of range"}
 	errInvalidDeviceSignature = errDeviceAuth{msg: "signature verification failed"}
 )
 
