@@ -41,11 +41,21 @@ type Transaction struct {
 	TargetIP           string
 	PublicKey          string
 	SourceIP           string
+	SourceUser         string
+	ClientName         string
+	ClientVersion      string
 	ClientCertFP       string
 	AgentSignData      string
 	HostKeyFingerprint string
 	State              State
 	CreatedAt          time.Time
+}
+
+// ClientMeta is optional metadata from the sign request (display/audit only).
+type ClientMeta struct {
+	SourceUser    string
+	ClientName    string
+	ClientVersion string
 }
 
 // Result is delivered to waiters when a transaction reaches a terminal state.
@@ -138,7 +148,7 @@ func newTxID() string {
 
 // Create registers a pending transaction and returns its metadata and result channel.
 // When cfg.Env is "dev", auto-approves via the configured signer.
-func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData, hostKeyFP string) (*Transaction, <-chan Result) {
+func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData, hostKeyFP string, client ClientMeta) (*Transaction, <-chan Result) {
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
@@ -147,6 +157,9 @@ func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, 
 		TargetIP:           targetIP,
 		PublicKey:          publicKey,
 		SourceIP:           sourceIP,
+		SourceUser:         client.SourceUser,
+		ClientName:         client.ClientName,
+		ClientVersion:      client.ClientVersion,
 		ClientCertFP:       clientCertFP,
 		AgentSignData:      agentSignData,
 		HostKeyFingerprint: hostKeyFP,

@@ -15,6 +15,7 @@ import (
 type CertRequest struct {
 	TargetUser string
 	TargetIP   string
+	Client     ClientInfo
 }
 
 // Config configures the Luna SDK HTTP client.
@@ -59,5 +60,10 @@ func (c *Client) RequestCertificate(ctx context.Context, req CertRequest) (*ssh.
 	return c.inner.RequestCertificate(ctx, sign.CertRequest{
 		TargetUser: req.TargetUser,
 		TargetIP:   req.TargetIP,
+		Client: sign.ClientInfo{
+			SourceUser:    req.Client.SourceUser,
+			ClientName:    req.Client.ClientName,
+			ClientVersion: req.Client.ClientVersion,
+		},
 	})
 }

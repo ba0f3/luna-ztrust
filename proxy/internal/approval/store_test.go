@@ -25,7 +25,7 @@ func (s stubIssuer) IssueCert(_ context.Context, req signing.IssueRequest) (sign
 func TestStoreApproveWakesWaiter(t *testing.T) {
 	s := approval.NewStore(60 * time.Second)
 	s.SetIssuer(stubIssuer{cert: "certpem"})
-	tx, _ := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "")
+	tx, _ := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "", approval.ClientMeta{})
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		s.Approve(tx.ID, time.Minute, "telegram:1")
@@ -43,7 +43,7 @@ func TestStoreDevBypass(t *testing.T) {
 	s := approval.NewStore(60 * time.Second)
 	s.SetIssuer(stubIssuer{cert: "ssh-ed25519-cert-v01@openssh.com AAAAutotest"})
 	s.SetConfig(config.Config{Env: "dev"})
-	tx, ch := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "")
+	tx, ch := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "", approval.ClientMeta{})
 	select {
 	case res := <-ch:
 		if res.Err != nil {
@@ -63,7 +63,7 @@ func TestStoreDevBypass(t *testing.T) {
 func TestStoreLocalKeyRequiresAgentSignData(t *testing.T) {
 	s := approval.NewStore(60 * time.Second)
 	s.SetConfig(config.Config{SignerMode: approval.SignerModeLocalKey})
-	tx, _ := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "")
+	tx, _ := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "", approval.ClientMeta{})
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		s.Approve(tx.ID, time.Minute, "telegram:1")

@@ -125,6 +125,18 @@ luna-ztrust/
 ## SDK public API (minimum)
 
 ```go
+type ClientInfo struct {
+    SourceUser    string // optional OS/login user on the client host
+    ClientName    string // optional, e.g. luna-agent, lunacli
+    ClientVersion string // optional release version
+}
+
+type CertRequest struct {
+    TargetUser string
+    TargetIP   string
+    Client     ClientInfo
+}
+
 type Config struct {
     ProxyURL   string
     TLSCert    tls.Certificate
@@ -140,7 +152,7 @@ func (c *Client) FetchCapabilities(ctx context.Context) (Capabilities, error)
 func NewCertSigner(cert *ssh.Certificate, priv ed25519.PrivateKey) (ssh.Signer, error)
 ```
 
-PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed with ephemeral key; hex-encode signature in JSON. `local-key` sign requests include `agent_sign_data` and `host_key_fingerprint`; capabilities expose loaded signer fingerprints and public keys when available.
+PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed with ephemeral key; hex-encode signature in JSON. Optional sign JSON fields `source_user`, `client_name`, `client_version` are for approval display and audit logs only (not in PoP). Authoritative **source IP** is always from mTLS `RemoteAddr` on the proxy. `local-key` sign requests include `agent_sign_data` and `host_key_fingerprint`; capabilities expose loaded signer fingerprints and public keys when available.
 
 ## Proxy packages
 

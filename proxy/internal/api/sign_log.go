@@ -26,6 +26,9 @@ type signLogEntry struct {
 	SourceIP      string `json:"source_ip,omitempty"`
 	TargetUser    string `json:"target_user,omitempty"`
 	TargetIP      string `json:"target_ip,omitempty"`
+	SourceUser    string `json:"source_user,omitempty"`
+	ClientName    string `json:"client_name,omitempty"`
+	ClientVersion string `json:"client_version,omitempty"`
 	Outcome       string `json:"outcome"`
 	Sealed        bool   `json:"sealed,omitempty"`
 	LoadedSigners int    `json:"loaded_signers,omitempty"`
@@ -79,16 +82,19 @@ func signOutcomeFromAuthErr(err error) string {
 	}
 }
 
-func (s *server) logSignRequest(r *http.Request, start time.Time, txID, targetUser, targetIP, outcome string) {
+func (s *server) logSignRequest(r *http.Request, start time.Time, txID, targetUser, targetIP, outcome string, meta auth.SignClientMeta) {
 	emitSignLog(signLogEntry{
-		Route:        "ssh/sign",
-		TxID:         txID,
-		ClientCertFP: clientCertFPFromRequest(r),
-		SourceIP:     clientIPFromRemoteAddr(r.RemoteAddr),
-		TargetUser:   targetUser,
-		TargetIP:     targetIP,
-		Outcome:      outcome,
-		LatencyMS:    time.Since(start).Milliseconds(),
+		Route:         "ssh/sign",
+		TxID:          txID,
+		ClientCertFP:  clientCertFPFromRequest(r),
+		SourceIP:      clientIPFromRemoteAddr(r.RemoteAddr),
+		TargetUser:    targetUser,
+		TargetIP:      targetIP,
+		SourceUser:    meta.SourceUser,
+		ClientName:    meta.ClientName,
+		ClientVersion: meta.ClientVersion,
+		Outcome:       outcome,
+		LatencyMS:     time.Since(start).Milliseconds(),
 	})
 }
 

@@ -28,6 +28,9 @@ type SignRequest struct {
 	AgentSignData      string `json:"agent_sign_data,omitempty"`
 	HostPublicKey      string `json:"host_public_key,omitempty"`
 	HostKeyFingerprint string `json:"host_key_fingerprint,omitempty"`
+	SourceUser         string `json:"source_user,omitempty"`
+	ClientName         string `json:"client_name,omitempty"`
+	ClientVersion      string `json:"client_version,omitempty"`
 	BodyMAC            string `json:"-"` // X-Luna-Body-Mac header, set by handler
 }
 

@@ -69,7 +69,7 @@ func TestPollerApproveCallback(t *testing.T) {
 	store := approval.NewStore(time.Minute)
 	store.SetConfig(config.Config{SignerMode: approval.SignerModeLocalCA})
 	store.SetLeases(lease.NewStore())
-	tx, _ := store.Create("deploy", "10.0.0.5", "ssh-ed25519 AAAA", "127.0.0.1", "fp", "", "")
+	tx, _ := store.Create("deploy", "10.0.0.5", "ssh-ed25519 AAAA", "127.0.0.1", "fp", "", "", approval.ClientMeta{})
 
 	var mu sync.Mutex
 	var outcomes []string

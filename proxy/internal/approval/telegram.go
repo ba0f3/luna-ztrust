@@ -74,10 +74,7 @@ func (n *Notifier) Notify(ctx context.Context, tx *Transaction) error {
 	n.sent[tx.ID] = struct{}{}
 	n.mu.Unlock()
 
-	text := fmt.Sprintf(
-		"Luna SSH sign request\nUser: %s\nHost: %s\nTx: %s",
-		tx.TargetUser, tx.TargetIP, tx.ID,
-	)
+	text := formatApprovalMessage(tx)
 	body := map[string]any{
 		"chat_id": n.chatID,
 		"text":    text,
@@ -138,6 +135,31 @@ func formatTTLLabel(sec int) string {
 	default:
 		return fmt.Sprintf("Approve %ds", sec)
 	}
+}
+
+func formatApprovalMessage(tx *Transaction) string {
+	if tx == nil {
+		return "Luna SSH sign request"
+	}
+	var b strings.Builder
+	b.WriteString("Luna SSH sign request\n")
+	fmt.Fprintf(&b, "Target user: %s\n", tx.TargetUser)
+	fmt.Fprintf(&b, "Target host: %s\n", tx.TargetIP)
+	if tx.SourceIP != "" {
+		fmt.Fprintf(&b, "Source IP: %s\n", tx.SourceIP)
+	}
+	if tx.SourceUser != "" {
+		fmt.Fprintf(&b, "Source user: %s\n", tx.SourceUser)
+	}
+	if tx.ClientName != "" || tx.ClientVersion != "" {
+		if tx.ClientVersion != "" {
+			fmt.Fprintf(&b, "Client: %s %s\n", tx.ClientName, tx.ClientVersion)
+		} else {
+			fmt.Fprintf(&b, "Client: %s\n", tx.ClientName)
+		}
+	}
+	fmt.Fprintf(&b, "Tx: %s", tx.ID)
+	return b.String()
 }
 
 func (n *Notifier) forgetSent(txID string) {

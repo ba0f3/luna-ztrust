@@ -42,6 +42,9 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 		TargetIP:           req.TargetIP,
 		Timestamp:          ts,
 		PopSignature:       popSig,
+		SourceUser:         req.Client.SourceUser,
+		ClientName:         req.Client.ClientName,
+		ClientVersion:      req.Client.ClientVersion,
 		AgentSignData:      base64.StdEncoding.EncodeToString(signData),
 		HostKeyFingerprint: req.HostKeyFingerprint,
 	})

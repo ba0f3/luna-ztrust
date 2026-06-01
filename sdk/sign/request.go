@@ -7,6 +7,9 @@ type Request struct {
 	TargetIP           string `json:"target_ip"`
 	Timestamp          int64  `json:"timestamp"`
 	PopSignature       string `json:"pop_signature"`
+	SourceUser         string `json:"source_user,omitempty"`
+	ClientName         string `json:"client_name,omitempty"`
+	ClientVersion      string `json:"client_version,omitempty"`
 	AgentSignData      string `json:"agent_sign_data,omitempty"`
 	HostKeyFingerprint string `json:"host_key_fingerprint,omitempty"`
 }
@@ -24,10 +27,18 @@ type WaitResponse struct {
 	LeaseExpiresAt string `json:"lease_expires_at,omitempty"`
 }
 
+// ClientInfo is optional client metadata (not part of PoP).
+type ClientInfo struct {
+	SourceUser    string
+	ClientName    string
+	ClientVersion string
+}
+
 // CertRequest identifies the SSH session to certify.
 type CertRequest struct {
 	TargetUser string
 	TargetIP   string
+	Client     ClientInfo
 }
 
 // SignatureRequest identifies the SSH session for hosted-key signing.
@@ -35,4 +46,5 @@ type SignatureRequest struct {
 	TargetUser         string
 	TargetIP           string
 	HostKeyFingerprint string
+	Client             ClientInfo
 }

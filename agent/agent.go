@@ -103,6 +103,7 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 			TargetUser:         a.targetUser,
 			TargetIP:           a.targetHost,
 			HostKeyFingerprint: fp,
+			Client:             DefaultClientInfo(),
 		}, data)
 	}
 
@@ -112,6 +113,7 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 	cert, priv, err := a.provider.RequestCertificate(ctx, sdk.CertRequest{
 		TargetUser: a.targetUser,
 		TargetIP:   a.targetHost,
+		Client:     DefaultClientInfo(),
 	})
 	if err != nil {
 		return nil, err

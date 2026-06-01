@@ -109,11 +109,14 @@ func (c *Client) RequestCertificate(ctx context.Context, req CertRequest) (*ssh.
 	}
 
 	body, err := json.Marshal(Request{
-		PublicKey:    string(ssh.MarshalAuthorizedKey(sshPub)),
-		TargetUser:   req.TargetUser,
-		TargetIP:     req.TargetIP,
-		Timestamp:    ts,
-		PopSignature: popSig,
+		PublicKey:     string(ssh.MarshalAuthorizedKey(sshPub)),
+		TargetUser:    req.TargetUser,
+		TargetIP:      req.TargetIP,
+		Timestamp:     ts,
+		PopSignature:  popSig,
+		SourceUser:    req.Client.SourceUser,
+		ClientName:    req.Client.ClientName,
+		ClientVersion: req.Client.ClientVersion,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("marshal request: %w", err)

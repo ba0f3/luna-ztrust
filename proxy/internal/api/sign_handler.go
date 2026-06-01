@@ -30,45 +30,56 @@ type waitResponse struct {
 	LeaseExpiresAt string `json:"lease_expires_at,omitempty"`
 }
 
+func signClientMeta(req auth.SignRequest) approval.ClientMeta {
+	m := auth.NormalizeSignClientMeta(req.SourceUser, req.ClientName, req.ClientVersion)
+	return approval.ClientMeta{
+		SourceUser:    m.SourceUser,
+		ClientName:    m.ClientName,
+		ClientVersion: m.ClientVersion,
+	}
+}
+
 func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
+	emptyMeta := auth.SignClientMeta{}
 	r.Body = http.MaxBytesReader(w, r.Body, maxSignRequestBody)
 	rawBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
-			s.logSignRequest(r, start, "", "", "", "body_too_large")
+			s.logSignRequest(r, start, "", "", "", "body_too_large", emptyMeta)
 			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
 			return
 		}
-		s.logSignRequest(r, start, "", "", "", "read_body_error")
+		s.logSignRequest(r, start, "", "", "", "read_body_error", emptyMeta)
 		http.Error(w, "read body", http.StatusBadRequest)
 		return
 	}
 
 	var req auth.SignRequest
 	if err := json.Unmarshal(rawBody, &req); err != nil {
-		s.logSignRequest(r, start, "", "", "", "invalid_json")
+		s.logSignRequest(r, start, "", "", "", "invalid_json", emptyMeta)
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 	req.BodyMAC = r.Header.Get("X-Luna-Body-Mac")
+	clientMeta := auth.NormalizeSignClientMeta(req.SourceUser, req.ClientName, req.ClientVersion)
 
 	conn, ok := tlsConnFromContext(r.Context())
 	if !ok {
-		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "tls_required")
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "tls_required", clientMeta)
 		http.Error(w, "tls connection required", http.StatusUnauthorized)
 		return
 	}
 
 	if err := auth.ValidateSignRequest(conn, rawBody, &req, time.Now(), s.replay); err != nil {
-		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, signOutcomeFromAuthErr(err))
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, signOutcomeFromAuthErr(err), clientMeta)
 		writeAuthError(w, err)
 		return
 	}
 
 	if !s.keystore.Available() {
-		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "sealed")
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "sealed", clientMeta)
 		http.Error(w, "sealed", http.StatusServiceUnavailable)
 		return
 	}
@@ -77,29 +88,30 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	sourceIP := clientIPFromRemoteAddr(r.RemoteAddr)
 
 	if s.cfg.SignerMode == approval.SignerModeLocalKey && req.AgentSignData == "" {
-		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "missing_agent_sign_data")
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "missing_agent_sign_data", clientMeta)
 		http.Error(w, "agent_sign_data required", http.StatusBadRequest)
 		return
 	}
 	if len(req.AgentSignData) > maxAgentSignDataB64 {
-		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "agent_sign_data_too_large")
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "agent_sign_data_too_large", clientMeta)
 		http.Error(w, "agent_sign_data too large", http.StatusRequestEntityTooLarge)
 		return
 	}
 
 	hostKeyFP, err := s.resolveHostKeyFingerprint(&req)
 	if err != nil {
-		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_host_key")
+		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_host_key", clientMeta)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP, hostKeyFP)
+	txMeta := signClientMeta(req)
 
 	if s.cfg.Env != "dev" {
 		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData, hostKeyFP); ok {
 			tx := s.store.CreateInstantApproved(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, res)
-			s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "lease_hit")
+			s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "lease_hit", clientMeta)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_ = json.NewEncoder(w).Encode(signResponse{TxID: tx.ID})
@@ -107,7 +119,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData, hostKeyFP)
+	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData, hostKeyFP, txMeta)
 	if s.cfg.Env != "dev" {
 		if s.telegram != nil && s.telegram.Configured() {
 			go func() {
@@ -124,7 +136,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 			_ = s.push.NotifyPending(context.Background(), tx)
 		}()
 	}
-	s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "accepted")
+	s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "accepted", clientMeta)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	_ = json.NewEncoder(w).Encode(signResponse{TxID: tx.ID})
