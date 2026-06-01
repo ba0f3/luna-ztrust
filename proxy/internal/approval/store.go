@@ -346,6 +346,18 @@ func (s *Store) getEntry(txID string) *txEntry {
 	return entry
 }
 
+// Snapshot returns a copy of the transaction if it exists (any state).
+func (s *Store) Snapshot(txID string) *Transaction {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, ok := s.txs[txID]
+	if !ok {
+		return nil
+	}
+	cp := *entry.tx
+	return &cp
+}
+
 // Deny marks the transaction denied and delivers ErrDenied to waiters.
 func (s *Store) Deny(txID string) {
 	s.finish(txID, StateDenied, &Result{Err: ErrDenied})

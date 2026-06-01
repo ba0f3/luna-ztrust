@@ -162,6 +162,119 @@ func formatApprovalMessage(tx *Transaction) string {
 	return b.String()
 }
 
+// Resolution records who resolved an approval prompt and how.
+type Resolution struct {
+	Decision string // "APPROVED" or "DENIED"
+	Approver string
+	At       time.Time
+	TTL      time.Duration // set for approve
+}
+
+func formatResolvedApprovalMessage(tx *Transaction, res Resolution) string {
+	if tx == nil {
+		return "Luna SSH sign request\nStatus: " + res.Decision
+	}
+	var b strings.Builder
+	b.WriteString("Luna SSH sign request\n")
+	fmt.Fprintf(&b, "Target user: %s\n", tx.TargetUser)
+	fmt.Fprintf(&b, "Target host: %s\n", tx.TargetIP)
+	if tx.SourceIP != "" {
+		fmt.Fprintf(&b, "Source IP: %s\n", tx.SourceIP)
+	}
+	if tx.SourceUser != "" {
+		fmt.Fprintf(&b, "Source user: %s\n", tx.SourceUser)
+	}
+	if tx.ClientName != "" || tx.ClientVersion != "" {
+		if tx.ClientVersion != "" {
+			fmt.Fprintf(&b, "Client: %s %s\n", tx.ClientName, tx.ClientVersion)
+		} else {
+			fmt.Fprintf(&b, "Client: %s\n", tx.ClientName)
+		}
+	}
+	fmt.Fprintf(&b, "Tx: %s\n", tx.ID)
+	fmt.Fprintf(&b, "Status: %s\n", res.Decision)
+	if res.Approver != "" {
+		fmt.Fprintf(&b, "By: %s\n", formatApproverDisplay(res.Approver))
+	}
+	if !res.At.IsZero() {
+		fmt.Fprintf(&b, "At: %s\n", res.At.UTC().Format(time.RFC3339))
+	}
+	if res.Decision == "APPROVED" && res.TTL > 0 {
+		fmt.Fprintf(&b, "Lease TTL: %s", res.TTL)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func formatApproverDisplay(approver string) string {
+	if strings.HasPrefix(approver, "telegram:") {
+		return "Telegram chat " + strings.TrimPrefix(approver, "telegram:")
+	}
+	if strings.HasPrefix(approver, "device:") {
+		return "Mobile device " + strings.TrimPrefix(approver, "device:")
+	}
+	return approver
+}
+
+// EditMessageText updates a Telegram message and removes inline buttons.
+func EditMessageText(ctx context.Context, cfg NotifierConfig, chatID int64, messageID int, text string) error {
+	if cfg.BotToken == "" || messageID == 0 {
+		return nil
+	}
+	body := map[string]any{
+		"chat_id":    chatID,
+		"message_id": messageID,
+		"text":       text,
+		"reply_markup": map[string]any{
+			"inline_keyboard": []any{},
+		},
+	}
+	return telegramAPIPOST(ctx, cfg, "editMessageText", body)
+}
+
+func telegramAPIPOST(ctx context.Context, cfg NotifierConfig, method string, payload map[string]any) error {
+	base := cfg.BaseURL
+	if base == "" {
+		base = telegramAPIBase
+	}
+	client := cfg.Client
+	if client == nil {
+		client = &http.Client{Timeout: 15 * time.Second}
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	reqURL := fmt.Sprintf("%s/bot%s/%s", base, cfg.BotToken, method)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bytes.NewReader(raw))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	slurp, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("telegram %s: %s: %s", method, resp.Status, slurp)
+	}
+	var ack struct {
+		OK          bool   `json:"ok"`
+		Description string `json:"description"`
+	}
+	if err := json.Unmarshal(slurp, &ack); err != nil {
+		return fmt.Errorf("telegram %s response: %w", method, err)
+	}
+	if !ack.OK {
+		if ack.Description != "" {
+			return fmt.Errorf("telegram %s: %s", method, ack.Description)
+		}
+		return fmt.Errorf("telegram %s: not ok", method)
+	}
+	return nil
+}
+
 func (n *Notifier) forgetSent(txID string) {
 	n.mu.Lock()
 	delete(n.sent, txID)

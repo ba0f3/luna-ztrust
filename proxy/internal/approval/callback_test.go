@@ -73,6 +73,7 @@ func TestPollerApproveCallback(t *testing.T) {
 
 	var mu sync.Mutex
 	var outcomes []string
+	var edited bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/deleteWebhook"):
@@ -88,7 +89,8 @@ func TestPollerApproveCallback(t *testing.T) {
 							"id":   "cq1",
 							"data": "approve:" + tx.ID + ":300",
 							"message": map[string]any{
-								"chat": map[string]any{"id": 4242},
+								"message_id": 42,
+								"chat":       map[string]any{"id": 4242},
 							},
 						},
 					},
@@ -98,6 +100,10 @@ func TestPollerApproveCallback(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(raw)
 		case strings.HasSuffix(r.URL.Path, "/answerCallbackQuery"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok":true}`))
+		case strings.HasSuffix(r.URL.Path, "/editMessageText"):
+			edited = true
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"ok":true}`))
 		default:
@@ -134,6 +140,9 @@ func TestPollerApproveCallback(t *testing.T) {
 	defer mu.Unlock()
 	for _, o := range outcomes {
 		if o == "approved" {
+			if !edited {
+				t.Fatal("expected editMessageText after approve")
+			}
 			return
 		}
 	}

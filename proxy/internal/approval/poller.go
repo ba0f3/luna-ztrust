@@ -166,7 +166,8 @@ type telegramCallbackQuery struct {
 }
 
 type telegramMessage struct {
-	Chat telegramChat `json:"chat"`
+	MessageID int          `json:"message_id"`
+	Chat      telegramChat `json:"chat"`
 }
 
 type telegramChat struct {
@@ -178,15 +179,22 @@ func (p *Poller) handleUpdate(ctx context.Context, upd telegramUpdate) {
 	if cq == nil || cq.Data == "" {
 		return
 	}
-	defer func() {
-		_ = p.answerCallbackQuery(ctx, cq.ID, "")
-	}()
 
 	action, txID, ttl, ok := ParseCallbackData(cq.Data, p.allowedTTLs)
 	if !ok {
 		p.logEvent("poll", "", "ignored_callback", cq.Data)
 		return
 	}
+	defer func() {
+		toast := ""
+		switch action {
+		case "approve":
+			toast = "Approved"
+		case "deny":
+			toast = "Denied"
+		}
+		_ = p.answerCallbackQuery(ctx, cq.ID, toast)
+	}()
 
 	chatID := int64(0)
 	if cq.Message != nil {
@@ -197,6 +205,14 @@ func (p *Poller) handleUpdate(ctx context.Context, upd telegramUpdate) {
 		return
 	}
 
+	txSnap := p.store.Snapshot(txID)
+	at := time.Now().UTC()
+	cfg := NotifierConfig{
+		BotToken: p.token,
+		BaseURL:  p.baseURL,
+		Client:   p.client,
+	}
+
 	switch action {
 	case "approve":
 		if ttl <= 0 {
@@ -205,9 +221,31 @@ func (p *Poller) handleUpdate(ctx context.Context, upd telegramUpdate) {
 		approver := lease.FormatApproverChatID(chatID)
 		p.store.Approve(txID, ttl, approver)
 		p.logEvent("poll", txID, "approved", fmt.Sprintf("ttl=%s", ttl))
+		p.editResolvedMessage(ctx, cfg, cq.Message, txSnap, Resolution{
+			Decision: "APPROVED",
+			Approver: approver,
+			At:       at,
+			TTL:      ttl,
+		})
 	case "deny":
+		approver := lease.FormatApproverChatID(chatID)
 		p.store.Deny(txID)
 		p.logEvent("poll", txID, "denied", "")
+		p.editResolvedMessage(ctx, cfg, cq.Message, txSnap, Resolution{
+			Decision: "DENIED",
+			Approver: approver,
+			At:       at,
+		})
+	}
+}
+
+func (p *Poller) editResolvedMessage(ctx context.Context, cfg NotifierConfig, msg *telegramMessage, tx *Transaction, res Resolution) {
+	if msg == nil || msg.MessageID == 0 {
+		return
+	}
+	text := formatResolvedApprovalMessage(tx, res)
+	if err := EditMessageText(ctx, cfg, msg.Chat.ID, msg.MessageID, text); err != nil {
+		p.logEvent("poll", "", "edit_message_failed", err.Error())
 	}
 }
 
