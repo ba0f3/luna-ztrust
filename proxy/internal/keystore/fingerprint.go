@@ -14,8 +14,7 @@ import (
 // with trailing '=' removed. This matches `ssh-keygen -lf` (e.g. SHA256:ErTRveOa...).
 func Fingerprint(pub ssh.PublicKey) string {
 	sum := sha256.Sum256(pub.Marshal())
-	b64 := base64.StdEncoding.EncodeToString(sum[:])
-	return strings.TrimRight(b64, "=")
+	return base64.RawStdEncoding.EncodeToString(sum[:])
 }
 
 // NormalizeFingerprintInput strips an optional SHA256: prefix and base64 padding for lookup.
@@ -44,13 +43,9 @@ func ParseFingerprintHint(s string) (string, error) {
 }
 
 func fingerprintDigest(raw []byte) string {
-	b64 := base64.StdEncoding.EncodeToString(raw)
-	return strings.TrimRight(b64, "=")
+	return base64.RawStdEncoding.EncodeToString(raw)
 }
 
 func decodeFingerprintBase64(s string) ([]byte, error) {
-	if pad := len(s) % 4; pad != 0 {
-		s += strings.Repeat("=", 4-pad)
-	}
-	return base64.StdEncoding.DecodeString(s)
+	return base64.RawStdEncoding.DecodeString(s)
 }
