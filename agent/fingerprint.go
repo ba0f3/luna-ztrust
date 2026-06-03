@@ -11,8 +11,8 @@ import (
 // PublicKeyFingerprint matches proxy keystore fingerprint (SHA256 of ssh wire encoding).
 func PublicKeyFingerprint(pub ssh.PublicKey) string {
 	sum := sha256.Sum256(pub.Marshal())
-	b64 := base64.StdEncoding.EncodeToString(sum[:])
-	return strings.TrimRight(b64, "=")
+	// ⚡ Bolt: Use RawStdEncoding to generate unpadded string directly instead of StdEncoding + TrimRight
+	return base64.RawStdEncoding.EncodeToString(sum[:])
 }
 
 func normalizeFingerprintHint(s string) string {
