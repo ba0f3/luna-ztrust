@@ -33,7 +33,10 @@ type mobileApproveRequest struct {
 	Signature string `json:"signature"`
 }
 
+const maxMobileBody = 64 << 10
+
 func (s *server) handleMobileEnroll(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxMobileBody)
 	var req mobileEnrollRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
@@ -70,6 +73,7 @@ func (s *server) handleMobileDeleteDevice(w http.ResponseWriter, r *http.Request
 }
 
 func (s *server) handleMobileApprove(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxMobileBody)
 	var req mobileApproveRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
