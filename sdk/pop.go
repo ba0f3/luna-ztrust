@@ -3,13 +3,19 @@ package sdk
 import (
 	"crypto/ed25519"
 	"encoding/hex"
-	"fmt"
+	"strconv"
 
 	"golang.org/x/crypto/ssh"
 )
 
 func challenge(user, ip string, ts int64) []byte {
-	return []byte(fmt.Sprintf("%s:%s:%d", user, ip, ts))
+	// Optimization: avoid fmt.Sprintf overhead and allocations in hot path
+	out := make([]byte, 0, len(user)+len(ip)+2+20) // Roughly size of user + ip + two colons + max int64 length
+	out = append(out, user...)
+	out = append(out, ':')
+	out = append(out, ip...)
+	out = append(out, ':')
+	return strconv.AppendInt(out, ts, 10)
 }
 
 func SignPoP(pub ssh.PublicKey, priv ed25519.PrivateKey, user, ip string, ts int64) (string, error) {
