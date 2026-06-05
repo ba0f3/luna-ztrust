@@ -2,13 +2,19 @@ package auth
 
 import (
 	"encoding/hex"
-	"fmt"
+	"strconv"
 
 	"golang.org/x/crypto/ssh"
 )
 
 func popChallenge(user, ip string, ts int64) []byte {
-	return []byte(fmt.Sprintf("%s:%s:%d", user, ip, ts))
+	// Optimization: avoid fmt.Sprintf overhead and allocations in hot path
+	out := make([]byte, 0, len(user)+len(ip)+2+20)
+	out = append(out, user...)
+	out = append(out, ':')
+	out = append(out, ip...)
+	out = append(out, ':')
+	return strconv.AppendInt(out, ts, 10)
 }
 
 // VerifyPoP checks the hex-encoded SSH signature over target_user:target_ip:timestamp.

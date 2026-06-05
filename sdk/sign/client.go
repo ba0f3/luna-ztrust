@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -215,7 +216,14 @@ func parseCertificate(line string) (*ssh.Certificate, error) {
 }
 
 func signPoP(pub ssh.PublicKey, priv ed25519.PrivateKey, user, ip string, ts int64) (string, error) {
-	msg := []byte(fmt.Sprintf("%s:%s:%d", user, ip, ts))
+	// Optimization: avoid fmt.Sprintf overhead and allocations in hot path
+	msg := make([]byte, 0, len(user)+len(ip)+2+20)
+	msg = append(msg, user...)
+	msg = append(msg, ':')
+	msg = append(msg, ip...)
+	msg = append(msg, ':')
+	msg = strconv.AppendInt(msg, ts, 10)
+
 	sig := ed25519.Sign(priv, msg)
 	sshSig := &ssh.Signature{Format: pub.Type(), Blob: sig}
 	return hex.EncodeToString(sshSig.Blob), nil
