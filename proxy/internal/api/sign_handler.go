@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -133,6 +134,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_session_binding", clientMeta)
+			log.Printf("[sign] invalid_session_binding user=%s ip=%s: %v", req.TargetUser, req.TargetIP, err)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}

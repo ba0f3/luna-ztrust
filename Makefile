@@ -18,6 +18,11 @@ AGENT_LDFLAGS := -s -w \
 
 COMPOSE := docker compose -f deploy/docker-compose.e2e.yml
 
+build:
+	go work sync
+	(cd proxy && CGO_ENABLED=0 go build -ldflags "$(PROXY_LDFLAGS)" -o ../bin/luna-proxy ./cmd/luna-proxy)
+	(cd agent && CGO_ENABLED=0 go build -ldflags "$(AGENT_LDFLAGS)" -o ../bin/luna-agent ./cmd/luna-agent)
+
 fmt:
 	@for m in $(MODULES); do \
 		echo "==> $$m"; \
@@ -47,11 +52,6 @@ update:
 		(cd $$m && go get -u ./... && go mod tidy); \
 	done
 	go work sync
-
-build:
-	go work sync
-	(cd proxy && CGO_ENABLED=0 go build -ldflags "$(PROXY_LDFLAGS)" -o ../bin/luna-proxy ./cmd/luna-proxy)
-	(cd agent && CGO_ENABLED=0 go build -ldflags "$(AGENT_LDFLAGS)" -o ../bin/luna-agent ./cmd/luna-agent)
 
 ci: fmt-check lint test build
 
