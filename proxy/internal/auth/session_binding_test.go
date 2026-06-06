@@ -134,6 +134,44 @@ func TestValidateDirectLocalKeySignData(t *testing.T) {
 	}
 }
 
+func TestValidateDirectLocalKeySignData_GoClientWireFormat(t *testing.T) {
+	hostPub, _ := testSigner(t)
+	userPub, _ := testSigner(t)
+	sessionID := []byte("exchange-hash")
+	data := ssh.Marshal(struct {
+		Session []byte
+		Type    byte
+		User    string
+		Service string
+		Method  string
+		Sign    bool
+		Algo    string
+		PubKey  []byte
+	}{
+		Session: sessionID,
+		Type:    50,
+		User:    "deploy",
+		Service: "ssh-connection",
+		Method:  "publickey",
+		Sign:    true,
+		Algo:    userPub.Type(),
+		PubKey:  userPub.Marshal(),
+	})
+
+	got, err := ValidateDirectLocalKeySignData(
+		base64.StdEncoding.EncodeToString(hostPub.Marshal()),
+		data,
+		"deploy",
+		userPub,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.HostKeyFingerprint == "" {
+		t.Fatal("missing host key fingerprint")
+	}
+}
+
 func TestValidateDirectLocalKeySignDataRejectsWrongUser(t *testing.T) {
 	hostPub, _ := testSigner(t)
 	userPub, _ := testSigner(t)

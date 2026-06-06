@@ -108,6 +108,8 @@ func validateDirectUserAuthSignData(data []byte, targetUser string, expectedKey,
 	return append([]byte(nil), req.SessionID...), nil
 }
 
+const msgUserAuthRequest = 50
+
 type userAuthSignData struct {
 	SessionID []byte
 	User      string `sshtype:"50"`
@@ -119,9 +121,36 @@ type userAuthSignData struct {
 	Rest      []byte `ssh:"rest"`
 }
 
+// goUserAuthSignData matches the payload signed by golang.org/x/crypto/ssh and
+// OpenSSH clients (RFC 4252 section 7).
+type goUserAuthSignData struct {
+	Session []byte
+	Type    byte
+	User    string
+	Service string
+	Method  string
+	Sign    bool
+	Algo    string
+	PubKey  []byte
+	Rest    []byte `ssh:"rest"`
+}
+
 func parseUserAuthSignData(data []byte) (userAuthSignData, error) {
 	if len(data) == 0 {
 		return userAuthSignData{}, fmt.Errorf("%w: missing sign data", ErrInvalidSessionBinding)
+	}
+	var goReq goUserAuthSignData
+	if err := ssh.Unmarshal(data, &goReq); err == nil && goReq.Type == msgUserAuthRequest && len(goReq.Session) > 0 {
+		return userAuthSignData{
+			SessionID: goReq.Session,
+			User:      goReq.User,
+			Service:   goReq.Service,
+			Method:    goReq.Method,
+			HasSig:    goReq.Sign,
+			Algorithm: goReq.Algo,
+			PublicKey: goReq.PubKey,
+			Rest:      goReq.Rest,
+		}, nil
 	}
 	var req userAuthSignData
 	if err := ssh.Unmarshal(data, &req); err != nil {
@@ -135,7 +164,7 @@ func parseUserAuthSignData(data []byte) (userAuthSignData, error) {
 
 func validateParsedUserAuth(req userAuthSignData, targetUser string, expectedKey, boundHostKey ssh.PublicKey) error {
 	if expectedKey == nil || req.User != targetUser || req.Service != "ssh-connection" || !req.HasSig ||
-		req.Algorithm != expectedKey.Type() || !bytes.Equal(req.PublicKey, expectedKey.Marshal()) {
+		!bytes.Equal(req.PublicKey, expectedKey.Marshal()) {
 		return fmt.Errorf("%w: user-auth request mismatch", ErrInvalidSessionBinding)
 	}
 	switch req.Method {
