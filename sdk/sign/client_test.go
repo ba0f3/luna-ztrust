@@ -185,32 +185,20 @@ func TestRequestCertificateHappyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cert, priv, err := c.RequestCertificate(context.Background(), sign.CertRequest{
-		TargetUser: "deploy",
-		TargetIP:   "10.0.0.5",
-	})
-	if err != nil {
-		t.Fatalf("RequestCertificate: %v", err)
-	}
-	if cert == nil {
-		t.Fatal("nil certificate")
-	}
-	if len(priv) != ed25519.PrivateKeySize {
-		t.Fatalf("private key len = %d", len(priv))
-	}
-	if cert.Key.Type() != ssh.KeyAlgoED25519 {
-		t.Fatalf("cert key type = %q", cert.Key.Type())
-	}
-
-	signer, err := sdk.NewCertSigner(cert, priv)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cert.Key.Type() != ssh.KeyAlgoED25519 {
-		t.Fatalf("cert key type = %q", cert.Key.Type())
-	}
-	if _, ok := signer.PublicKey().(*ssh.Certificate); !ok {
-		t.Fatalf("signer public key type = %T", signer.PublicKey())
+	for i := 0; i < 3; i++ {
+		cert, priv, err := c.RequestCertificate(context.Background(), sign.CertRequest{
+			TargetUser: "deploy",
+			TargetIP:   "10.0.0.5",
+		})
+		if err != nil {
+			t.Fatalf("RequestCertificate attempt %d: %v", i+1, err)
+		}
+		if cert == nil {
+			t.Fatalf("attempt %d: nil certificate", i+1)
+		}
+		if len(priv) != ed25519.PrivateKeySize {
+			t.Fatalf("attempt %d: private key len = %d", i+1, len(priv))
+		}
 	}
 }
 

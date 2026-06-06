@@ -35,6 +35,23 @@ func (c *Client) FetchCapabilities(ctx context.Context) (Capabilities, error) {
 		return Capabilities{}, err
 	}
 
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		caps, err := c.fetchCapabilitiesOnce(req)
+		if err == nil {
+			return caps, nil
+		}
+		lastErr = err
+		if attempt == 0 && isRetryableConnErr(err) {
+			c.httpClient.CloseIdleConnections()
+			continue
+		}
+		break
+	}
+	return Capabilities{}, lastErr
+}
+
+func (c *Client) fetchCapabilitiesOnce(req *http.Request) (Capabilities, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return Capabilities{}, fmt.Errorf("GET capabilities: %w", err)

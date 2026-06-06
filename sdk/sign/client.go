@@ -1,6 +1,7 @@
 package sign
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/ed25519"
@@ -16,7 +17,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -36,7 +36,8 @@ type Config struct {
 type Client struct {
 	httpClient *http.Client
 	proxyURL   string
-	shared     *sharedTLSConn
+	tlsCfg     *tls.Config
+	addr       string
 }
 
 // NewClient builds a sign client with a reused TLS session for request HMAC.
@@ -73,18 +74,17 @@ func NewClient(cfg Config) (*Client, error) {
 		host = net.JoinHostPort(host, "443")
 	}
 
-	shared := &sharedTLSConn{cfg: tlsCfg, addr: host}
 	tr := &http.Transport{
-		TLSClientConfig: tlsCfg,
-		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return shared.dial(ctx)
-		},
+		TLSClientConfig:     tlsCfg,
+		MaxIdleConnsPerHost: 2,
+		IdleConnTimeout:     90 * time.Second,
 	}
 
 	return &Client{
 		httpClient: &http.Client{Transport: tr, Timeout: timeout},
 		proxyURL:   strings.TrimRight(cfg.ProxyURL, "/"),
-		shared:     shared,
+		tlsCfg:     tlsCfg,
+		addr:       host,
 	}, nil
 }
 
@@ -144,10 +144,28 @@ func (c *Client) RequestCertificate(ctx context.Context, req CertRequest) (*ssh.
 }
 
 func (c *Client) postSign(ctx context.Context, body []byte) (string, error) {
-	conn, err := c.shared.dial(ctx)
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		txID, err := c.postSignOnce(ctx, body)
+		if err == nil {
+			return txID, nil
+		}
+		lastErr = err
+		if attempt == 0 && isRetryableConnErr(err) {
+			continue
+		}
+		break
+	}
+	return "", lastErr
+}
+
+func (c *Client) postSignOnce(ctx context.Context, body []byte) (string, error) {
+	conn, err := c.dialTLS(ctx)
 	if err != nil {
 		return "", fmt.Errorf("tls dial: %w", err)
 	}
+	defer conn.Close()
+
 	mac, err := ComputeBodyHMAC(conn, body)
 	if err != nil {
 		return "", fmt.Errorf("body HMAC: %w", err)
@@ -159,8 +177,9 @@ func (c *Client) postSign(ctx context.Context, body []byte) (string, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Luna-Body-Mac", FormatMACHeader(mac))
+	req.ContentLength = int64(len(body))
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := doHTTPOverConn(ctx, conn, req)
 	if err != nil {
 		return "", fmt.Errorf("POST sign: %w", err)
 	}
@@ -186,21 +205,28 @@ func (c *Client) getWait(ctx context.Context, txID string) (WaitResponse, error)
 		return WaitResponse{}, err
 	}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return WaitResponse{}, fmt.Errorf("GET wait: %w", err)
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		resp, err := c.httpClient.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return WaitResponse{}, readHTTPError(resp, "GET wait")
+			}
+			var out WaitResponse
+			if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+				return WaitResponse{}, fmt.Errorf("decode wait response: %w", err)
+			}
+			return out, nil
+		}
+		lastErr = err
+		if attempt == 0 && isRetryableConnErr(err) {
+			c.httpClient.CloseIdleConnections()
+			continue
+		}
+		break
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return WaitResponse{}, readHTTPError(resp, "GET wait")
-	}
-
-	var out WaitResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return WaitResponse{}, fmt.Errorf("decode wait response: %w", err)
-	}
-	return out, nil
+	return WaitResponse{}, fmt.Errorf("GET wait: %w", lastErr)
 }
 
 func parseCertificate(line string) (*ssh.Certificate, error) {
@@ -238,29 +264,36 @@ func readHTTPError(resp *http.Response, op string) error {
 	return fmt.Errorf("%s: HTTP %d: %s", op, resp.StatusCode, msg)
 }
 
-type sharedTLSConn struct {
-	once sync.Once
-	conn *tls.Conn
-	err  error
-	cfg  *tls.Config
-	addr string
+func (c *Client) dialTLS(ctx context.Context) (*tls.Conn, error) {
+	var d net.Dialer
+	raw, err := d.DialContext(ctx, "tcp", c.addr)
+	if err != nil {
+		return nil, err
+	}
+	tc := tls.Client(raw, c.tlsCfg.Clone())
+	if err := tc.HandshakeContext(ctx); err != nil {
+		_ = raw.Close()
+		return nil, err
+	}
+	return tc, nil
 }
 
-func (s *sharedTLSConn) dial(ctx context.Context) (*tls.Conn, error) {
-	s.once.Do(func() {
-		var d net.Dialer
-		raw, err := d.DialContext(ctx, "tcp", s.addr)
-		if err != nil {
-			s.err = err
-			return
-		}
-		tc := tls.Client(raw, s.cfg)
-		if err := tc.Handshake(); err != nil {
-			raw.Close()
-			s.err = err
-			return
-		}
-		s.conn = tc
-	})
-	return s.conn, s.err
+func doHTTPOverConn(ctx context.Context, conn net.Conn, req *http.Request) (*http.Response, error) {
+	req = req.WithContext(ctx)
+	if err := req.Write(conn); err != nil {
+		return nil, err
+	}
+	return http.ReadResponse(bufio.NewReader(conn), req)
+}
+
+func isRetryableConnErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "eof") ||
+		strings.Contains(msg, "connection reset") ||
+		strings.Contains(msg, "broken pipe") ||
+		strings.Contains(msg, "use of closed network connection") ||
+		strings.Contains(msg, "tls: ")
 }
