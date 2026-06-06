@@ -60,7 +60,11 @@ type SignatureRequest struct {
 	// caller's HostKeyCallback. Direct x/crypto/ssh clients use this when they
 	// cannot provide OpenSSH agent session binding.
 	DestinationHostPublicKey []byte
-	Client                   ClientInfo
+	// SignatureFormat sets ssh.Signature.Format on the returned signature. When
+	// empty, the ephemeral PoP key type is used (callers using a hosted signing
+	// key must set this to that key's Type()).
+	SignatureFormat string
+	Client          ClientInfo
 }
 
 // SessionBinding proves the destination SSH host key and exchange hash.

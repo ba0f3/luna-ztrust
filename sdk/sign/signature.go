@@ -98,5 +98,9 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 	if err != nil {
 		return nil, fmt.Errorf("decode ssh_signature: %w", err)
 	}
-	return &ssh.Signature{Format: sshPub.Type(), Blob: blob}, nil
+	format := req.SignatureFormat
+	if format == "" {
+		format = sshPub.Type()
+	}
+	return &ssh.Signature{Format: format, Blob: blob}, nil
 }
