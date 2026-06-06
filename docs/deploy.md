@@ -261,15 +261,19 @@ Copy certs from proxy (after `luna-proxy setup mtls` on the central host) — th
 mtls_enroll_token: "your-long-random-secret"
 ```
 
-2. On the agent host, wizard option **Generate key/CSR and enroll via proxy API** (or):
+2. Obtain the SHA-256 fingerprint of `ca.crt` over a trusted channel, then on
+the agent host install that CA or use pinned HTTP bootstrap:
 
 ```bash
-luna-agent setup --fetch-ca --enroll-token 'your-long-random-secret' \
+luna-agent setup --fetch-ca --ca-fingerprint '<sha256-ca-cert>' \
+  --enroll-token 'your-long-random-secret' \
   --proxy-url https://luna.example:8443 ...
 ```
 
 - `GET /api/v1/mtls/ca` — download public CA (no client cert)
 - `POST /api/v1/mtls/enroll` — submit CSR, receive `client.crt` (requires `X-Luna-Enroll-Token` header)
+- Insecure first-contact CA download fails unless `--ca-fingerprint` matches.
+- Enrollment never silently replaces an installed CA before sending the token.
 
 ### 3. Manual mTLS layout (alternative)
 

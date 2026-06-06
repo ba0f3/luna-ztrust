@@ -7,11 +7,12 @@ import (
 
 // LookupKey identifies a client session for lease reuse (excludes approver).
 type LookupKey struct {
-	ClientCertFP       string
-	TargetUser         string
-	TargetIP           string
-	SourceIP           string
-	HostKeyFingerprint string // local-key: binds lease to approved hosted key
+	ClientCertFP                  string
+	TargetUser                    string
+	TargetIP                      string
+	SourceIP                      string
+	HostKeyFingerprint            string // local-key: binds lease to approved hosted key
+	DestinationHostKeyFingerprint string // local-key: verified SSH server host key
 }
 
 func (k LookupKey) lookupString() string {
@@ -21,6 +22,7 @@ func (k LookupKey) lookupString() string {
 		k.TargetIP,
 		k.SourceIP,
 		k.HostKeyFingerprint,
+		k.DestinationHostKeyFingerprint,
 	}, "|")
 }
 
@@ -35,13 +37,18 @@ func (k FullKey) String() string {
 }
 
 // NewLookupKey builds a lookup key from sign request context.
-func NewLookupKey(clientCertFP, targetUser, targetIP, sourceIP, hostKeyFingerprint string) LookupKey {
+func NewLookupKey(clientCertFP, targetUser, targetIP, sourceIP, hostKeyFingerprint string, destinationHostKeyFingerprint ...string) LookupKey {
+	destination := ""
+	if len(destinationHostKeyFingerprint) > 0 {
+		destination = destinationHostKeyFingerprint[0]
+	}
 	return LookupKey{
-		ClientCertFP:       clientCertFP,
-		TargetUser:         targetUser,
-		TargetIP:           targetIP,
-		SourceIP:           sourceIP,
-		HostKeyFingerprint: hostKeyFingerprint,
+		ClientCertFP:                  clientCertFP,
+		TargetUser:                    targetUser,
+		TargetIP:                      targetIP,
+		SourceIP:                      sourceIP,
+		HostKeyFingerprint:            hostKeyFingerprint,
+		DestinationHostKeyFingerprint: destination,
 	}
 }
 

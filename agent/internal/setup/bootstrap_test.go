@@ -1,6 +1,9 @@
 package setup_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,17 +33,21 @@ func TestFetchCA_RejectsNonPEM(t *testing.T) {
 }
 
 func TestFetchCA_WritesPEM(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	var certPEM []byte
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"))
+		_, _ = w.Write(certPEM)
 	}))
 	t.Cleanup(ts.Close)
+	certPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ts.Certificate().Raw})
+	sum := sha256.Sum256(ts.Certificate().Raw)
 
 	dir := t.TempDir()
 	path, err := setup.FetchCA(setup.BootstrapOptions{
 		ProxyURL:           ts.URL,
 		CertsDir:           dir,
 		InsecureSkipVerify: true,
+		CAFingerprint:      hex.EncodeToString(sum[:]),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -50,6 +57,22 @@ func TestFetchCA_WritesPEM(t *testing.T) {
 	}
 	if _, err := os.Stat(path); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFetchCA_RequiresFingerprintForInsecureFirstContact(t *testing.T) {
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = pem.Encode(w, &pem.Block{Type: "CERTIFICATE", Bytes: []byte("invalid")})
+	}))
+	t.Cleanup(ts.Close)
+
+	_, err := setup.FetchCA(setup.BootstrapOptions{
+		ProxyURL:           ts.URL,
+		CertsDir:           t.TempDir(),
+		InsecureSkipVerify: true,
+	})
+	if err == nil || !strings.Contains(err.Error(), "fingerprint required") {
+		t.Fatalf("err = %v, want fingerprint required", err)
 	}
 }
 

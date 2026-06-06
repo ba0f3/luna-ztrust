@@ -12,8 +12,9 @@ import (
 )
 
 type mobileEnrollRequest struct {
-	Label        string `json:"label"`
-	DevicePubKey string `json:"device_pubkey"`
+	Label           string `json:"label"`
+	DevicePubKey    string `json:"device_pubkey"`
+	CertFingerprint string `json:"cert_fingerprint"`
 }
 
 type mobileEnrollResponse struct {
@@ -42,7 +43,11 @@ func (s *server) handleMobileEnroll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
-	dev, err := s.mobile.Enroll(req.Label, req.DevicePubKey)
+	if req.CertFingerprint == "" {
+		http.Error(w, "cert_fingerprint required", http.StatusBadRequest)
+		return
+	}
+	dev, err := s.mobile.EnrollBound(req.Label, req.DevicePubKey, req.CertFingerprint)
 	if err != nil {
 		if errors.Is(err, mobile.ErrEmptyLabel) || errors.Is(err, mobile.ErrInvalidKey) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -90,6 +95,10 @@ func (s *server) handleMobileApprove(w http.ResponseWriter, r *http.Request) {
 	dev, ok := s.mobile.Get(req.DeviceID)
 	if !ok {
 		http.Error(w, "unknown device", http.StatusForbidden)
+		return
+	}
+	if clientCertFPFromRequest(r) != dev.CertFingerprint {
+		http.Error(w, "mobile client certificate mismatch", http.StatusForbidden)
 		return
 	}
 

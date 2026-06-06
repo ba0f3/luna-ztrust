@@ -44,7 +44,7 @@ graph TD
 2. `POST /api/v1/ssh/sign` with JSON body, `pop_signature`, mTLS, `X-Luna-Body-Mac`.
 3. Proxy validates the auth pipeline; if no signer is loaded → `503`. Otherwise lease fast-path or new `tx_id` + Telegram (or auto-approve in dev).
 4. `GET /api/v1/ssh/sign/{tx_id}/wait` blocks until approved, denied, or timeout.
-5. Proxy signs via `local-ca` (SSH user cert + `source-address`) or `local-key` (`agent_sign_data` → `ssh_signature`).
+5. Proxy signs via `local-ca` (SSH user cert + `source-address`) or `local-key` after validating OpenSSH `session-bind@openssh.com` and the SSH user-auth payload.
 6. SDK returns cert + private key, or signature; agent returns `ssh.Signature` to OpenSSH.
 
 ## Repository layout
@@ -127,6 +127,7 @@ LUNA_PROXY_URL=https://localhost:8443 go test -tags=e2e ./sdk/sign/... -v
 | `TELEGRAM_BOT_TOKEN` | Outbound Telegram API |
 | `TELEGRAM_WEBHOOK_SECRET` | Webhook validation |
 | `TELEGRAM_CHAT_ID` | Admin chat for approval prompts |
+| `TELEGRAM_USER_IDS` | Comma-separated Telegram user IDs allowed to approve in group chats |
 | `FCM_CREDENTIALS` | P5 hook for mobile push (stub until implemented) |
 
 Vault / `LUNA_VAULT_*` are removed from the runtime path; see [docs/legacy-vault-migration.md](docs/legacy-vault-migration.md).
@@ -162,11 +163,15 @@ luna-proxy key list
 luna-proxy key remove <fingerprint>
 luna-proxy key confirm <pending-id>
 luna-proxy key reject <pending-id>
-luna-proxy mobile enroll --label phone --pubkey <base64-ed25519-pubkey>
+luna-proxy mobile enroll --label phone --pubkey <base64-ed25519-pubkey> \
+  --cert-fingerprint <sha256-mobile-client-cert>
 luna-proxy mobile list
 ```
 
 In `local-ca`, `key load` replaces the single CA signer. In `local-key`, it adds a signer to the in-memory pool. Process restart clears loaded signers, CLI enrollments, mobile enrollments, and pending uploads in v1.
+
+Mobile approvals and pending-key uploads must use the exact mTLS client
+certificate fingerprint recorded at enrollment.
 
 ### Remote key load (`local-key`)
 
@@ -219,6 +224,11 @@ See [docs/superpowers/specs/2026-05-31-cli-remote-key-load-design.md](docs/super
 | `LUNA_TARGET_USER` | Default SSH principal |
 | `LUNA_TARGET_HOST` | Target IP/hostname for PoP / cert binding |
 | `LUNA_HOST_KEY_FINGERPRINT` | Optional `local-key` signer hint when multiple host keys are loaded |
+
+In `local-key` mode, the verified destination SSH host-key fingerprint from
+OpenSSH session binding is authoritative. `LUNA_TARGET_HOST` / `target_ip` is
+display and audit metadata only. Forwarded agents and OpenSSH clients that do
+not send `session-bind@openssh.com` are rejected.
 | `LUNA_HOSTED_PUBLIC_KEY` | Optional host `.pub` path or authorized_keys line for identity discovery |
 
 Agent socket: `/run/luna/agent.sock` (mode `0600`).
@@ -259,6 +269,7 @@ Auth order on sign requests: mTLS → HMAC → timestamp → replay LRU → PoP 
 - **IP binding:** `source-address` on user certs from mTLS `RemoteAddr`.
 - **Session leases:** Re-approval skipped for same client + target + approver within TTL.
 - **Local administration:** Key load, key list/remove, status, CLI enrollment, and mobile enrollment have Unix socket paths guarded by peer credentials.
+- **Telegram approvals:** Private-chat callbacks must come from the configured chat/user ID. Group chats require `TELEGRAM_USER_IDS`.
 
 ## Documentation
 

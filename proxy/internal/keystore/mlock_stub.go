@@ -2,11 +2,17 @@
 
 package keystore
 
-import "golang.org/x/crypto/ssh"
+import (
+	"fmt"
 
-func mlockSigner(_ ssh.Signer) {}
+	"golang.org/x/crypto/ssh"
+)
 
-func mlockBytes([]byte) {}
+func mlockSigner(_ ssh.Signer) error {
+	return fmt.Errorf("memory locking is unsupported on this platform")
+}
+
+func mlockBytes([]byte) error { return fmt.Errorf("memory locking is unsupported on this platform") }
 
 func zeroBytes(b []byte) {
 	for i := range b {

@@ -19,23 +19,25 @@ const defaultPollTimeout = 30 * time.Second
 // PollerConfig configures Telegram long polling for inline approve/deny callbacks.
 type PollerConfig struct {
 	NotifierConfig
-	Store       *Store
-	PollTimeout time.Duration
+	Store          *Store
+	PollTimeout    time.Duration
+	AllowedUserIDs string
 	// LogEvent logs poll lifecycle events (route, tx_id, outcome, detail).
 	LogEvent func(route, txID, outcome, detail string)
 }
 
 // Poller receives Telegram callback_query updates via getUpdates (outbound long poll).
 type Poller struct {
-	token       string
-	chatID      string
-	allowedTTLs []int
-	baseURL     string
-	client      *http.Client
-	store       *Store
-	pollTimeout time.Duration
-	offset      int64
-	logEvent    func(route, txID, outcome, detail string)
+	token          string
+	chatID         string
+	allowedUserIDs string
+	allowedTTLs    []int
+	baseURL        string
+	client         *http.Client
+	store          *Store
+	pollTimeout    time.Duration
+	offset         int64
+	logEvent       func(route, txID, outcome, detail string)
 }
 
 // NewPoller returns a poller. When BotToken is empty, Run is a no-op.
@@ -63,14 +65,15 @@ func NewPoller(cfg PollerConfig) *Poller {
 		}
 	}
 	return &Poller{
-		token:       strings.TrimSpace(cfg.BotToken),
-		chatID:      strings.TrimSpace(cfg.ChatID),
-		allowedTTLs: cfg.AllowedTTLSeconds,
-		baseURL:     base,
-		client:      client,
-		store:       cfg.Store,
-		pollTimeout: timeout,
-		logEvent:    logEvent,
+		token:          strings.TrimSpace(cfg.BotToken),
+		chatID:         strings.TrimSpace(cfg.ChatID),
+		allowedUserIDs: strings.TrimSpace(cfg.AllowedUserIDs),
+		allowedTTLs:    cfg.AllowedTTLSeconds,
+		baseURL:        base,
+		client:         client,
+		store:          cfg.Store,
+		pollTimeout:    timeout,
+		logEvent:       logEvent,
 	}
 }
 
@@ -162,7 +165,12 @@ type telegramUpdate struct {
 type telegramCallbackQuery struct {
 	ID      string           `json:"id"`
 	Data    string           `json:"data"`
+	From    telegramUser     `json:"from"`
 	Message *telegramMessage `json:"message"`
+}
+
+type telegramUser struct {
+	ID int64 `json:"id"`
 }
 
 type telegramMessage struct {
@@ -202,6 +210,10 @@ func (p *Poller) handleUpdate(ctx context.Context, upd telegramUpdate) {
 	}
 	if cq.Message == nil || !ChatAllowed(p.chatID, chatID) {
 		p.logEvent("poll", txID, "ignored_chat", fmt.Sprintf("chat_id=%d", chatID))
+		return
+	}
+	if !TelegramUserAllowed(p.chatID, p.allowedUserIDs, cq.From.ID) {
+		p.logEvent("poll", txID, "ignored_user", fmt.Sprintf("user_id=%d", cq.From.ID))
 		return
 	}
 

@@ -204,8 +204,9 @@ func (s *Server) pendingListData() json.RawMessage {
 }
 
 type mobileEnrollData struct {
-	Label        string `json:"label"`
-	DevicePubKey string `json:"device_pubkey"`
+	Label           string `json:"label"`
+	DevicePubKey    string `json:"device_pubkey"`
+	CertFingerprint string `json:"cert_fingerprint"`
 }
 
 func (s *Server) handleMobileEnroll(req Request) Response {
@@ -213,7 +214,10 @@ func (s *Server) handleMobileEnroll(req Request) Response {
 	if err := json.Unmarshal(req.Data, &in); err != nil {
 		return s.fail(req.ID, "invalid json", "BAD_REQUEST")
 	}
-	dev, err := s.deps.Mobile.Enroll(in.Label, in.DevicePubKey)
+	if in.CertFingerprint == "" {
+		return s.fail(req.ID, "cert_fingerprint required", "BAD_REQUEST")
+	}
+	dev, err := s.deps.Mobile.EnrollBound(in.Label, in.DevicePubKey, in.CertFingerprint)
 	if err != nil {
 		return s.fail(req.ID, err.Error(), "BAD_REQUEST")
 	}

@@ -140,7 +140,34 @@ func TestLunaAgentSignLocalKeyMode(t *testing.T) {
 	}
 	keys := []*sshagent.Key{{Format: want.Format, Blob: cert.Key.Marshal()}}
 	la := agent.NewLunaAgent(mock, agent.SignerModeLocalKey, "deploy", "10.0.0.5", "abc", keys, 0)
-	got, err := la.Sign(cert.Key, []byte("challenge"))
+	connAgent := agent.NewConnectionAgent(la)
+	_, hostPriv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hostSigner, err := ssh.NewSignerFromKey(hostPriv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionID := []byte("exchange-hash")
+	hostSig, err := hostSigner.Sign(rand.Reader, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := ssh.Marshal(struct {
+		HostPublicKey []byte
+		SessionID     []byte
+		Signature     []byte
+		Forwarding    bool
+	}{
+		HostPublicKey: hostSigner.PublicKey().Marshal(),
+		SessionID:     sessionID,
+		Signature:     ssh.Marshal(hostSig),
+	})
+	if _, err := connAgent.Extension("session-bind@openssh.com", contents); err != nil {
+		t.Fatalf("Extension: %v", err)
+	}
+	got, err := connAgent.Sign(cert.Key, []byte("challenge"))
 	if err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
@@ -149,6 +176,17 @@ func TestLunaAgentSignLocalKeyMode(t *testing.T) {
 	}
 	if mock.lastSigReq.TargetUser != "deploy" {
 		t.Fatalf("TargetUser = %q", mock.lastSigReq.TargetUser)
+	}
+	if string(mock.lastSigReq.SessionBinding.SessionID) != string(sessionID) {
+		t.Fatal("session binding not forwarded")
+	}
+}
+
+func TestLunaAgentSignLocalKeyRejectsMissingSessionBinding(t *testing.T) {
+	mock := &mockProvider{signerMode: agent.SignerModeLocalKey}
+	la := agent.NewLunaAgent(mock, agent.SignerModeLocalKey, "deploy", "10.0.0.5", "abc", nil, 0)
+	if _, err := la.Sign(nil, []byte("challenge")); err == nil {
+		t.Fatal("expected missing session binding rejection")
 	}
 }
 

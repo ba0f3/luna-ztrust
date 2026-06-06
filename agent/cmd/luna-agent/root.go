@@ -120,7 +120,7 @@ func runAgent(_ *cobra.Command, _ []string) error {
 		}
 		go func(c net.Conn) {
 			defer c.Close()
-			sshagent.ServeAgent(la, c)
+			sshagent.ServeAgent(agent.NewConnectionAgent(la), c)
 		}(conn)
 	}
 }

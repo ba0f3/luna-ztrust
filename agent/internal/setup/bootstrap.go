@@ -3,9 +3,12 @@ package setup
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -71,7 +74,9 @@ type BootstrapOptions struct {
 	ProxyURL    string
 	CertsDir    string
 	EnrollToken string
-	Timeout     time.Duration
+	// CAFingerprint is the expected SHA-256 fingerprint of the fetched CA certificate.
+	CAFingerprint string
+	Timeout       time.Duration
 	// InsecureSkipVerify allows fetching the CA before trust is installed (first contact only).
 	InsecureSkipVerify bool
 	// RefreshCA replaces ca.crt from the proxy before enroll (default for proxy enrollment).
@@ -104,6 +109,11 @@ func FetchCA(opts BootstrapOptions) (string, error) {
 	if !looksLikePEMCert(body) {
 		return "", fmt.Errorf("GET %s: response is not a PEM certificate", mtlsCAPath)
 	}
+	if opts.InsecureSkipVerify {
+		if err := verifyCAFingerprint(body, opts.CAFingerprint); err != nil {
+			return "", err
+		}
+	}
 	if err := writeFile(dest, body, 0o644); err != nil {
 		return "", err
 	}
@@ -117,6 +127,7 @@ func RefreshTrustAnchor(opts BootstrapOptions) error {
 		ProxyURL:           opts.ProxyURL,
 		CertsDir:           opts.CertsDir,
 		InsecureSkipVerify: true,
+		CAFingerprint:      opts.CAFingerprint,
 		Timeout:            opts.Timeout,
 	}); err != nil {
 		return fmt.Errorf("download CA: %w", err)
@@ -297,6 +308,27 @@ func looksLikePEMCert(pemBytes []byte) bool {
 	return bytes.Contains(pemBytes, []byte("BEGIN CERTIFICATE"))
 }
 
+func verifyCAFingerprint(pemBytes []byte, expected string) error {
+	expected = strings.ToLower(strings.ReplaceAll(strings.TrimSpace(expected), ":", ""))
+	if expected == "" {
+		return fmt.Errorf("CA fingerprint required for insecure first-contact download")
+	}
+	block, rest := pem.Decode(pemBytes)
+	if block == nil || block.Type != "CERTIFICATE" || len(bytes.TrimSpace(rest)) != 0 {
+		return fmt.Errorf("parse fetched CA certificate")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("parse fetched CA certificate: %w", err)
+	}
+	sum := sha256.Sum256(cert.Raw)
+	got := hex.EncodeToString(sum[:])
+	if got != expected {
+		return fmt.Errorf("fetched CA fingerprint mismatch: got %s", got)
+	}
+	return nil
+}
+
 func (o BootstrapOptions) withDefaults() BootstrapOptions {
 	if o.Timeout <= 0 {
 		o.Timeout = 30 * time.Second
@@ -304,5 +336,6 @@ func (o BootstrapOptions) withDefaults() BootstrapOptions {
 	o.ProxyURL = strings.TrimSpace(o.ProxyURL)
 	o.CertsDir = filepath.Clean(o.CertsDir)
 	o.EnrollToken = strings.TrimSpace(o.EnrollToken)
+	o.CAFingerprint = strings.TrimSpace(o.CAFingerprint)
 	return o
 }

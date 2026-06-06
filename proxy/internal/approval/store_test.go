@@ -3,16 +3,30 @@ package approval_test
 import (
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/ba0f3/luna-ztrust/proxy/internal/approval"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/config"
+	"github.com/ba0f3/luna-ztrust/proxy/internal/lease"
 	"github.com/ba0f3/luna-ztrust/proxy/internal/signing"
 )
 
 type stubIssuer struct {
 	cert string
+}
+
+type blockingIssuer struct {
+	started sync.Once
+	start   chan struct{}
+	release chan struct{}
+}
+
+func (b *blockingIssuer) IssueCert(_ context.Context, req signing.IssueRequest) (signing.IssueResult, error) {
+	b.started.Do(func() { close(b.start) })
+	<-b.release
+	return signing.IssueResult{Certificate: "certpem", ExpiresAt: req.ValidUntil}, nil
 }
 
 func (s stubIssuer) IssueCert(_ context.Context, req signing.IssueRequest) (signing.IssueResult, error) {
@@ -71,5 +85,33 @@ func TestStoreLocalKeyRequiresAgentSignData(t *testing.T) {
 	_, _, _, _, err := s.Wait(context.Background(), tx.ID)
 	if err != approval.ErrAgentSignData {
 		t.Fatalf("err = %v, want ErrAgentSignData", err)
+	}
+}
+
+func TestStoreDenyCannotOverrideClaimedApproval(t *testing.T) {
+	issuer := &blockingIssuer{start: make(chan struct{}), release: make(chan struct{})}
+	leases := lease.NewStore()
+	s := approval.NewStore(time.Minute)
+	s.SetIssuer(issuer)
+	s.SetLeases(leases)
+	tx, _ := s.Create("deploy", "10.0.0.1", "ssh-ed25519 AAAA", "203.0.113.1", "fp1", "", "", approval.ClientMeta{})
+
+	done := make(chan struct{})
+	go func() {
+		s.Approve(tx.ID, time.Minute, "telegram:1")
+		close(done)
+	}()
+	<-issuer.start
+	s.Deny(tx.ID)
+	close(issuer.release)
+	<-done
+
+	got := s.Snapshot(tx.ID)
+	if got == nil || got.State != approval.StateApproved {
+		t.Fatalf("state = %v, want approved", got)
+	}
+	lookup := lease.NewLookupKey("fp1", "deploy", "10.0.0.1", "203.0.113.1", "")
+	if _, ok := leases.FindActive(lookup); !ok {
+		t.Fatal("expected lease after committed approval")
 	}
 }

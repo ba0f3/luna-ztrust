@@ -25,10 +25,11 @@ const (
 type State string
 
 const (
-	StatePending  State = "pending"
-	StateApproved State = "approved"
-	StateDenied   State = "denied"
-	StateExpired  State = "expired"
+	StatePending   State = "pending"
+	StateApproving State = "approving"
+	StateApproved  State = "approved"
+	StateDenied    State = "denied"
+	StateExpired   State = "expired"
 )
 
 // DefaultDevCertTTL is the credential lifetime used for LUNA_ENV=dev auto-approve.
@@ -36,19 +37,20 @@ const DefaultDevCertTTL = 5 * time.Minute
 
 // Transaction is a pending or terminal SSH sign approval request.
 type Transaction struct {
-	ID                 string
-	TargetUser         string
-	TargetIP           string
-	PublicKey          string
-	SourceIP           string
-	SourceUser         string
-	ClientName         string
-	ClientVersion      string
-	ClientCertFP       string
-	AgentSignData      string
-	HostKeyFingerprint string
-	State              State
-	CreatedAt          time.Time
+	ID                            string
+	TargetUser                    string
+	TargetIP                      string
+	PublicKey                     string
+	SourceIP                      string
+	SourceUser                    string
+	ClientName                    string
+	ClientVersion                 string
+	ClientCertFP                  string
+	AgentSignData                 string
+	HostKeyFingerprint            string
+	DestinationHostKeyFingerprint string
+	State                         State
+	CreatedAt                     time.Time
 }
 
 // ClientMeta is optional metadata from the sign request (display/audit only).
@@ -149,22 +151,28 @@ func newTxID() string {
 // Create registers a pending transaction and returns its metadata and result channel.
 // When cfg.Env is "dev", auto-approves via the configured signer.
 func (s *Store) Create(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData, hostKeyFP string, client ClientMeta) (*Transaction, <-chan Result) {
+	return s.CreateBound(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData, hostKeyFP, "", client)
+}
+
+// CreateBound registers a transaction bound to a verified destination host key.
+func (s *Store) CreateBound(targetUser, targetIP, publicKey, sourceIP, clientCertFP, agentSignData, hostKeyFP, destinationHostKeyFP string, client ClientMeta) (*Transaction, <-chan Result) {
 	s.mu.Lock()
 	id := newTxID()
 	tx := &Transaction{
-		ID:                 id,
-		TargetUser:         targetUser,
-		TargetIP:           targetIP,
-		PublicKey:          publicKey,
-		SourceIP:           sourceIP,
-		SourceUser:         client.SourceUser,
-		ClientName:         client.ClientName,
-		ClientVersion:      client.ClientVersion,
-		ClientCertFP:       clientCertFP,
-		AgentSignData:      agentSignData,
-		HostKeyFingerprint: hostKeyFP,
-		State:              StatePending,
-		CreatedAt:          time.Now(),
+		ID:                            id,
+		TargetUser:                    targetUser,
+		TargetIP:                      targetIP,
+		PublicKey:                     publicKey,
+		SourceIP:                      sourceIP,
+		SourceUser:                    client.SourceUser,
+		ClientName:                    client.ClientName,
+		ClientVersion:                 client.ClientVersion,
+		ClientCertFP:                  clientCertFP,
+		AgentSignData:                 agentSignData,
+		HostKeyFingerprint:            hostKeyFP,
+		DestinationHostKeyFingerprint: destinationHostKeyFP,
+		State:                         StatePending,
+		CreatedAt:                     time.Now(),
 	}
 	ch := make(chan Result, 1)
 	entry := &txEntry{
@@ -212,12 +220,13 @@ func (s *Store) IssueFromLease(ctx context.Context, lookup lease.LookupKey, publ
 		return Result{}, false
 	}
 	tx := &Transaction{
-		PublicKey:          publicKey,
-		TargetUser:         lookup.TargetUser,
-		TargetIP:           lookup.TargetIP,
-		SourceIP:           lookup.SourceIP,
-		AgentSignData:      agentSignData,
-		HostKeyFingerprint: hostKeyFP,
+		PublicKey:                     publicKey,
+		TargetUser:                    lookup.TargetUser,
+		TargetIP:                      lookup.TargetIP,
+		SourceIP:                      lookup.SourceIP,
+		AgentSignData:                 agentSignData,
+		HostKeyFingerprint:            hostKeyFP,
+		DestinationHostKeyFingerprint: lookup.DestinationHostKeyFingerprint,
 	}
 	res, err := s.issueForTransaction(ctx, tx, time.Now().Add(remaining))
 	if err != nil {
@@ -254,7 +263,7 @@ func (s *Store) CreateInstantApproved(targetUser, targetIP, publicKey, sourceIP,
 }
 
 func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Duration, approverChatID string) {
-	entry := s.getEntry(txID)
+	entry := s.claimApproval(txID)
 	if entry == nil {
 		return
 	}
@@ -262,7 +271,7 @@ func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Dur
 	until := time.Now().Add(ttl)
 	res, err := s.issueForTransaction(ctx, entry.tx, until)
 	if err != nil {
-		s.finish(txID, StateDenied, &Result{Err: err})
+		_ = s.finishClaimed(txID, StateDenied, &Result{Err: err})
 		return
 	}
 
@@ -270,6 +279,10 @@ func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Dur
 	leases := s.leases
 	s.mu.Unlock()
 	leaseExpires := until
+	res.LeaseExpiresAt = leaseExpires
+	if !s.finishClaimed(txID, StateApproved, &res) {
+		return
+	}
 	if leases != nil && approverChatID != "" && entry.tx.ClientCertFP != "" {
 		lookup := lease.NewLookupKey(
 			entry.tx.ClientCertFP,
@@ -277,12 +290,10 @@ func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Dur
 			entry.tx.TargetIP,
 			entry.tx.SourceIP,
 			entry.tx.HostKeyFingerprint,
+			entry.tx.DestinationHostKeyFingerprint,
 		)
 		leases.Put(lease.NewFullKey(lookup, approverChatID), until)
 	}
-	res.LeaseExpiresAt = leaseExpires
-
-	s.finish(txID, StateApproved, &res)
 }
 
 func (s *Store) issueForTransaction(ctx context.Context, tx *Transaction, until time.Time) (Result, error) {
@@ -336,13 +347,14 @@ func (s *Store) issueForTransaction(ctx context.Context, tx *Transaction, until 
 	}, nil
 }
 
-func (s *Store) getEntry(txID string) *txEntry {
+func (s *Store) claimApproval(txID string) *txEntry {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	entry, ok := s.txs[txID]
-	if !ok || entry.result != nil {
+	if !ok || entry.result != nil || entry.tx.State != StatePending {
 		return nil
 	}
+	entry.tx.State = StateApproving
 	return entry
 }
 
@@ -360,21 +372,37 @@ func (s *Store) Snapshot(txID string) *Transaction {
 
 // Deny marks the transaction denied and delivers ErrDenied to waiters.
 func (s *Store) Deny(txID string) {
-	s.finish(txID, StateDenied, &Result{Err: ErrDenied})
+	s.finishPending(txID, StateDenied, &Result{Err: ErrDenied})
 }
 
 func (s *Store) expire(txID string) {
-	s.finish(txID, StateExpired, &Result{Err: ErrTimeout})
+	s.finishPending(txID, StateExpired, &Result{Err: ErrTimeout})
 }
 
-func (s *Store) finish(txID string, state State, res *Result) {
+func (s *Store) finishPending(txID string, state State, res *Result) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	entry, ok := s.txs[txID]
-	if !ok || entry.result != nil {
+	if !ok || entry.result != nil || entry.tx.State != StatePending {
 		return
 	}
+	s.finishLocked(entry, state, res)
+}
+
+func (s *Store) finishClaimed(txID string, state State, res *Result) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	entry, ok := s.txs[txID]
+	if !ok || entry.result != nil || entry.tx.State != StateApproving {
+		return false
+	}
+	s.finishLocked(entry, state, res)
+	return true
+}
+
+func (s *Store) finishLocked(entry *txEntry, state State, res *Result) {
 	entry.tx.State = state
 	entry.result = res
 	if entry.timer != nil {

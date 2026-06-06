@@ -10,6 +10,7 @@ type Config struct {
 	TelegramBotToken      string
 	TelegramWebhookSecret string
 	TelegramChatID        string
+	TelegramUserIDs       string
 	AdminClientOU         string
 	CliClientOU           string
 	KeyPath               string

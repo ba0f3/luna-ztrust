@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -105,7 +106,29 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP, hostKeyFP)
+	destinationHostKeyFP := ""
+	if s.cfg.SignerMode == approval.SignerModeLocalKey {
+		hostedPub, err := s.keystore.PublicKeyForFingerprint(hostKeyFP)
+		if err != nil {
+			s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_host_key", clientMeta)
+			http.Error(w, "hosted signer unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		signData, err := base64.StdEncoding.DecodeString(req.AgentSignData)
+		if err != nil {
+			http.Error(w, "invalid agent_sign_data", http.StatusBadRequest)
+			return
+		}
+		binding, err := auth.ValidateLocalKeySignData(req.SessionBinding, signData, req.TargetUser, hostedPub)
+		if err != nil {
+			s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_session_binding", clientMeta)
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		destinationHostKeyFP = binding.HostKeyFingerprint
+	}
+
+	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP, hostKeyFP, destinationHostKeyFP)
 	txMeta := signClientMeta(req)
 
 	if s.cfg.Env != "dev" {
@@ -119,7 +142,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	tx, _ := s.store.Create(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData, hostKeyFP, txMeta)
+	tx, _ := s.store.CreateBound(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, req.AgentSignData, hostKeyFP, destinationHostKeyFP, txMeta)
 	if s.cfg.Env != "dev" {
 		if s.telegram != nil && s.telegram.Configured() {
 			go func() {

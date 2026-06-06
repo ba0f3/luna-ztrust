@@ -13,3 +13,12 @@ func TestNormalizeSignClientMeta(t *testing.T) {
 		t.Fatalf("source user len = %d", len(m.SourceUser))
 	}
 }
+
+func TestValidateDisplayFieldsRejectsControlCharacters(t *testing.T) {
+	if err := ValidateDisplayFields("deploy\nTarget host: trusted", "10.0.0.5", SignClientMeta{}); err == nil {
+		t.Fatal("expected target user control character rejection")
+	}
+	if err := ValidateDisplayFields("deploy", "10.0.0.5", SignClientMeta{ClientName: "ok\tspoof"}); err == nil {
+		t.Fatal("expected metadata control character rejection")
+	}
+}

@@ -60,6 +60,7 @@ func newViper() (*viper.Viper, error) {
 	bindEnv("telegram_bot_token", "TELEGRAM_BOT_TOKEN")
 	bindEnv("telegram_webhook_secret", "TELEGRAM_WEBHOOK_SECRET")
 	bindEnv("telegram_chat_id", "TELEGRAM_CHAT_ID")
+	bindEnv("telegram_user_ids", "TELEGRAM_USER_IDS")
 	bindEnv("admin_client_ou", "LUNA_ADMIN_CLIENT_OU")
 	bindEnv("cli_client_ou", "LUNA_CLI_CLIENT_OU")
 	bindEnv("key_path", "LUNA_KEY_PATH")
@@ -91,6 +92,7 @@ func configFromViper(v *viper.Viper) (Config, error) {
 		TelegramBotToken:      strings.TrimSpace(v.GetString("telegram_bot_token")),
 		TelegramWebhookSecret: strings.TrimSpace(v.GetString("telegram_webhook_secret")),
 		TelegramChatID:        strings.TrimSpace(v.GetString("telegram_chat_id")),
+		TelegramUserIDs:       strings.TrimSpace(v.GetString("telegram_user_ids")),
 		AdminClientOU:         strings.TrimSpace(v.GetString("admin_client_ou")),
 		CliClientOU:           strings.TrimSpace(v.GetString("cli_client_ou")),
 		KeyPath:               strings.TrimSpace(v.GetString("key_path")),

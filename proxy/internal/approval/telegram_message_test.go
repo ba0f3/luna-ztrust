@@ -12,17 +12,19 @@ import (
 
 func TestFormatApprovalMessage(t *testing.T) {
 	msg := formatApprovalMessage(&Transaction{
-		ID:            "tx_01",
-		TargetUser:    "deploy",
-		TargetIP:      "10.0.0.5",
-		SourceIP:      "203.0.113.1",
-		SourceUser:    "goclaw",
-		ClientName:    "luna-agent",
-		ClientVersion: "v0.1.0",
+		ID:                            "tx_01",
+		TargetUser:                    "deploy",
+		TargetIP:                      "10.0.0.5",
+		SourceIP:                      "203.0.113.1",
+		SourceUser:                    "goclaw",
+		ClientName:                    "luna-agent",
+		ClientVersion:                 "v0.1.0",
+		DestinationHostKeyFingerprint: "SHA256:destination",
 	})
 	for _, want := range []string{
 		"Target user: deploy",
-		"Target host: 10.0.0.5",
+		"Target host claim: 10.0.0.5",
+		"Verified SSH host key: SHA256:destination",
 		"Source IP: 203.0.113.1",
 		"Source user: goclaw",
 		"Client: luna-agent v0.1.0",

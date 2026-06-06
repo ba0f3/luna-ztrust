@@ -144,7 +144,10 @@ func formatApprovalMessage(tx *Transaction) string {
 	var b strings.Builder
 	b.WriteString("Luna SSH sign request\n")
 	fmt.Fprintf(&b, "Target user: %s\n", tx.TargetUser)
-	fmt.Fprintf(&b, "Target host: %s\n", tx.TargetIP)
+	fmt.Fprintf(&b, "Target host claim: %s\n", tx.TargetIP)
+	if tx.DestinationHostKeyFingerprint != "" {
+		fmt.Fprintf(&b, "Verified SSH host key: %s\n", tx.DestinationHostKeyFingerprint)
+	}
 	if tx.SourceIP != "" {
 		fmt.Fprintf(&b, "Source IP: %s\n", tx.SourceIP)
 	}
@@ -177,7 +180,10 @@ func formatResolvedApprovalMessage(tx *Transaction, res Resolution) string {
 	var b strings.Builder
 	b.WriteString("Luna SSH sign request\n")
 	fmt.Fprintf(&b, "Target user: %s\n", tx.TargetUser)
-	fmt.Fprintf(&b, "Target host: %s\n", tx.TargetIP)
+	fmt.Fprintf(&b, "Target host claim: %s\n", tx.TargetIP)
+	if tx.DestinationHostKeyFingerprint != "" {
+		fmt.Fprintf(&b, "Verified SSH host key: %s\n", tx.DestinationHostKeyFingerprint)
+	}
 	if tx.SourceIP != "" {
 		fmt.Fprintf(&b, "Source IP: %s\n", tx.SourceIP)
 	}

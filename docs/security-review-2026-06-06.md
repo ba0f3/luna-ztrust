@@ -14,6 +14,29 @@ focused on:
 
 No files were modified as part of the review other than this report.
 
+## Resolution Status
+
+The confirmed access-control and authorization paths were addressed in the
+security-hardening change set:
+
+- Certificate subjects and roles are assigned server-side.
+- Local-key signing requires validated OpenSSH session binding and user-auth
+  payloads; leases bind the verified destination host key.
+- Approval transitions are atomic and leases are created only after commit.
+- Agent bootstrap requires a pinned CA fingerprint for insecure first contact,
+  does not refresh trust before enrollment, and enrollment is rate-limited and
+  audited.
+- Mobile devices are bound to exact mTLS certificate fingerprints.
+- Client/admin keys are owner-only; only runtime-required server and CA keys
+  are service-readable.
+- Display controls are rejected and authoritative values are labeled.
+- Sensitive key buffers fail closed when `mlock` fails.
+
+Residual defense-in-depth work remains: replace the reusable enrollment token
+with single-use CSR-bound grants, move the runtime enrollment CA toward an
+offline or hardware-backed issuer, and redesign signer ownership so removed
+keys can be zeroed without racing in-flight signatures.
+
 ## Summary
 
 | Severity | Count |
@@ -186,7 +209,8 @@ access.
 - Move admin client private keys off the proxy host after provisioning.
 - Store the issuing CA key separately with minimal access.
 - Apply permissions using an explicit filename allowlist.
-- Keep `ca.key` and `admin-client.key` root-only.
+- Keep `admin-client.key` and automation client keys owner-only. Keep `ca.key`
+  service-readable only while runtime CSR enrollment is enabled.
 - Prefer an offline CA or hardware-backed issuer for enrollment.
 
 ### Medium: Telegram approval messages can mislead operators

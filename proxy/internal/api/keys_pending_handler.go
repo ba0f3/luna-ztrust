@@ -61,6 +61,10 @@ func (s *server) handleMobileKeysPending(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "unknown device", http.StatusForbidden)
 		return
 	}
+	if clientCertFPFromRequest(r) != dev.CertFingerprint {
+		http.Error(w, "mobile client certificate mismatch", http.StatusForbidden)
+		return
+	}
 
 	payload := mobileKeysPendingSignPayload{
 		DeviceID:     req.DeviceID,

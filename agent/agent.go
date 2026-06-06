@@ -77,6 +77,10 @@ func (a *LunaAgent) List() ([]*agent.Key, error) {
 
 // Sign blocks until provider returns credentials, then returns the SSH signature.
 func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error) {
+	return a.signWithBinding(pub, data, sdk.SessionBinding{})
+}
+
+func (a *LunaAgent) signWithBinding(pub ssh.PublicKey, data []byte, binding sdk.SessionBinding) (*ssh.Signature, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.locked {
@@ -92,6 +96,9 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 	defer cancel()
 
 	if mode == SignerModeLocalKey {
+		if len(binding.HostPublicKey) == 0 || len(binding.SessionID) == 0 || len(binding.Signature) == 0 {
+			return nil, errors.New("session-bind@openssh.com required for local-key signing")
+		}
 		fp := a.hostKeyFingerprint
 		if pub != nil {
 			fp = PublicKeyFingerprint(pub)
@@ -103,6 +110,7 @@ func (a *LunaAgent) Sign(pub ssh.PublicKey, data []byte) (*ssh.Signature, error)
 			TargetUser:         a.targetUser,
 			TargetIP:           a.targetHost,
 			HostKeyFingerprint: fp,
+			SessionBinding:     binding,
 			Client:             DefaultClientInfo(),
 		}, data)
 	}

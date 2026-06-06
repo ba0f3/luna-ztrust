@@ -1,6 +1,9 @@
 package auth
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 const (
 	maxSourceUserLen    = 64
@@ -13,6 +16,20 @@ type SignClientMeta struct {
 	SourceUser    string
 	ClientName    string
 	ClientVersion string
+}
+
+var ErrInvalidDisplayField = errors.New("display field contains control characters")
+
+// ValidateDisplayFields rejects control characters that can spoof approval UI.
+func ValidateDisplayFields(targetUser, targetIP string, meta SignClientMeta) error {
+	for _, field := range []string{targetUser, targetIP, meta.SourceUser, meta.ClientName, meta.ClientVersion} {
+		for _, r := range field {
+			if r < 0x20 || r == 0x7f {
+				return ErrInvalidDisplayField
+			}
+		}
+	}
+	return nil
 }
 
 // NormalizeSignClientMeta trims and caps optional client metadata fields.

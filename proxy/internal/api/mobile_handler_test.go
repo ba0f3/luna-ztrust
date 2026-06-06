@@ -33,8 +33,13 @@ func TestMobileEnrollAndApprove(t *testing.T) {
 		"label":         "test-phone",
 		"device_pubkey": base64.StdEncoding.EncodeToString(pub),
 	})
-	_, adminTLS, _ := loadAdminTLSConfigs(t)
+	_, adminTLS, automationTLS := loadAdminTLSConfigs(t)
 	admin := newMTLSClient(t, env.ts, adminTLS)
+	enrollBody, _ = json.Marshal(map[string]string{
+		"label":            "test-phone",
+		"device_pubkey":    base64.StdEncoding.EncodeToString(pub),
+		"cert_fingerprint": tlsCertFingerprint(t, automationTLS),
+	})
 	resp, err := admin.http.Post(env.ts.URL+"/api/v1/mobile/enroll", "application/json", bytes.NewReader(enrollBody))
 	if err != nil {
 		t.Fatal(err)
@@ -82,6 +87,15 @@ func TestMobileEnrollAndApprove(t *testing.T) {
 		Signature string `json:"signature"`
 	}{sp, hex.EncodeToString(sig)})
 
+	resp, err = admin.http.Post(env.ts.URL+"/api/v1/mobile/approve", "application/json", bytes.NewReader(approveBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("mismatched mobile cert status %d, want 403", resp.StatusCode)
+	}
+
 	resp, err = env.client.http.Post(env.ts.URL+"/api/v1/mobile/approve", "application/json", bytes.NewReader(approveBody))
 	if err != nil {
 		t.Fatal(err)
@@ -109,13 +123,14 @@ func TestMobileDeleteDevice(t *testing.T) {
 		AdminClientOU:   "luna-admin",
 	}
 	env := startTestServerDefault(t, cfg)
-	_, adminTLS, _ := loadAdminTLSConfigs(t)
+	_, adminTLS, automationTLS := loadAdminTLSConfigs(t)
 	admin := newMTLSClient(t, env.ts, adminTLS)
 
 	pub, _, _ := ed25519.GenerateKey(rand.Reader)
 	enrollBody, _ := json.Marshal(map[string]string{
-		"label":         "d",
-		"device_pubkey": base64.StdEncoding.EncodeToString(pub),
+		"label":            "d",
+		"device_pubkey":    base64.StdEncoding.EncodeToString(pub),
+		"cert_fingerprint": tlsCertFingerprint(t, automationTLS),
 	})
 	resp, err := admin.http.Post(env.ts.URL+"/api/v1/mobile/enroll", "application/json", bytes.NewReader(enrollBody))
 	if err != nil {
@@ -149,11 +164,12 @@ func TestMobileKeysPendingRequiresDeviceSignature(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, adminTLS, _ := loadAdminTLSConfigs(t)
+	_, adminTLS, automationTLS := loadAdminTLSConfigs(t)
 	admin := newMTLSClient(t, env.ts, adminTLS)
 	enrollBody, _ := json.Marshal(map[string]string{
-		"label":         "upload-phone",
-		"device_pubkey": base64.StdEncoding.EncodeToString(pub),
+		"label":            "upload-phone",
+		"device_pubkey":    base64.StdEncoding.EncodeToString(pub),
+		"cert_fingerprint": tlsCertFingerprint(t, automationTLS),
 	})
 	resp, err := admin.http.Post(env.ts.URL+"/api/v1/mobile/enroll", "application/json", bytes.NewReader(enrollBody))
 	if err != nil {

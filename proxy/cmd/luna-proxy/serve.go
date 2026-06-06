@@ -118,7 +118,8 @@ func runServe(_ *cobra.Command, _ []string) error {
 				ChatID:            cfg.TelegramChatID,
 				AllowedTTLSeconds: cfg.AllowedTTLSeconds,
 			},
-			Store: store,
+			Store:          store,
+			AllowedUserIDs: cfg.TelegramUserIDs,
 		})
 		go poller.Run(context.Background())
 	}

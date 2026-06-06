@@ -95,8 +95,16 @@ func EnsureCertPermissions(dir, group string) error {
 			return fmt.Errorf("chown %s: %w", path, err)
 		}
 		switch {
-		case strings.HasSuffix(e.Name(), ".key"):
+		case e.Name() == "server.key" || e.Name() == "ca.key":
 			if err := os.Chmod(path, 0o640); err != nil {
+				return err
+			}
+		case e.Name() == "admin-client.key" || e.Name() == "client.key":
+			if err := os.Chmod(path, 0o600); err != nil {
+				return err
+			}
+		case strings.HasSuffix(e.Name(), ".key"):
+			if err := os.Chmod(path, 0o600); err != nil {
 				return err
 			}
 		case strings.HasSuffix(e.Name(), ".crt"):

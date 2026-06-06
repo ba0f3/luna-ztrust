@@ -13,6 +13,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -251,8 +252,12 @@ func TestHandleMobileEnrollListDelete(t *testing.T) {
 	pubB64 := base64.StdEncoding.EncodeToString(priv.Public().(ed25519.PublicKey))
 
 	enroll := s.handle(Request{
-		Op:   "mobile.enroll",
-		Data: reqData(t, map[string]string{"label": "phone", "device_pubkey": pubB64}),
+		Op: "mobile.enroll",
+		Data: reqData(t, map[string]string{
+			"label":            "phone",
+			"device_pubkey":    pubB64,
+			"cert_fingerprint": strings.Repeat("a", 64),
+		}),
 	})
 	if !enroll.OK {
 		t.Fatalf("enroll: %+v", enroll)

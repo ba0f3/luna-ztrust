@@ -4,6 +4,7 @@ package keystore
 
 import (
 	"crypto/ed25519"
+	"fmt"
 	"reflect"
 	"unsafe"
 
@@ -11,19 +12,19 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func mlockSigner(signer ssh.Signer) {
+func mlockSigner(signer ssh.Signer) error {
 	if signer == nil {
-		return
+		return fmt.Errorf("nil signer")
 	}
 	v := reflect.ValueOf(signer)
 	for v.Kind() == reflect.Interface || v.Kind() == reflect.Pointer {
 		if v.IsNil() {
-			return
+			return fmt.Errorf("nil signer")
 		}
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
-		return
+		return fmt.Errorf("unsupported signer representation %T", signer)
 	}
 	for _, name := range []string{"key", "Key"} {
 		f := v.FieldByName(name)
@@ -31,22 +32,24 @@ func mlockSigner(signer ssh.Signer) {
 			continue
 		}
 		if f.CanInterface() {
-			mlockBytes(f.Interface().(ed25519.PrivateKey))
-			return
+			return mlockBytes(f.Interface().(ed25519.PrivateKey))
 		}
 		if f.CanAddr() {
 			pk := reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem().Interface().(ed25519.PrivateKey)
-			mlockBytes(pk)
-			return
+			return mlockBytes(pk)
 		}
 	}
+	return fmt.Errorf("private key memory not found in signer %T", signer)
 }
 
-func mlockBytes(b []byte) {
+func mlockBytes(b []byte) error {
 	if len(b) == 0 {
-		return
+		return nil
 	}
-	_ = unix.Mlock(b)
+	if err := unix.Mlock(b); err != nil {
+		return fmt.Errorf("mlock sensitive memory: %w", err)
+	}
+	return nil
 }
 
 func zeroBytes(b []byte) {

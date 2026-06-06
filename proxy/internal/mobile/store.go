@@ -19,10 +19,11 @@ var (
 
 // Device is an enrolled mobile approver.
 type Device struct {
-	ID         string
-	Label      string
-	PubKey     ed25519.PublicKey
-	EnrolledAt time.Time
+	ID              string
+	Label           string
+	PubKey          ed25519.PublicKey
+	CertFingerprint string
+	EnrolledAt      time.Time
 }
 
 // Store holds enrolled devices in memory.
@@ -38,6 +39,11 @@ func NewStore() *Store {
 
 // Enroll registers a device and returns its server-assigned ID.
 func (s *Store) Enroll(label, devicePubKeyB64 string) (*Device, error) {
+	return s.EnrollBound(label, devicePubKeyB64, "")
+}
+
+// EnrollBound registers a device bound to its mTLS client certificate.
+func (s *Store) EnrollBound(label, devicePubKeyB64, certFingerprint string) (*Device, error) {
 	if label == "" {
 		return nil, ErrEmptyLabel
 	}
@@ -47,10 +53,11 @@ func (s *Store) Enroll(label, devicePubKeyB64 string) (*Device, error) {
 	}
 	id := "dev_" + ulid.MustNew(ulid.Timestamp(time.Now()), rand.Reader).String()
 	dev := &Device{
-		ID:         id,
-		Label:      label,
-		PubKey:     ed25519.PublicKey(raw),
-		EnrolledAt: time.Now().UTC(),
+		ID:              id,
+		Label:           label,
+		PubKey:          ed25519.PublicKey(raw),
+		CertFingerprint: certFingerprint,
+		EnrolledAt:      time.Now().UTC(),
 	}
 	s.mu.Lock()
 	s.devices[id] = dev

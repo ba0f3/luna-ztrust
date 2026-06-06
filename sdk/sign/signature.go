@@ -20,6 +20,12 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 	if len(signData) == 0 {
 		return nil, fmt.Errorf("signData is required")
 	}
+	if len(req.SessionBinding.HostPublicKey) == 0 || len(req.SessionBinding.SessionID) == 0 || len(req.SessionBinding.Signature) == 0 {
+		return nil, fmt.Errorf("SessionBinding is required")
+	}
+	if req.SessionBinding.Forwarding {
+		return nil, fmt.Errorf("forwarded SessionBinding is not allowed")
+	}
 
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -47,6 +53,12 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 		ClientVersion:      req.Client.ClientVersion,
 		AgentSignData:      base64.StdEncoding.EncodeToString(signData),
 		HostKeyFingerprint: req.HostKeyFingerprint,
+		SessionBinding: sessionBindingRequest{
+			HostPublicKey: req.SessionBinding.HostPublicKey,
+			SessionID:     req.SessionBinding.SessionID,
+			Signature:     req.SessionBinding.Signature,
+			Forwarding:    req.SessionBinding.Forwarding,
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)

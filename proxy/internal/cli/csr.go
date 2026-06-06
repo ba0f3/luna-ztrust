@@ -85,10 +85,13 @@ func (s *CSRSigner) Sign(csrPEM []byte) (certPEM []byte, fingerprint string, err
 	if err := validateCSR(csr, s.requiredOU); err != nil {
 		return nil, "", err
 	}
-	return s.signCSRWithTTL(csr, s.ttl)
+	return s.signCSRWithTTL(csr, s.ttl, pkix.Name{
+		CommonName:         "Luna CLI Client",
+		OrganizationalUnit: []string{s.requiredOU},
+	})
 }
 
-// SignAutomation signs an automation client CSR (no OU requirement).
+// SignAutomation signs an automation client CSR without granting a role OU.
 func (s *CSRSigner) SignAutomation(csrPEM []byte) (certPEM []byte, fingerprint string, err error) {
 	if s == nil || s.caCert == nil || s.caKey == nil {
 		return nil, "", ErrCANotConfigured
@@ -100,14 +103,19 @@ func (s *CSRSigner) SignAutomation(csrPEM []byte) (certPEM []byte, fingerprint s
 	if err := validateCSR(csr, ""); err != nil {
 		return nil, "", err
 	}
-	return s.signCSRWithTTL(csr, defaultAutomationClientCertTTL)
+	return s.signCSRWithTTL(csr, defaultAutomationClientCertTTL, pkix.Name{
+		CommonName: "Luna Automation Client",
+	})
 }
 
 func (s *CSRSigner) signCSR(csr *x509.CertificateRequest) (certPEM []byte, fingerprint string, err error) {
-	return s.signCSRWithTTL(csr, s.ttl)
+	return s.signCSRWithTTL(csr, s.ttl, pkix.Name{
+		CommonName:         "Luna CLI Client",
+		OrganizationalUnit: []string{s.requiredOU},
+	})
 }
 
-func (s *CSRSigner) signCSRWithTTL(csr *x509.CertificateRequest, ttl time.Duration) (certPEM []byte, fingerprint string, err error) {
+func (s *CSRSigner) signCSRWithTTL(csr *x509.CertificateRequest, ttl time.Duration, subject pkix.Name) (certPEM []byte, fingerprint string, err error) {
 
 	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
@@ -117,7 +125,7 @@ func (s *CSRSigner) signCSRWithTTL(csr *x509.CertificateRequest, ttl time.Durati
 	now := time.Now().UTC()
 	template := x509.Certificate{
 		SerialNumber: serial,
-		Subject:      csr.Subject,
+		Subject:      subject,
 		NotBefore:    now.Add(-time.Minute),
 		NotAfter:     now.Add(ttl),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
@@ -154,22 +162,18 @@ func validateCSR(csr *x509.CertificateRequest, requiredOU string) error {
 	if err := csr.CheckSignature(); err != nil {
 		return ErrCSRInvalid
 	}
-	if requiredOU != "" && !subjectHasOU(csr.Subject, requiredOU) {
+	switch {
+	case requiredOU == "" && len(csr.Subject.OrganizationalUnit) != 0:
 		return ErrCSRInvalid
+	case requiredOU != "":
+		if len(csr.Subject.OrganizationalUnit) != 1 || csr.Subject.OrganizationalUnit[0] != requiredOU {
+			return ErrCSRInvalid
+		}
 	}
 	if err := validateCSRPublicKey(csr.PublicKey); err != nil {
 		return err
 	}
 	return nil
-}
-
-func subjectHasOU(subject pkix.Name, requiredOU string) bool {
-	for _, ou := range subject.OrganizationalUnit {
-		if ou == requiredOU {
-			return true
-		}
-	}
-	return false
 }
 
 func validateCSRPublicKey(pub crypto.PublicKey) error {

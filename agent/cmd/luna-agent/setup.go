@@ -25,6 +25,7 @@ var (
 	setupHostKeyFingerprint string
 	setupAgentSocket        string
 	setupEnrollToken        string
+	setupCAFingerprint      string
 	setupFetchCA            bool
 	setupForce              bool
 	setupSkipVerify         bool
@@ -78,7 +79,8 @@ func addSetupFlags(cmd *cobra.Command) {
 	f.StringVar(&setupHostKeyFingerprint, "host-key-fingerprint", "", "optional local-key signer hint")
 	f.StringVar(&setupAgentSocket, "agent-socket", "", "agent Unix socket (default: /run/luna/agent.sock as root/systemd, else XDG runtime)")
 	f.StringVar(&setupEnrollToken, "enroll-token", "", "proxy mTLS enroll token (or LUNA_MTLS_ENROLL_TOKEN)")
-	f.BoolVar(&setupFetchCA, "fetch-ca", false, "download ca.crt from GET /api/v1/mtls/ca")
+	f.StringVar(&setupCAFingerprint, "ca-fingerprint", "", "expected SHA-256 fingerprint for --fetch-ca")
+	f.BoolVar(&setupFetchCA, "fetch-ca", false, "download ca.crt after verifying --ca-fingerprint")
 	f.BoolVar(&setupForce, "force", false, "overwrite existing cert files")
 	f.BoolVar(&setupSkipVerify, "skip-verify", false, "skip proxy capabilities check")
 	f.BoolVar(&setupInstallSystemd, "install-systemd", false, "install luna-agent user systemd unit")
@@ -133,6 +135,7 @@ func flagsToSetupOptions() agentsetup.Options {
 		HostKeyFingerprint: setupHostKeyFingerprint,
 		AgentSocket:        setupAgentSocket,
 		EnrollToken:        setupEnrollToken,
+		CAFingerprint:      setupCAFingerprint,
 		FetchCA:            setupFetchCA,
 		Force:              setupForce,
 		SkipVerify:         setupSkipVerify,

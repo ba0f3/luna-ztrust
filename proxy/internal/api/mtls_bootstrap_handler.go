@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -45,6 +46,12 @@ func (s *server) handleMTLSCA(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *server) handleMTLSEnroll(w http.ResponseWriter, r *http.Request) {
+	sourceIP := clientIPFromRemoteAddr(r.RemoteAddr)
+	if !s.loadLimiter.TryRecordSuccess("mtls-enroll:" + sourceIP) {
+		log.Printf("auth: mtls_enroll outcome=rate_limit source_ip=%s", sourceIP)
+		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+		return
+	}
 	if s.csrSigner == nil {
 		http.Error(w, "mTLS enrollment not configured", http.StatusServiceUnavailable)
 		return
@@ -56,6 +63,7 @@ func (s *server) handleMTLSEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 	got := strings.TrimSpace(r.Header.Get("X-Luna-Enroll-Token"))
 	if subtle.ConstantTimeCompare([]byte(got), []byte(expected)) != 1 {
+		log.Printf("auth: mtls_enroll outcome=invalid_token source_ip=%s", sourceIP)
 		http.Error(w, "invalid enroll token", http.StatusUnauthorized)
 		return
 	}
@@ -93,4 +101,5 @@ func (s *server) handleMTLSEnroll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(mtlsEnrollResponse{CertificatePEM: string(certPEM)})
+	log.Printf("auth: mtls_enroll outcome=issued source_ip=%s", sourceIP)
 }

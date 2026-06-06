@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	mobileLabel  string
-	mobilePubKey string
+	mobileLabel           string
+	mobilePubKey          string
+	mobileCertFingerprint string
 )
 
 var mobileCmd = &cobra.Command{
@@ -39,8 +40,10 @@ var mobileDeleteCmd = &cobra.Command{
 func init() {
 	mobileEnrollCmd.Flags().StringVar(&mobileLabel, "label", "", "device label")
 	mobileEnrollCmd.Flags().StringVar(&mobilePubKey, "pubkey", "", "base64 device public key")
+	mobileEnrollCmd.Flags().StringVar(&mobileCertFingerprint, "cert-fingerprint", "", "SHA-256 fingerprint of the mobile mTLS client certificate")
 	_ = mobileEnrollCmd.MarkFlagRequired("label")
 	_ = mobileEnrollCmd.MarkFlagRequired("pubkey")
+	_ = mobileEnrollCmd.MarkFlagRequired("cert-fingerprint")
 	mobileCmd.AddCommand(mobileEnrollCmd, mobileListCmd, mobileDeleteCmd)
 	rootCmd.AddCommand(mobileCmd)
 }
@@ -51,8 +54,9 @@ func runMobileEnroll(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	data, err := client.Call(path, "mobile.enroll", map[string]string{
-		"label":         mobileLabel,
-		"device_pubkey": mobilePubKey,
+		"label":            mobileLabel,
+		"device_pubkey":    mobilePubKey,
+		"cert_fingerprint": mobileCertFingerprint,
 	})
 	if err != nil {
 		return err

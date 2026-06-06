@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
@@ -140,6 +141,15 @@ type testEnv struct {
 	store  *approval.Store
 	ks     *keystore.Keystore
 	client *mtlsClient
+}
+
+func tlsCertFingerprint(t *testing.T, cfg *tls.Config) string {
+	t.Helper()
+	if cfg == nil || len(cfg.Certificates) == 0 || len(cfg.Certificates[0].Certificate) == 0 {
+		t.Fatal("TLS config has no client certificate")
+	}
+	sum := sha256.Sum256(cfg.Certificates[0].Certificate[0])
+	return hex.EncodeToString(sum[:])
 }
 
 func startTestServer(t *testing.T, cfg config.Config, ks *keystore.Keystore) *testEnv {

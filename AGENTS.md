@@ -66,7 +66,9 @@ Auth failure → **no** `tx_id`, **no** Telegram.
 - **Signing keys:** encrypted PEM is decrypted only in proxy RAM (`internal/keystore`); `local-ca` has one active signer, `local-key` has a fingerprint-keyed pool.
 - **Control plane:** `luna-proxy serve` starts the mTLS API and Linux Unix control socket; socket ops use `SO_PEERCRED` and the configured admin group.
 - **Remote CLI key load:** only enrolled `OU=luna-cli` devices may call `POST /api/v1/cli/keys/load`; admin and automation certs must be rejected.
-- **Agent v1:** `Sign` blocks until cert/signature ready; mutex around in-flight sign; `LUNA_TARGET_HOST` required (OpenSSH does not pass remote host in `Sign`).
+- **Agent v1:** `Sign` blocks until cert/signature ready; mutex around in-flight sign; local-key requires a non-forwarded OpenSSH `session-bind@openssh.com` extension.
+- **Local-key destination:** the verified SSH server host-key fingerprint is authoritative; `target_ip` is display/audit metadata only.
+- **Bootstrap:** insecure first-contact CA download requires an out-of-band SHA-256 CA certificate fingerprint; enrollment must not refresh trust automatically.
 
 ## Build and test
 
@@ -152,7 +154,7 @@ func (c *Client) FetchCapabilities(ctx context.Context) (Capabilities, error)
 func NewCertSigner(cert *ssh.Certificate, priv ed25519.PrivateKey) (ssh.Signer, error)
 ```
 
-PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed with ephemeral key; hex-encode signature in JSON. Optional sign JSON fields `source_user`, `client_name`, `client_version` are for approval display and audit logs only (not in PoP). Authoritative **source IP** is always from mTLS `RemoteAddr` on the proxy. `local-key` sign requests include `agent_sign_data` and `host_key_fingerprint`; capabilities expose loaded signer fingerprints and public keys when available.
+PoP payload: `fmt.Sprintf("%s:%s:%d", targetUser, targetIP, timestamp)` signed with ephemeral key; hex-encode signature in JSON. Optional sign JSON fields `source_user`, `client_name`, `client_version` are for approval display and audit logs only (not in PoP). Authoritative **source IP** is always from mTLS `RemoteAddr` on the proxy. `local-key` sign requests include `agent_sign_data`, `host_key_fingerprint`, and verified session-binding fields; capabilities expose loaded signer fingerprints and public keys when available.
 
 ## Proxy packages
 

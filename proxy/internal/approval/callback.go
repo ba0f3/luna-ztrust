@@ -68,3 +68,16 @@ func ChatAllowed(configuredChatID string, chatID int64) bool {
 	}
 	return chatID == allowed
 }
+
+// TelegramUserAllowed authorizes callback users. Private chats default to the
+// configured positive chat ID; group chats require an explicit CSV allowlist.
+func TelegramUserAllowed(configuredChatID, configuredUserIDs string, userID int64) bool {
+	for _, raw := range strings.Split(configuredUserIDs, ",") {
+		allowed, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+		if err == nil && allowed == userID {
+			return true
+		}
+	}
+	chatID, err := strconv.ParseInt(strings.TrimSpace(configuredChatID), 10, 64)
+	return err == nil && chatID > 0 && chatID == userID
+}

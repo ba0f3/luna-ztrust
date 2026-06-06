@@ -103,6 +103,15 @@ func (k *Keystore) SignerForFingerprint(fingerprint string) (ssh.Signer, error) 
 	return signer, nil
 }
 
+// PublicKeyForFingerprint returns public key metadata for a hosted signer.
+func (k *Keystore) PublicKeyForFingerprint(fingerprint string) (ssh.PublicKey, error) {
+	signer, err := k.SignerForFingerprint(fingerprint)
+	if err != nil {
+		return nil, err
+	}
+	return signer.PublicKey(), nil
+}
+
 // ListSigners returns loaded signer metadata (local-key pool or single CA entry).
 func (k *Keystore) ListSigners() []SignerInfo {
 	k.mu.RLock()
@@ -150,25 +159,28 @@ func (k *Keystore) LoadPEMBytes(pemBytes []byte, passphrase string, comment stri
 		return "", err
 	}
 
-	mlockBytes(pemBytes)
 	defer func() {
 		zeroBytes(pemBytes)
 		runtime.KeepAlive(pemBytes)
 	}()
+	if err := mlockBytes(pemBytes); err != nil {
+		return "", err
+	}
 
 	pass := []byte(passphrase)
-	mlockBytes(pass)
 	defer func() {
 		zeroBytes(pass)
 		runtime.KeepAlive(pass)
 	}()
+	if err := mlockBytes(pass); err != nil {
+		return "", err
+	}
 
 	signer, err := parseEncryptedPEM(pemBytes, pass)
 	if err != nil {
 		k.recordUnsealFailure()
 		return "", err
 	}
-	mlockSigner(signer)
 	fp := Fingerprint(signer.PublicKey())
 
 	switch k.mode {
@@ -229,7 +241,9 @@ func parseEncryptedPEM(pemBytes, pass []byte) (ssh.Signer, error) {
 	var signer ssh.Signer
 	switch key := raw.(type) {
 	case ed25519.PrivateKey:
-		mlockBytes(key)
+		if err := mlockBytes(key); err != nil {
+			return nil, err
+		}
 		runtime.KeepAlive(key)
 		signer, err = ssh.NewSignerFromKey(key)
 	case *ed25519.PrivateKey:
@@ -238,9 +252,13 @@ func parseEncryptedPEM(pemBytes, pass []byte) (ssh.Signer, error) {
 		}
 		owned := make(ed25519.PrivateKey, ed25519.PrivateKeySize)
 		copy(owned, *key)
-		mlockBytes(*key)
+		if err := mlockBytes(*key); err != nil {
+			return nil, err
+		}
 		zeroBytes(*key)
-		mlockBytes(owned)
+		if err := mlockBytes(owned); err != nil {
+			return nil, err
+		}
 		runtime.KeepAlive(owned)
 		signer, err = ssh.NewSignerFromKey(owned)
 	default:

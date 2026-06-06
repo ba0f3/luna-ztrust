@@ -88,6 +88,7 @@ func TestPollerApproveCallback(t *testing.T) {
 						"callback_query": map[string]any{
 							"id":   "cq1",
 							"data": "approve:" + tx.ID + ":300",
+							"from": map[string]any{"id": 4242},
 							"message": map[string]any{
 								"message_id": 42,
 								"chat":       map[string]any{"id": 4242},
@@ -147,6 +148,18 @@ func TestPollerApproveCallback(t *testing.T) {
 		}
 	}
 	t.Fatalf("outcomes = %v, want approved", outcomes)
+}
+
+func TestTelegramUserAllowed(t *testing.T) {
+	if !approval.TelegramUserAllowed("4242", "", 4242) {
+		t.Fatal("private chat owner should be allowed")
+	}
+	if approval.TelegramUserAllowed("-1001", "", 4242) {
+		t.Fatal("group chat must require explicit user allowlist")
+	}
+	if !approval.TelegramUserAllowed("-1001", "7, 4242", 4242) {
+		t.Fatal("allowlisted group user should be allowed")
+	}
 }
 
 func TestDeleteWebhook(t *testing.T) {

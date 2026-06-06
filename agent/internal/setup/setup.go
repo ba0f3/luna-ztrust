@@ -28,6 +28,7 @@ type Options struct {
 	HostKeyFingerprint string
 	AgentSocket        string
 	EnrollToken        string
+	CAFingerprint      string
 	EnrollViaProxy     bool
 	FetchCA            bool
 	Force              bool
@@ -74,6 +75,7 @@ func Run(opts Options) (Result, error) {
 			ProxyURL:           opts.ProxyURL,
 			CertsDir:           opts.CertsDir,
 			InsecureSkipVerify: true,
+			CAFingerprint:      opts.CAFingerprint,
 		})
 		if err != nil {
 			return Result{}, fmt.Errorf("fetch CA: %w", err)
@@ -127,15 +129,10 @@ func Run(opts Options) (Result, error) {
 			if err := ensureEnrollToken(&opts); err != nil {
 				return Result{}, fmt.Errorf("step 3/5: %w", err)
 			}
-			refreshCA := opts.CAFile == "" && opts.FromDir == ""
-			if refreshCA {
-				fmt.Println("  refreshing ca.crt from proxy")
-			}
 			certPath, err := EnrollClientCSR(BootstrapOptions{
 				ProxyURL:    opts.ProxyURL,
 				CertsDir:    opts.CertsDir,
 				EnrollToken: opts.EnrollToken,
-				RefreshCA:   refreshCA,
 			})
 			if err != nil {
 				return Result{}, fmt.Errorf("step 3/5: proxy enroll failed: %w", formatEnrollError(err, opts.CertsDir))

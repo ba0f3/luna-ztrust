@@ -81,6 +81,47 @@ func TestSignCSR_RejectsWrongOU(t *testing.T) {
 	}
 }
 
+func TestSignCSR_RejectsAdditionalRoleOU(t *testing.T) {
+	caCert, caKey := loadTestCA(t)
+	signer := NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)
+
+	_, _, err := signer.Sign(generateTestCSRWithOUs(t, "luna-cli", "luna-admin"))
+	if !errors.Is(err, ErrCSRInvalid) {
+		t.Fatalf("expected ErrCSRInvalid, got %v", err)
+	}
+}
+
+func TestSignAutomation_RejectsRoleOU(t *testing.T) {
+	caCert, caKey := loadTestCA(t)
+	signer := NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)
+
+	_, _, err := signer.SignAutomation(generateTestCSR(t, "luna-admin"))
+	if !errors.Is(err, ErrCSRInvalid) {
+		t.Fatalf("expected ErrCSRInvalid, got %v", err)
+	}
+}
+
+func TestSignCSR_AssignsServerControlledSubject(t *testing.T) {
+	caCert, caKey := loadTestCA(t)
+	signer := NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)
+
+	certPEM, _, err := signer.Sign(generateTestCSR(t, "luna-cli"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, _ := pem.Decode(certPEM)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cert.Subject.CommonName != "Luna CLI Client" {
+		t.Fatalf("CommonName = %q", cert.Subject.CommonName)
+	}
+	if got := cert.Subject.OrganizationalUnit; len(got) != 1 || got[0] != "luna-cli" {
+		t.Fatalf("OrganizationalUnit = %v", got)
+	}
+}
+
 func TestSignCSR_RejectsMalformedPEM(t *testing.T) {
 	caCert, caKey := loadTestCA(t)
 	signer := NewCSRSigner(caCert, caKey, "luna-cli", 24*time.Hour)
@@ -124,6 +165,10 @@ func loadTestCA(t *testing.T) (*x509.Certificate, crypto.PrivateKey) {
 }
 
 func generateTestCSR(t *testing.T, ou string) []byte {
+	return generateTestCSRWithOUs(t, ou)
+}
+
+func generateTestCSRWithOUs(t *testing.T, ous ...string) []byte {
 	t.Helper()
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -131,7 +176,7 @@ func generateTestCSR(t *testing.T, ou string) []byte {
 	}
 	template := x509.CertificateRequest{
 		Subject: pkix.Name{
-			OrganizationalUnit: []string{ou},
+			OrganizationalUnit: ous,
 			CommonName:         "Luna CLI Test",
 		},
 	}
