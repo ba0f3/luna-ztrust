@@ -21,7 +21,8 @@ security-hardening change set:
 
 - Certificate subjects and roles are assigned server-side.
 - Local-key signing requires validated OpenSSH session binding and user-auth
-  payloads; leases bind the verified destination host key.
+  payloads; leases bind the verified destination host key. Direct in-process
+  SDK clients use an explicitly client-reported host key and cannot use leases.
 - Approval transitions are atomic and leases are created only after commit.
 - Agent bootstrap requires a pinned CA fingerprint for insecure first contact,
   does not refresh trust before enrollment, and enrollment is rate-limited and

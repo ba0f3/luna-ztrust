@@ -146,7 +146,7 @@ func formatApprovalMessage(tx *Transaction) string {
 	fmt.Fprintf(&b, "Target user: %s\n", tx.TargetUser)
 	fmt.Fprintf(&b, "Target host claim: %s\n", tx.TargetIP)
 	if tx.DestinationHostKeyFingerprint != "" {
-		fmt.Fprintf(&b, "Verified SSH host key: %s\n", tx.DestinationHostKeyFingerprint)
+		fmt.Fprintf(&b, "%s: %s\n", destinationHostKeyLabel(tx), tx.DestinationHostKeyFingerprint)
 	}
 	if tx.SourceIP != "" {
 		fmt.Fprintf(&b, "Source IP: %s\n", tx.SourceIP)
@@ -182,7 +182,7 @@ func formatResolvedApprovalMessage(tx *Transaction, res Resolution) string {
 	fmt.Fprintf(&b, "Target user: %s\n", tx.TargetUser)
 	fmt.Fprintf(&b, "Target host claim: %s\n", tx.TargetIP)
 	if tx.DestinationHostKeyFingerprint != "" {
-		fmt.Fprintf(&b, "Verified SSH host key: %s\n", tx.DestinationHostKeyFingerprint)
+		fmt.Fprintf(&b, "%s: %s\n", destinationHostKeyLabel(tx), tx.DestinationHostKeyFingerprint)
 	}
 	if tx.SourceIP != "" {
 		fmt.Fprintf(&b, "Source IP: %s\n", tx.SourceIP)
@@ -209,6 +209,13 @@ func formatResolvedApprovalMessage(tx *Transaction, res Resolution) string {
 		fmt.Fprintf(&b, "Lease TTL: %s", res.TTL)
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+func destinationHostKeyLabel(tx *Transaction) string {
+	if tx != nil && tx.DestinationHostKeySource == "client-reported" {
+		return "Client-reported SSH host key"
+	}
+	return "Session-bound SSH host key"
 }
 
 func formatApproverDisplay(approver string) string {

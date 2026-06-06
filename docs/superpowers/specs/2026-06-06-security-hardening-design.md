@@ -90,8 +90,18 @@ session binding. Forwarded session bindings are rejected.
 
 ### 3.5 Direct SDK Flow
 
-Direct SDK callers must provide a `SessionBinding` in `SignatureRequest`.
-Callers that cannot provide it cannot use `local-key` mode.
+In-process `x/crypto/ssh` clients cannot obtain OpenSSH agent
+`session-bind@openssh.com` data. Direct SDK callers instead provide
+`DestinationHostPublicKey`, captured from the host key accepted by their
+`ssh.HostKeyCallback`.
+
+The proxy still parses and validates the SSH user-auth payload, target user,
+session ID presence, and selected hosted signing key. Because the destination
+host key is a client assertion rather than a server-signed session binding:
+
+- approval messages label it as **client-reported**;
+- every signature requires approval;
+- lease lookup and lease creation are disabled.
 
 ## 4. Atomic Approval State
 
@@ -138,7 +148,9 @@ configured chat/user ID. Group chats require an explicit
 
 ## 8. Compatibility
 
-- Existing local-key SDK callers must provide session-binding context.
+- Agent local-key callers must provide session-binding context.
+- Direct SDK local-key callers must provide the destination host key accepted
+  by their `HostKeyCallback`; direct requests never use approval leases.
 - OpenSSH clients without `session-bind@openssh.com` support are rejected in
   local-key mode.
 - Local-CA continues to bind the source address and principal. Destination host

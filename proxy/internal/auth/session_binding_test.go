@@ -115,6 +115,40 @@ func TestValidateLocalKeySignDataRejectsWrongHostedKey(t *testing.T) {
 	}
 }
 
+func TestValidateDirectLocalKeySignData(t *testing.T) {
+	hostPub, _ := testSigner(t)
+	userPub, _ := testSigner(t)
+	data := marshalUserAuth(t, []byte("exchange-hash"), "deploy", userPub)
+
+	got, err := ValidateDirectLocalKeySignData(
+		base64.StdEncoding.EncodeToString(hostPub.Marshal()),
+		data,
+		"deploy",
+		userPub,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.HostKeyFingerprint == "" {
+		t.Fatal("missing host key fingerprint")
+	}
+}
+
+func TestValidateDirectLocalKeySignDataRejectsWrongUser(t *testing.T) {
+	hostPub, _ := testSigner(t)
+	userPub, _ := testSigner(t)
+	data := marshalUserAuth(t, []byte("exchange-hash"), "root", userPub)
+
+	if _, err := ValidateDirectLocalKeySignData(
+		base64.StdEncoding.EncodeToString(hostPub.Marshal()),
+		data,
+		"deploy",
+		userPub,
+	); err == nil {
+		t.Fatal("expected wrong user rejection")
+	}
+}
+
 func testSigner(t *testing.T) (ssh.PublicKey, ssh.Signer) {
 	t.Helper()
 	_, priv, err := ed25519.GenerateKey(rand.Reader)

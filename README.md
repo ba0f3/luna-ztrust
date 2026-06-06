@@ -229,6 +229,12 @@ In `local-key` mode, the verified destination SSH host-key fingerprint from
 OpenSSH session binding is authoritative. `LUNA_TARGET_HOST` / `target_ip` is
 display and audit metadata only. Forwarded agents and OpenSSH clients that do
 not send `session-bind@openssh.com` are rejected.
+
+Direct in-process `x/crypto/ssh` SDK clients cannot produce the OpenSSH agent
+session-binding extension. They must pass the server host key accepted by their
+`ssh.HostKeyCallback` as `SignatureRequest.DestinationHostPublicKey`. The proxy
+labels this destination as client-reported and requires approval for every
+signature; direct SDK requests never reuse approval leases.
 | `LUNA_HOSTED_PUBLIC_KEY` | Optional host `.pub` path or authorized_keys line for identity discovery |
 
 Agent socket: `/run/luna/agent.sock` (mode `0600`).

@@ -20,8 +20,25 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 	if len(signData) == 0 {
 		return nil, fmt.Errorf("signData is required")
 	}
-	if len(req.SessionBinding.HostPublicKey) == 0 || len(req.SessionBinding.SessionID) == 0 || len(req.SessionBinding.Signature) == 0 {
-		return nil, fmt.Errorf("SessionBinding is required")
+	sessionBindingFields := 0
+	for _, present := range []bool{
+		len(req.SessionBinding.HostPublicKey) > 0,
+		len(req.SessionBinding.SessionID) > 0,
+		len(req.SessionBinding.Signature) > 0,
+	} {
+		if present {
+			sessionBindingFields++
+		}
+	}
+	if sessionBindingFields != 0 && sessionBindingFields != 3 {
+		return nil, fmt.Errorf("SessionBinding is incomplete")
+	}
+	hasSessionBinding := sessionBindingFields == 3
+	if !hasSessionBinding && len(req.DestinationHostPublicKey) == 0 {
+		return nil, fmt.Errorf("SessionBinding or DestinationHostPublicKey is required")
+	}
+	if hasSessionBinding && len(req.DestinationHostPublicKey) > 0 {
+		return nil, fmt.Errorf("SessionBinding and DestinationHostPublicKey are mutually exclusive")
 	}
 	if req.SessionBinding.Forwarding {
 		return nil, fmt.Errorf("forwarded SessionBinding is not allowed")
@@ -59,6 +76,7 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 			Signature:     req.SessionBinding.Signature,
 			Forwarding:    req.SessionBinding.Forwarding,
 		},
+		DestinationHostPublicKey: req.DestinationHostPublicKey,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)

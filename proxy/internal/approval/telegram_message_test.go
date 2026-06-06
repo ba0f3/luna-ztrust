@@ -24,7 +24,7 @@ func TestFormatApprovalMessage(t *testing.T) {
 	for _, want := range []string{
 		"Target user: deploy",
 		"Target host claim: 10.0.0.5",
-		"Verified SSH host key: SHA256:destination",
+		"Session-bound SSH host key: SHA256:destination",
 		"Source IP: 203.0.113.1",
 		"Source user: goclaw",
 		"Client: luna-agent v0.1.0",
