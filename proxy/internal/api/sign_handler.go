@@ -106,7 +106,9 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	txMeta := signClientMeta(req)
 	destinationHostKeyFP := ""
+	allowLease := true
 	if s.cfg.SignerMode == approval.SignerModeLocalKey {
 		hostedPub, err := s.keystore.PublicKeyForFingerprint(hostKeyFP)
 		if err != nil {
@@ -119,7 +121,16 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid agent_sign_data", http.StatusBadRequest)
 			return
 		}
-		binding, err := auth.ValidateLocalKeySignData(req.SessionBinding, signData, req.TargetUser, hostedPub)
+		var binding auth.ValidatedSessionBinding
+		if req.SessionBinding.HostPublicKey != "" {
+			binding, err = auth.ValidateLocalKeySignData(req.SessionBinding, signData, req.TargetUser, hostedPub)
+			txMeta.DestinationHostKeySource = "session-bound"
+		} else {
+			binding, err = auth.ValidateDirectLocalKeySignData(req.DestinationHostPublicKey, signData, req.TargetUser, hostedPub)
+			txMeta.DestinationHostKeySource = "client-reported"
+			txMeta.DisableLease = true
+			allowLease = false
+		}
 		if err != nil {
 			s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_session_binding", clientMeta)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -129,9 +140,8 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lookup := lease.NewLookupKey(clientFP, req.TargetUser, req.TargetIP, sourceIP, hostKeyFP, destinationHostKeyFP)
-	txMeta := signClientMeta(req)
 
-	if s.cfg.Env != "dev" {
+	if s.cfg.Env != "dev" && allowLease {
 		if res, ok := s.store.IssueFromLease(r.Context(), lookup, req.PublicKey, req.AgentSignData, hostKeyFP); ok {
 			tx := s.store.CreateInstantApproved(req.TargetUser, req.TargetIP, req.PublicKey, sourceIP, clientFP, res)
 			s.logSignRequest(r, start, tx.ID, req.TargetUser, req.TargetIP, "lease_hit", clientMeta)

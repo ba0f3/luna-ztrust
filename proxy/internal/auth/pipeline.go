@@ -20,19 +20,20 @@ var ErrInvalidPoP = errors.New("invalid proof of possession")
 
 // SignRequest is the JSON body for POST /api/v1/ssh/sign.
 type SignRequest struct {
-	PublicKey          string         `json:"public_key"`
-	TargetUser         string         `json:"target_user"`
-	TargetIP           string         `json:"target_ip"`
-	Timestamp          int64          `json:"timestamp"`
-	PopSignature       string         `json:"pop_signature"`
-	AgentSignData      string         `json:"agent_sign_data,omitempty"`
-	HostPublicKey      string         `json:"host_public_key,omitempty"`
-	HostKeyFingerprint string         `json:"host_key_fingerprint,omitempty"`
-	SourceUser         string         `json:"source_user,omitempty"`
-	ClientName         string         `json:"client_name,omitempty"`
-	ClientVersion      string         `json:"client_version,omitempty"`
-	SessionBinding     SessionBinding `json:"session_binding,omitempty"`
-	BodyMAC            string         `json:"-"` // X-Luna-Body-Mac header, set by handler
+	PublicKey                string         `json:"public_key"`
+	TargetUser               string         `json:"target_user"`
+	TargetIP                 string         `json:"target_ip"`
+	Timestamp                int64          `json:"timestamp"`
+	PopSignature             string         `json:"pop_signature"`
+	AgentSignData            string         `json:"agent_sign_data,omitempty"`
+	HostPublicKey            string         `json:"host_public_key,omitempty"`
+	HostKeyFingerprint       string         `json:"host_key_fingerprint,omitempty"`
+	SourceUser               string         `json:"source_user,omitempty"`
+	ClientName               string         `json:"client_name,omitempty"`
+	ClientVersion            string         `json:"client_version,omitempty"`
+	SessionBinding           SessionBinding `json:"session_binding,omitempty"`
+	DestinationHostPublicKey string         `json:"destination_host_public_key,omitempty"`
+	BodyMAC                  string         `json:"-"` // X-Luna-Body-Mac header, set by handler
 }
 
 // ValidateCLIKeysLoad runs HMAC, timestamp, and replay checks for POST /api/v1/cli/keys/load.

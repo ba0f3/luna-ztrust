@@ -68,6 +68,7 @@ Auth failure → **no** `tx_id`, **no** Telegram.
 - **Remote CLI key load:** only enrolled `OU=luna-cli` devices may call `POST /api/v1/cli/keys/load`; admin and automation certs must be rejected.
 - **Agent v1:** `Sign` blocks until cert/signature ready; mutex around in-flight sign; local-key requires a non-forwarded OpenSSH `session-bind@openssh.com` extension.
 - **Local-key destination:** the verified SSH server host-key fingerprint is authoritative; `target_ip` is display/audit metadata only.
+- **Direct SDK local-key:** in-process `x/crypto/ssh` callers pass the host key accepted by `HostKeyCallback` as `DestinationHostPublicKey`; this client-reported path never uses approval leases.
 - **Bootstrap:** insecure first-contact CA download requires an out-of-band SHA-256 CA certificate fingerprint; enrollment must not refresh trust automatically.
 
 ## Build and test

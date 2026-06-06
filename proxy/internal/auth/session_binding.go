@@ -64,25 +64,77 @@ func ValidateLocalKeySignData(binding SessionBinding, signData []byte, targetUse
 	}, nil
 }
 
+// ValidateDirectLocalKeySignData validates user-auth data from an in-process
+// SSH client and derives the destination from the host key accepted by its
+// HostKeyCallback. Unlike OpenSSH session binding, this is a client assertion.
+func ValidateDirectLocalKeySignData(hostPublicKey string, signData []byte, targetUser string, expectedKey ssh.PublicKey) (ValidatedSessionBinding, error) {
+	hostWire, err := decodeRequiredBase64(hostPublicKey)
+	if err != nil {
+		return ValidatedSessionBinding{}, fmt.Errorf("%w: destination host public key", ErrInvalidSessionBinding)
+	}
+	hostKey, err := ssh.ParsePublicKey(hostWire)
+	if err != nil {
+		return ValidatedSessionBinding{}, fmt.Errorf("%w: destination host public key", ErrInvalidSessionBinding)
+	}
+	sessionID, err := validateDirectUserAuthSignData(signData, targetUser, expectedKey, hostKey)
+	if err != nil {
+		return ValidatedSessionBinding{}, err
+	}
+	return ValidatedSessionBinding{
+		HostKeyFingerprint: keystore.Fingerprint(hostKey),
+		SessionID:          sessionID,
+	}, nil
+}
+
 func validateUserAuthSignData(data, expectedSessionID []byte, targetUser string, expectedKey, boundHostKey ssh.PublicKey) error {
-	if len(data) == 0 || expectedKey == nil {
-		return fmt.Errorf("%w: missing sign data or hosted key", ErrInvalidSessionBinding)
+	req, err := parseUserAuthSignData(data)
+	if err != nil {
+		return err
 	}
-	var req struct {
-		SessionID []byte
-		User      string `sshtype:"50"`
-		Service   string
-		Method    string
-		HasSig    bool
-		Algorithm string
-		PublicKey []byte
-		Rest      []byte `ssh:"rest"`
+	if !bytes.Equal(req.SessionID, expectedSessionID) {
+		return fmt.Errorf("%w: user-auth request mismatch", ErrInvalidSessionBinding)
 	}
+	return validateParsedUserAuth(req, targetUser, expectedKey, boundHostKey)
+}
+
+func validateDirectUserAuthSignData(data []byte, targetUser string, expectedKey, hostKey ssh.PublicKey) ([]byte, error) {
+	req, err := parseUserAuthSignData(data)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateParsedUserAuth(req, targetUser, expectedKey, hostKey); err != nil {
+		return nil, err
+	}
+	return append([]byte(nil), req.SessionID...), nil
+}
+
+type userAuthSignData struct {
+	SessionID []byte
+	User      string `sshtype:"50"`
+	Service   string
+	Method    string
+	HasSig    bool
+	Algorithm string
+	PublicKey []byte
+	Rest      []byte `ssh:"rest"`
+}
+
+func parseUserAuthSignData(data []byte) (userAuthSignData, error) {
+	if len(data) == 0 {
+		return userAuthSignData{}, fmt.Errorf("%w: missing sign data", ErrInvalidSessionBinding)
+	}
+	var req userAuthSignData
 	if err := ssh.Unmarshal(data, &req); err != nil {
-		return fmt.Errorf("%w: user-auth request", ErrInvalidSessionBinding)
+		return userAuthSignData{}, fmt.Errorf("%w: user-auth request", ErrInvalidSessionBinding)
 	}
-	if !bytes.Equal(req.SessionID, expectedSessionID) || req.User != targetUser ||
-		req.Service != "ssh-connection" || !req.HasSig ||
+	if len(req.SessionID) == 0 {
+		return userAuthSignData{}, fmt.Errorf("%w: missing session id", ErrInvalidSessionBinding)
+	}
+	return req, nil
+}
+
+func validateParsedUserAuth(req userAuthSignData, targetUser string, expectedKey, boundHostKey ssh.PublicKey) error {
+	if expectedKey == nil || req.User != targetUser || req.Service != "ssh-connection" || !req.HasSig ||
 		req.Algorithm != expectedKey.Type() || !bytes.Equal(req.PublicKey, expectedKey.Marshal()) {
 		return fmt.Errorf("%w: user-auth request mismatch", ErrInvalidSessionBinding)
 	}

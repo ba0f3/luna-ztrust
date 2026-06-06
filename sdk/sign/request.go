@@ -2,17 +2,18 @@ package sign
 
 // Request is the JSON body for POST /api/v1/ssh/sign.
 type Request struct {
-	PublicKey          string                `json:"public_key"`
-	TargetUser         string                `json:"target_user"`
-	TargetIP           string                `json:"target_ip"`
-	Timestamp          int64                 `json:"timestamp"`
-	PopSignature       string                `json:"pop_signature"`
-	SourceUser         string                `json:"source_user,omitempty"`
-	ClientName         string                `json:"client_name,omitempty"`
-	ClientVersion      string                `json:"client_version,omitempty"`
-	AgentSignData      string                `json:"agent_sign_data,omitempty"`
-	HostKeyFingerprint string                `json:"host_key_fingerprint,omitempty"`
-	SessionBinding     sessionBindingRequest `json:"session_binding,omitempty"`
+	PublicKey                string                `json:"public_key"`
+	TargetUser               string                `json:"target_user"`
+	TargetIP                 string                `json:"target_ip"`
+	Timestamp                int64                 `json:"timestamp"`
+	PopSignature             string                `json:"pop_signature"`
+	SourceUser               string                `json:"source_user,omitempty"`
+	ClientName               string                `json:"client_name,omitempty"`
+	ClientVersion            string                `json:"client_version,omitempty"`
+	AgentSignData            string                `json:"agent_sign_data,omitempty"`
+	HostKeyFingerprint       string                `json:"host_key_fingerprint,omitempty"`
+	SessionBinding           sessionBindingRequest `json:"session_binding,omitempty"`
+	DestinationHostPublicKey []byte                `json:"destination_host_public_key,omitempty"`
 }
 
 type sessionBindingRequest struct {
@@ -55,7 +56,11 @@ type SignatureRequest struct {
 	TargetIP           string
 	HostKeyFingerprint string
 	SessionBinding     SessionBinding
-	Client             ClientInfo
+	// DestinationHostPublicKey is the SSH server host key accepted by the
+	// caller's HostKeyCallback. Direct x/crypto/ssh clients use this when they
+	// cannot provide OpenSSH agent session binding.
+	DestinationHostPublicKey []byte
+	Client                   ClientInfo
 }
 
 // SessionBinding proves the destination SSH host key and exchange hash.

@@ -49,15 +49,19 @@ type Transaction struct {
 	AgentSignData                 string
 	HostKeyFingerprint            string
 	DestinationHostKeyFingerprint string
+	DestinationHostKeySource      string
+	DisableLease                  bool
 	State                         State
 	CreatedAt                     time.Time
 }
 
 // ClientMeta is optional metadata from the sign request (display/audit only).
 type ClientMeta struct {
-	SourceUser    string
-	ClientName    string
-	ClientVersion string
+	SourceUser               string
+	ClientName               string
+	ClientVersion            string
+	DestinationHostKeySource string
+	DisableLease             bool
 }
 
 // Result is delivered to waiters when a transaction reaches a terminal state.
@@ -171,6 +175,8 @@ func (s *Store) CreateBound(targetUser, targetIP, publicKey, sourceIP, clientCer
 		AgentSignData:                 agentSignData,
 		HostKeyFingerprint:            hostKeyFP,
 		DestinationHostKeyFingerprint: destinationHostKeyFP,
+		DestinationHostKeySource:      client.DestinationHostKeySource,
+		DisableLease:                  client.DisableLease,
 		State:                         StatePending,
 		CreatedAt:                     time.Now(),
 	}
@@ -283,7 +289,7 @@ func (s *Store) approveWithIssuer(ctx context.Context, txID string, ttl time.Dur
 	if !s.finishClaimed(txID, StateApproved, &res) {
 		return
 	}
-	if leases != nil && approverChatID != "" && entry.tx.ClientCertFP != "" {
+	if leases != nil && approverChatID != "" && entry.tx.ClientCertFP != "" && !entry.tx.DisableLease {
 		lookup := lease.NewLookupKey(
 			entry.tx.ClientCertFP,
 			entry.tx.TargetUser,
