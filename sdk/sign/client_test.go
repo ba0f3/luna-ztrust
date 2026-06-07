@@ -20,7 +20,6 @@ import (
 
 	"github.com/ba0f3/luna-ztrust/sdk"
 	"github.com/ba0f3/luna-ztrust/sdk/sign"
-	"golang.org/x/crypto/ssh"
 )
 
 type tlsConnKey struct{}
