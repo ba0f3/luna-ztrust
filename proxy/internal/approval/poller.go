@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,10 +113,11 @@ func (p *Poller) Run(ctx context.Context) {
 
 func (p *Poller) pollOnce(ctx context.Context) error {
 	q := url.Values{}
-	q.Set("timeout", fmt.Sprintf("%d", int(p.pollTimeout.Seconds())))
+	// ⚡ Bolt: Replace fmt.Sprintf("%d") with strconv.Itoa/FormatInt to reduce overhead and memory allocations
+	q.Set("timeout", strconv.Itoa(int(p.pollTimeout.Seconds())))
 	q.Set("allowed_updates", `["callback_query"]`)
 	if p.offset > 0 {
-		q.Set("offset", fmt.Sprintf("%d", p.offset))
+		q.Set("offset", strconv.FormatInt(p.offset, 10))
 	}
 
 	reqURL := fmt.Sprintf("%s/bot%s/getUpdates?%s", p.baseURL, p.token, q.Encode())
