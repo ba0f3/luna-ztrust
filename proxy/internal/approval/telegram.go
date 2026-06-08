@@ -118,7 +118,7 @@ func approvalKeyboard(txID string, allowedTTLs []int) [][]map[string]string {
 	for _, sec := range ttls {
 		label := formatTTLLabel(sec)
 		row = append(row, map[string]string{
-			"text":          label,
+			"text": label,
 			// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation and strconv for better performance
 			"callback_data": "approve:" + txID + ":" + strconv.Itoa(sec),
 		})
