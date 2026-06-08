@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -117,8 +118,9 @@ func approvalKeyboard(txID string, allowedTTLs []int) [][]map[string]string {
 	for _, sec := range ttls {
 		label := formatTTLLabel(sec)
 		row = append(row, map[string]string{
-			"text":          label,
-			"callback_data": fmt.Sprintf("approve:%s:%d", txID, sec),
+			"text": label,
+			// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation and strconv for better performance
+			"callback_data": "approve:" + txID + ":" + strconv.Itoa(sec),
 		})
 	}
 	row = append(row, map[string]string{
@@ -131,9 +133,11 @@ func approvalKeyboard(txID string, allowedTTLs []int) [][]map[string]string {
 func formatTTLLabel(sec int) string {
 	switch {
 	case sec%60 == 0 && sec >= 60:
-		return fmt.Sprintf("Approve %dm", sec/60)
+		// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation and strconv for better performance
+		return "Approve " + strconv.Itoa(sec/60) + "m"
 	default:
-		return fmt.Sprintf("Approve %ds", sec)
+		// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation and strconv for better performance
+		return "Approve " + strconv.Itoa(sec) + "s"
 	}
 }
 
