@@ -87,22 +87,22 @@ func (s *Store) FindActive(lookup LookupKey) (ActiveLease, bool) {
 	s.mu.RLock()
 	candidates := s.byLookup[lookupStr]
 	now := time.Now()
-	var best *ActiveLease
+
+	// ⚡ Bolt: Avoid pointer indirection tracking 'best' to eliminate heap allocations per lookup cycle.
+	var best ActiveLease
+	found := false
 	for full := range candidates {
 		l, ok := s.leases[full]
 		if !ok || now.After(l.ExpiresAt) {
 			continue
 		}
-		if best == nil || l.ExpiresAt.After(best.ExpiresAt) {
-			cp := l
-			best = &cp
+		if !found || l.ExpiresAt.After(best.ExpiresAt) {
+			best = l
+			found = true
 		}
 	}
 	s.mu.RUnlock()
-	if best == nil {
-		return ActiveLease{}, false
-	}
-	return *best, true
+	return best, found
 }
 
 // Remaining returns time until lease expiry.
