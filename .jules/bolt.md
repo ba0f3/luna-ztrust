@@ -7,3 +7,6 @@
 ## 2026-06-05 - Avoid fmt.Sprintf in hot paths for byte arrays
 **Learning:** In Go, converting strings to byte arrays via `fmt.Sprintf("%s:%s:%d", ...)` causes multiple heap allocations and memory overhead, heavily impacting the hot path, especially within high-traffic functions like cryptographic challenge generation or PoP signing.
 **Action:** Use manual byte slice construction with pre-calculated sizing and `strconv.AppendInt` for numeric types to avoid allocations and substantially improve throughput and reduce memory overhead.
+## 2026-06-09 - Avoid pointer indirection in loop accumulations
+**Learning:** Using a pointer to track the "best" or "latest" struct within a loop (e.g., `cp := l; best = &cp`) often causes the local copy to escape to the heap in Go, leading to unnecessary memory allocations on hot paths.
+**Action:** Use value semantics and a separate boolean flag (e.g., `var best Struct`, `found := false`) to accumulate state in loops. This allows the compiler to keep the accumulator on the stack or in registers, eliminating heap allocations and GC pressure.
