@@ -1,7 +1,6 @@
 package lease
 
 import (
-	"strings"
 	"sync"
 	"time"
 )
@@ -15,15 +14,15 @@ type ActiveLease struct {
 // Store holds in-memory session leases.
 type Store struct {
 	mu       sync.RWMutex
-	leases   map[string]ActiveLease
-	byLookup map[string]map[string]struct{} // lookup key -> full lease keys
+	leases   map[FullKey]ActiveLease
+	byLookup map[LookupKey]map[FullKey]struct{} // lookup key -> full lease keys
 }
 
 // NewStore creates an empty lease store with periodic expiry cleanup.
 func NewStore() *Store {
 	s := &Store{
-		leases:   make(map[string]ActiveLease),
-		byLookup: make(map[string]map[string]struct{}),
+		leases:   make(map[FullKey]ActiveLease),
+		byLookup: make(map[LookupKey]map[FullKey]struct{}),
 	}
 	go s.purgeLoop()
 	return s
@@ -48,44 +47,34 @@ func (s *Store) purgeExpired() {
 	}
 }
 
-func (s *Store) deleteLocked(full string) {
+func (s *Store) deleteLocked(full FullKey) {
 	delete(s.leases, full)
-	if bucket, ok := s.byLookup[lookupFromFullKey(full)]; ok {
+	if bucket, ok := s.byLookup[full.LookupKey]; ok {
 		delete(bucket, full)
 		if len(bucket) == 0 {
-			delete(s.byLookup, lookupFromFullKey(full))
+			delete(s.byLookup, full.LookupKey)
 		}
 	}
 }
 
-func lookupFromFullKey(full string) string {
-	if i := strings.LastIndex(full, "|"); i >= 0 {
-		return full[:i]
-	}
-	return full
-}
-
 // Put records a lease until expiresAt.
 func (s *Store) Put(key FullKey, expiresAt time.Time) {
-	full := key.String()
-	lookup := key.LookupKey.lookupString()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.leases[full] = ActiveLease{
+	s.leases[key] = ActiveLease{
 		Approver:  key.Approver,
 		ExpiresAt: expiresAt,
 	}
-	if s.byLookup[lookup] == nil {
-		s.byLookup[lookup] = make(map[string]struct{})
+	if s.byLookup[key.LookupKey] == nil {
+		s.byLookup[key.LookupKey] = make(map[FullKey]struct{})
 	}
-	s.byLookup[lookup][full] = struct{}{}
+	s.byLookup[key.LookupKey][key] = struct{}{}
 }
 
 // FindActive returns the longest-lived active lease matching lookup (any approver).
 func (s *Store) FindActive(lookup LookupKey) (ActiveLease, bool) {
-	lookupStr := lookup.lookupString()
 	s.mu.RLock()
-	candidates := s.byLookup[lookupStr]
+	candidates := s.byLookup[lookup]
 	now := time.Now()
 
 	// ⚡ Bolt: Avoid pointer indirection tracking 'best' to eliminate heap allocations per lookup cycle.
