@@ -102,9 +102,8 @@ func (n *Notifier) Notify(ctx context.Context, tx *Transaction) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		slurp, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		n.forgetSent(tx.ID)
-		return fmt.Errorf("telegram sendMessage: %s: %s", resp.Status, slurp)
+		return fmt.Errorf("telegram sendMessage: %s", resp.Status)
 	}
 	return nil
 }
@@ -274,7 +273,7 @@ func telegramAPIPOST(ctx context.Context, cfg NotifierConfig, method string, pay
 	defer resp.Body.Close()
 	slurp, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("telegram %s: %s: %s", method, resp.Status, slurp)
+		return fmt.Errorf("telegram %s: %s", method, resp.Status)
 	}
 	var ack struct {
 		OK          bool   `json:"ok"`
@@ -328,7 +327,7 @@ func DeleteWebhook(ctx context.Context, cfg NotifierConfig) error {
 	defer resp.Body.Close()
 	slurp, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("telegram deleteWebhook: %s: %s", resp.Status, slurp)
+		return fmt.Errorf("telegram deleteWebhook: %s", resp.Status)
 	}
 	var ack struct {
 		OK          bool   `json:"ok"`
