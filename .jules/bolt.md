@@ -10,3 +10,6 @@
 ## 2026-06-09 - Avoid pointer indirection in loop accumulations
 **Learning:** Using a pointer to track the "best" or "latest" struct within a loop (e.g., `cp := l; best = &cp`) often causes the local copy to escape to the heap in Go, leading to unnecessary memory allocations on hot paths.
 **Action:** Use value semantics and a separate boolean flag (e.g., `var best Struct`, `found := false`) to accumulate state in loops. This allows the compiler to keep the accumulator on the stack or in registers, eliminating heap allocations and GC pressure.
+## 2026-06-11 - Use Struct Keys in Maps to Avoid Allocations
+**Learning:** In Go, structs containing comparable types (like strings) can be used directly as map keys. Serializing structs into strings with custom delimiters (`strings.Join`, etc.) to use as map keys forces memory allocations on every lookup, degrading performance on hot paths like authentication or lease checking.
+**Action:** Use struct values as map keys directly instead of stringifying them. This allows the Go runtime to hash the struct fields efficiently without any heap allocations.
