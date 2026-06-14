@@ -12,15 +12,16 @@ var ErrTimestampOutsideWindow = errors.New("timestamp outside allowed window")
 
 // ReplayLRU tracks recently seen request body hashes and rejects duplicates within TTL.
 type ReplayLRU struct {
-	ttl   time.Duration
-	max   int
-	mu    sync.Mutex
-	byKey map[string]*list.Element
+	ttl time.Duration
+	max int
+	mu  sync.Mutex
+	// ⚡ Bolt: Use fixed size array for map keys to avoid string allocation.
+	byKey map[[32]byte]*list.Element
 	order *list.List
 }
 
 type replayEntry struct {
-	key       string
+	key       [32]byte
 	expiresAt time.Time
 }
 
@@ -29,14 +30,13 @@ func NewReplayLRU(ttl time.Duration, max int) *ReplayLRU {
 	return &ReplayLRU{
 		ttl:   ttl,
 		max:   max,
-		byKey: make(map[string]*list.Element),
+		byKey: make(map[[32]byte]*list.Element),
 		order: list.New(),
 	}
 }
 
 // AddIfNew records key if it has not been seen within TTL. Returns true when key is new.
-func (r *ReplayLRU) AddIfNew(key []byte) bool {
-	k := string(key)
+func (r *ReplayLRU) AddIfNew(key [32]byte) bool {
 	now := time.Now()
 
 	r.mu.Lock()
@@ -44,21 +44,21 @@ func (r *ReplayLRU) AddIfNew(key []byte) bool {
 
 	r.evictExpired(now)
 
-	if el, ok := r.byKey[k]; ok {
+	if el, ok := r.byKey[key]; ok {
 		ent := el.Value.(*replayEntry)
 		if now.Before(ent.expiresAt) {
 			return false
 		}
 		r.order.Remove(el)
-		delete(r.byKey, k)
+		delete(r.byKey, key)
 	}
 
 	ent := &replayEntry{
-		key:       k,
+		key:       key,
 		expiresAt: now.Add(r.ttl),
 	}
 	el := r.order.PushFront(ent)
-	r.byKey[k] = el
+	r.byKey[key] = el
 
 	for r.order.Len() > r.max {
 		back := r.order.Back()

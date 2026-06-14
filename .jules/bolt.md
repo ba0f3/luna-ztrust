@@ -13,3 +13,6 @@
 ## 2026-06-11 - Use Struct Keys in Maps to Avoid Allocations
 **Learning:** In Go, structs containing comparable types (like strings) can be used directly as map keys. Serializing structs into strings with custom delimiters (`strings.Join`, etc.) to use as map keys forces memory allocations on every lookup, degrading performance on hot paths like authentication or lease checking.
 **Action:** Use struct values as map keys directly instead of stringifying them. This allows the Go runtime to hash the struct fields efficiently without any heap allocations.
+## 2026-06-14 - Map Key String Allocation Optimization
+**Learning:** Using `string(b)` to convert a byte slice (`[]byte`) to a string for use as a map key introduces a heap allocation per lookup/insertion. On hot paths, this causes significant GC pressure and slows down operations like replay caches.
+**Action:** Use fixed-size byte arrays (e.g. `[32]byte`) directly as map keys where applicable (like when working with SHA-256 hashes) to eliminate the casting allocations completely and improve cache throughput.

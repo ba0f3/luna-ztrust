@@ -7,7 +7,8 @@ import (
 
 func TestReplayLRURejectsDuplicate(t *testing.T) {
 	lru := NewReplayLRU(60*time.Second, 100)
-	k := []byte("body1")
+	var k [32]byte
+	copy(k[:], []byte("body1"))
 	if !lru.AddIfNew(k) {
 		t.Fatal("first should be new")
 	}

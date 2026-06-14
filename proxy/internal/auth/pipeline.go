@@ -45,7 +45,7 @@ func ValidateCLIKeysLoad(conn *tls.Conn, rawBody []byte, bodyMAC string, timesta
 		return err
 	}
 	sum := sha256.Sum256(rawBody)
-	if !replay.AddIfNew(sum[:]) {
+	if !replay.AddIfNew(sum) {
 		return ErrReplay
 	}
 	return nil
@@ -60,7 +60,7 @@ func ValidateSignRequest(conn *tls.Conn, rawBody []byte, req *SignRequest, now t
 		return err
 	}
 	sum := sha256.Sum256(rawBody)
-	if !replay.AddIfNew(sum[:]) {
+	if !replay.AddIfNew(sum) {
 		return ErrReplay
 	}
 	pub, _, _, _, err := ssh.ParseAuthorizedKey([]byte(req.PublicKey))
