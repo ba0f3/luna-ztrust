@@ -12,9 +12,9 @@ var ErrTimestampOutsideWindow = errors.New("timestamp outside allowed window")
 
 // ReplayLRU tracks recently seen request body hashes and rejects duplicates within TTL.
 type ReplayLRU struct {
-	ttl   time.Duration
-	max   int
-	mu    sync.Mutex
+	ttl time.Duration
+	max int
+	mu  sync.Mutex
 	// ⚡ Bolt: Use fixed size array for map keys to avoid string allocation.
 	byKey map[[32]byte]*list.Element
 	order *list.List
