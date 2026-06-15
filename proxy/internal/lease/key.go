@@ -1,8 +1,7 @@
 package lease
 
 import (
-	"fmt"
-	"strings"
+	"strconv"
 )
 
 // LookupKey identifies a client session for lease reuse (excludes approver).
@@ -16,14 +15,9 @@ type LookupKey struct {
 }
 
 func (k LookupKey) lookupString() string {
-	return strings.Join([]string{
-		k.ClientCertFP,
-		k.TargetUser,
-		k.TargetIP,
-		k.SourceIP,
-		k.HostKeyFingerprint,
-		k.DestinationHostKeyFingerprint,
-	}, "|")
+	// ⚡ Bolt: Replace strings.Join with string concatenation to avoid heap allocation
+	// of a string slice on a relatively hot path.
+	return k.ClientCertFP + "|" + k.TargetUser + "|" + k.TargetIP + "|" + k.SourceIP + "|" + k.HostKeyFingerprint + "|" + k.DestinationHostKeyFingerprint
 }
 
 // FullKey is the complete lease identity including the approver.
@@ -59,7 +53,8 @@ func NewFullKey(lookup LookupKey, approver string) FullKey {
 
 // FormatApproverChatID normalizes Telegram chat IDs for storage.
 func FormatApproverChatID(chatID int64) string {
-	return fmt.Sprintf("telegram:%d", chatID)
+	// ⚡ Bolt: Replace fmt.Sprintf with strconv to avoid heap allocation
+	return "telegram:" + strconv.FormatInt(chatID, 10)
 }
 
 // FormatApproverDeviceID normalizes enrolled mobile device IDs for lease binding.
