@@ -16,3 +16,6 @@
 ## 2026-06-14 - Map Key String Allocation Optimization
 **Learning:** Using `string(b)` to convert a byte slice (`[]byte`) to a string for use as a map key introduces a heap allocation per lookup/insertion. On hot paths, this causes significant GC pressure and slows down operations like replay caches.
 **Action:** Use fixed-size byte arrays (e.g. `[32]byte`) directly as map keys where applicable (like when working with SHA-256 hashes) to eliminate the casting allocations completely and improve cache throughput.
+## 2026-06-15 - Avoid Heap Allocation for String Slices on Hot Paths
+**Learning:** Using `strings.Join` with a slice literal of strings causes a heap allocation for the slice header and backing array on every call. On hot paths, such as constructing lookup keys in the lease store, this causes unnecessary garbage collection overhead and degrades performance.
+**Action:** Use direct string concatenation (e.g. `s1 + "|" + s2`) when joining a fixed number of short strings, particularly in frequently called methods like lookup keys. This avoids the slice allocation completely, letting the compiler optimize the string formatting.
