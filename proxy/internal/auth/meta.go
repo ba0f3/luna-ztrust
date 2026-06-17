@@ -22,11 +22,29 @@ var ErrInvalidDisplayField = errors.New("display field contains control characte
 
 // ValidateDisplayFields rejects control characters that can spoof approval UI.
 func ValidateDisplayFields(targetUser, targetIP string, meta SignClientMeta) error {
-	for _, field := range []string{targetUser, targetIP, meta.SourceUser, meta.ClientName, meta.ClientVersion} {
-		for _, r := range field {
-			if r < 0x20 || r == 0x7f {
-				return ErrInvalidDisplayField
-			}
+	// ⚡ Bolt: Expand loop into direct checks to avoid []string allocation on the hot path
+	if err := checkDisplayField(targetUser); err != nil {
+		return err
+	}
+	if err := checkDisplayField(targetIP); err != nil {
+		return err
+	}
+	if err := checkDisplayField(meta.SourceUser); err != nil {
+		return err
+	}
+	if err := checkDisplayField(meta.ClientName); err != nil {
+		return err
+	}
+	if err := checkDisplayField(meta.ClientVersion); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkDisplayField(field string) error {
+	for _, r := range field {
+		if r < 0x20 || r == 0x7f {
+			return ErrInvalidDisplayField
 		}
 	}
 	return nil

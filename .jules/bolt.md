@@ -19,3 +19,6 @@
 ## 2026-06-15 - Avoid Heap Allocation for String Slices on Hot Paths
 **Learning:** Using `strings.Join` with a slice literal of strings causes a heap allocation for the slice header and backing array on every call. On hot paths, such as constructing lookup keys in the lease store, this causes unnecessary garbage collection overhead and degrades performance.
 **Action:** Use direct string concatenation (e.g. `s1 + "|" + s2`) when joining a fixed number of short strings, particularly in frequently called methods like lookup keys. This avoids the slice allocation completely, letting the compiler optimize the string formatting.
+## 2026-06-16 - Avoid String Slice Allocation in Validation Loops
+**Learning:** Initializing a temporary string slice literal (`[]string{a, b, c}`) just to iterate over strings in a loop forces a heap allocation for the backing array. When placed in a hot path (like input validation for every authentication request), this creates unnecessary garbage collection pressure and CPU overhead.
+**Action:** Extract the inner loop body into a helper function and call it directly for each string parameter instead of packing them into a temporary slice.
