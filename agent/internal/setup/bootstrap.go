@@ -104,7 +104,7 @@ func FetchCA(opts BootstrapOptions) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GET %s: HTTP %d: %s", mtlsCAPath, resp.StatusCode, strings.TrimSpace(string(body)))
+		return "", fmt.Errorf("GET %s: HTTP %d", mtlsCAPath, resp.StatusCode)
 	}
 	if !looksLikePEMCert(body) {
 		return "", fmt.Errorf("GET %s: response is not a PEM certificate", mtlsCAPath)
@@ -219,7 +219,7 @@ func EnrollClientCSR(opts BootstrapOptions) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("POST %s: HTTP %d: %s", mtlsEnrollPath, resp.StatusCode, strings.TrimSpace(string(body)))
+		return "", fmt.Errorf("POST %s: HTTP %d", mtlsEnrollPath, resp.StatusCode)
 	}
 	var out struct {
 		CertificatePEM string `json:"certificate_pem"`

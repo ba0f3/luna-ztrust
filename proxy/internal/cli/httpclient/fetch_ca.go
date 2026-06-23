@@ -62,7 +62,7 @@ func FetchCA(ctx context.Context, proxyURL, destPath string) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GET %s: HTTP %d: %s", mtlsCAPath, resp.StatusCode, strings.TrimSpace(string(body)))
+		return "", fmt.Errorf("GET %s: HTTP %d", mtlsCAPath, resp.StatusCode)
 	}
 	if !bytes.Contains(body, []byte("BEGIN CERTIFICATE")) {
 		return "", fmt.Errorf("GET %s: response is not a PEM certificate", mtlsCAPath)
