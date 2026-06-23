@@ -6,3 +6,7 @@
 **Vulnerability:** Telegram raw HTTP response bodies were being appended to fmt.Errorf calls.
 **Learning:** Including raw external API responses in formatted error strings risks exposing sensitive internal identifiers, tokens, or network infrastructure details in application logs.
 **Prevention:** Avoid blindly appending body responses to errors; instead, log just the HTTP status code or safe/parsed sub-fields.
+## 2026-06-23 - Exposed sensitive data in error messages
+**Vulnerability:** HTTP API response bodies were being appended blindly to fmt.Errorf calls in client functions.
+**Learning:** Including raw external API responses in formatted error strings risks exposing sensitive internal identifiers, tokens, or network infrastructure details in application logs.
+**Prevention:** Avoid blindly appending body responses to errors; instead, log just the HTTP status code or safe/parsed sub-fields.
