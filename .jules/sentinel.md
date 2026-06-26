@@ -10,3 +10,7 @@
 **Vulnerability:** HTTP API response bodies were being appended blindly to fmt.Errorf calls in client functions.
 **Learning:** Including raw external API responses in formatted error strings risks exposing sensitive internal identifiers, tokens, or network infrastructure details in application logs.
 **Prevention:** Avoid blindly appending body responses to errors; instead, log just the HTTP status code or safe/parsed sub-fields.
+## 2025-02-09 - Avoid Logging Raw External API Bodies
+**Vulnerability:** Raw HTTP response bodies from external or untrusted APIs were being blindly appended to `fmt.Errorf` and potentially exposed in application logs or CLI outputs. This can leak sensitive internal tokens or identifiers if the API proxy/server returns unexpected data.
+**Learning:** Found multiple instances where API clients (`sdk/sign/client.go`, `proxy/internal/cli/httpclient/enroll.go`, `load.go`) would embed the entire response body in the error if parsing failed.
+**Prevention:** Drain HTTP response bodies but do not append them raw to errors. Log or return only the HTTP status code, or parse structured data explicitly before emitting any values.

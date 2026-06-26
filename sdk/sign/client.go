@@ -256,12 +256,9 @@ func signPoP(pub ssh.PublicKey, priv ed25519.PrivateKey, user, ip string, ts int
 }
 
 func readHTTPError(resp *http.Response, op string) error {
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	msg := strings.TrimSpace(string(body))
-	if msg == "" {
-		return fmt.Errorf("%s: HTTP %d", op, resp.StatusCode)
-	}
-	return fmt.Errorf("%s: HTTP %d: %s", op, resp.StatusCode, msg)
+	// Drain body but do not include it in the error to prevent information disclosure
+	io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+	return fmt.Errorf("%s: HTTP %d", op, resp.StatusCode)
 }
 
 func (c *Client) dialTLS(ctx context.Context) (*tls.Conn, error) {
