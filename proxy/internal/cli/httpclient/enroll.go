@@ -94,11 +94,7 @@ func Enroll(ctx context.Context, cfg MTLSConfig, label, csrPEM string) (EnrollRe
 }
 
 func enrollHTTPError(status int, body []byte) error {
-	msg := strings.TrimSpace(string(body))
-	if msg == "" {
-		return fmt.Errorf("cli enroll: HTTP %d", status)
-	}
-	return fmt.Errorf("cli enroll (%d): %s", status, msg)
+	return fmt.Errorf("cli enroll: HTTP %d", status)
 }
 
 // VerifyClientCertAgainstCA checks that clientCertPath is signed by caPath.

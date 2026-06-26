@@ -127,7 +127,6 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 }
 
 func loadHTTPError(status int, body []byte) error {
-	msg := strings.TrimSpace(string(body))
 	var j loadErrorResponse
 	if json.Unmarshal(body, &j) == nil && j.Error != "" {
 		if j.Code != "" {
@@ -135,8 +134,5 @@ func loadHTTPError(status int, body []byte) error {
 		}
 		return fmt.Errorf("remote key load (%d): %s", status, j.Error)
 	}
-	if msg == "" {
-		return fmt.Errorf("remote key load: HTTP %d", status)
-	}
-	return fmt.Errorf("remote key load (%d): %s", status, msg)
+	return fmt.Errorf("remote key load: HTTP %d", status)
 }
