@@ -20,15 +20,16 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 	if len(signData) == 0 {
 		return nil, fmt.Errorf("signData is required")
 	}
+	// ⚡ Bolt: Use direct if-statements instead of a temporary slice to avoid slice allocation and loop overhead.
 	sessionBindingFields := 0
-	for _, present := range []bool{
-		len(req.SessionBinding.HostPublicKey) > 0,
-		len(req.SessionBinding.SessionID) > 0,
-		len(req.SessionBinding.Signature) > 0,
-	} {
-		if present {
-			sessionBindingFields++
-		}
+	if len(req.SessionBinding.HostPublicKey) > 0 {
+		sessionBindingFields++
+	}
+	if len(req.SessionBinding.SessionID) > 0 {
+		sessionBindingFields++
+	}
+	if len(req.SessionBinding.Signature) > 0 {
+		sessionBindingFields++
 	}
 	if sessionBindingFields != 0 && sessionBindingFields != 3 {
 		return nil, fmt.Errorf("SessionBinding is incomplete")
