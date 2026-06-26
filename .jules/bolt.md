@@ -22,3 +22,6 @@
 ## 2026-06-16 - Avoid String Slice Allocation in Validation Loops
 **Learning:** Initializing a temporary string slice literal (`[]string{a, b, c}`) just to iterate over strings in a loop forces a heap allocation for the backing array. When placed in a hot path (like input validation for every authentication request), this creates unnecessary garbage collection pressure and CPU overhead.
 **Action:** Extract the inner loop body into a helper function and call it directly for each string parameter instead of packing them into a temporary slice.
+## 2026-06-18 - Avoid Boolean Slice Allocation in Validation
+**Learning:** Initializing a temporary boolean slice literal (e.g., `[]bool{cond1, cond2}`) just to iterate and count conditions forces an unnecessary slice allocation and loop overhead.
+**Action:** Use direct `if` statements for condition checking and counting instead of packing them into a temporary slice to prevent unnecessary memory allocation.
