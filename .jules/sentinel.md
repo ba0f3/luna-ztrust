@@ -14,3 +14,7 @@
 **Vulnerability:** Raw HTTP response bodies from external or untrusted APIs were being blindly appended to `fmt.Errorf` and potentially exposed in application logs or CLI outputs. This can leak sensitive internal tokens or identifiers if the API proxy/server returns unexpected data.
 **Learning:** Found multiple instances where API clients (`sdk/sign/client.go`, `proxy/internal/cli/httpclient/enroll.go`, `load.go`) would embed the entire response body in the error if parsing failed.
 **Prevention:** Drain HTTP response bodies but do not append them raw to errors. Log or return only the HTTP status code, or parse structured data explicitly before emitting any values.
+## 2026-06-25 - Avoid Unbounded io.ReadAll on HTTP Responses
+**Vulnerability:** HTTP API response bodies were being read using `io.ReadAll(resp.Body)` without a size limit.
+**Learning:** Reading HTTP response bodies without bounds allows a malicious or compromised server to send excessively large payloads, leading to memory exhaustion and potentially crashing the application (Denial of Service).
+**Prevention:** Always use `io.LimitReader` when reading HTTP response bodies (e.g., `io.ReadAll(io.LimitReader(resp.Body, 1<<20))`) to enforce a safe maximum memory allocation.

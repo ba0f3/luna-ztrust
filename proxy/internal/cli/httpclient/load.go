@@ -107,7 +107,7 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return "", err
 	}
