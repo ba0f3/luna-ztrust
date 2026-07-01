@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -63,7 +64,8 @@ func (c *Client) fetchCapabilitiesOnce(req *http.Request) (Capabilities, error) 
 	}
 
 	var caps Capabilities
-	if err := json.NewDecoder(resp.Body).Decode(&caps); err != nil {
+	// 🛡️ Sentinel: Enforce maximum response size to prevent memory exhaustion DoS
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&caps); err != nil {
 		return Capabilities{}, fmt.Errorf("decode capabilities: %w", err)
 	}
 	if caps.SignerMode == "" {
