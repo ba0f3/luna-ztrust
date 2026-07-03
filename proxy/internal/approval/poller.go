@@ -120,7 +120,8 @@ func (p *Poller) pollOnce(ctx context.Context) error {
 		q.Set("offset", strconv.FormatInt(p.offset, 10))
 	}
 
-	reqURL := fmt.Sprintf("%s/bot%s/getUpdates?%s", p.baseURL, p.token, q.Encode())
+	// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation for better performance
+	reqURL := p.baseURL + "/bot" + p.token + "/getUpdates?" + q.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return err
@@ -277,7 +278,8 @@ func (p *Poller) answerCallbackQuery(ctx context.Context, callbackQueryID, text 
 	if err != nil {
 		return err
 	}
-	reqURL := fmt.Sprintf("%s/bot%s/answerCallbackQuery", p.baseURL, p.token)
+	// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation for better performance
+	reqURL := p.baseURL + "/bot" + p.token + "/answerCallbackQuery"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(string(raw)))
 	if err != nil {
 		return err

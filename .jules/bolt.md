@@ -25,3 +25,6 @@
 ## 2026-06-18 - Avoid Boolean Slice Allocation in Validation
 **Learning:** Initializing a temporary boolean slice literal (e.g., `[]bool{cond1, cond2}`) just to iterate and count conditions forces an unnecessary slice allocation and loop overhead.
 **Action:** Use direct `if` statements for condition checking and counting instead of packing them into a temporary slice to prevent unnecessary memory allocation.
+## 2026-06-21 - Avoid fmt.Sprintf for URL concatenation
+**Learning:** Using `fmt.Sprintf` for simple string building, like concatenating base URLs, API paths, and query strings in hot paths (like repeated polling loops), introduces unnecessary reflection and dynamic memory allocation overhead compared to direct string concatenation.
+**Action:** Replace `fmt.Sprintf` with direct string concatenation (`+`) when joining strings. If numbers are involved, use `strconv` (e.g., `strconv.Itoa`) combined with concatenation. This avoids reflection, reduces heap allocations, and provides a measurable speedup in frequently executed code.
