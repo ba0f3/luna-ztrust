@@ -90,7 +90,8 @@ func (p *Poller) Run(ctx context.Context) {
 	}); err != nil {
 		p.logEvent("poll", "", "delete_webhook_failed", err.Error())
 	} else {
-		p.logEvent("poll", "", "started", fmt.Sprintf("timeout=%s", p.pollTimeout))
+		// ⚡ Bolt: Replace fmt.Sprintf with String() method for better performance
+		p.logEvent("poll", "", "started", "timeout="+p.pollTimeout.String())
 	}
 
 	for {
@@ -212,11 +213,13 @@ func (p *Poller) handleUpdate(ctx context.Context, upd telegramUpdate) {
 		chatID = cq.Message.Chat.ID
 	}
 	if cq.Message == nil || !ChatAllowed(p.chatID, chatID) {
-		p.logEvent("poll", txID, "ignored_chat", fmt.Sprintf("chat_id=%d", chatID))
+		// ⚡ Bolt: Replace fmt.Sprintf with strconv for logging
+		p.logEvent("poll", txID, "ignored_chat", "chat_id="+strconv.FormatInt(chatID, 10))
 		return
 	}
 	if !TelegramUserAllowed(p.chatID, p.allowedUserIDs, cq.From.ID) {
-		p.logEvent("poll", txID, "ignored_user", fmt.Sprintf("user_id=%d", cq.From.ID))
+		// ⚡ Bolt: Replace fmt.Sprintf with strconv for logging
+		p.logEvent("poll", txID, "ignored_user", "user_id="+strconv.FormatInt(cq.From.ID, 10))
 		return
 	}
 
@@ -235,7 +238,8 @@ func (p *Poller) handleUpdate(ctx context.Context, upd telegramUpdate) {
 		}
 		approver := lease.FormatApproverChatID(chatID)
 		p.store.Approve(txID, ttl, approver)
-		p.logEvent("poll", txID, "approved", fmt.Sprintf("ttl=%s", ttl))
+		// ⚡ Bolt: Replace fmt.Sprintf with String() method to reduce reflection overhead
+		p.logEvent("poll", txID, "approved", "ttl="+ttl.String())
 		p.editResolvedMessage(ctx, cfg, cq.Message, txSnap, Resolution{
 			Decision: "APPROVED",
 			Approver: approver,

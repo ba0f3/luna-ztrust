@@ -88,7 +88,8 @@ func (n *Notifier) Notify(ctx context.Context, tx *Transaction) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/bot%s/sendMessage", n.baseURL, n.token)
+	// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation to avoid heap allocation and reflection overhead
+	url := n.baseURL + "/bot" + n.token + "/sendMessage"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(raw))
 	if err != nil {
 		return err
@@ -260,7 +261,8 @@ func telegramAPIPOST(ctx context.Context, cfg NotifierConfig, method string, pay
 	if err != nil {
 		return err
 	}
-	reqURL := fmt.Sprintf("%s/bot%s/%s", base, cfg.BotToken, method)
+	// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation for API URLs to improve performance on hot paths
+	reqURL := base + "/bot" + cfg.BotToken + "/" + method
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bytes.NewReader(raw))
 	if err != nil {
 		return err
@@ -313,7 +315,8 @@ func DeleteWebhook(ctx context.Context, cfg NotifierConfig) error {
 		client = &http.Client{Timeout: 15 * time.Second}
 	}
 
-	reqURL := fmt.Sprintf("%s/bot%s/deleteWebhook", base, token)
+	// ⚡ Bolt: Replace fmt.Sprintf with direct string concatenation for API URLs
+	reqURL := base + "/bot" + token + "/deleteWebhook"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader("{}"))
 	if err != nil {
 		return err
