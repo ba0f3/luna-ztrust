@@ -28,3 +28,6 @@
 ## 2026-06-21 - Avoid fmt.Sprintf for URL concatenation
 **Learning:** Using `fmt.Sprintf` for simple string building, like concatenating base URLs, API paths, and query strings in hot paths (like repeated polling loops), introduces unnecessary reflection and dynamic memory allocation overhead compared to direct string concatenation.
 **Action:** Replace `fmt.Sprintf` with direct string concatenation (`+`) when joining strings. If numbers are involved, use `strconv` (e.g., `strconv.Itoa`) combined with concatenation. This avoids reflection, reduces heap allocations, and provides a measurable speedup in frequently executed code.
+## 2026-06-25 - Avoid fmt.Sprintf for logger details on polling loops
+**Learning:** Using `fmt.Sprintf` to construct detail strings on every skipped or processed event in a hot polling loop introduces continuous garbage collection pressure due to reflection and small heap allocations.
+**Action:** Use direct string concatenation combined with `strconv.FormatInt` or native `.String()` methods for logging arguments on high-frequency paths to eliminate reflection and reduce GC pressure.
