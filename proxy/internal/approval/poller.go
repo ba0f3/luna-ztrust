@@ -138,7 +138,7 @@ func (p *Poller) pollOnce(ctx context.Context) error {
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("telegram getUpdates: %s", resp.Status)
+		return fmt.Errorf("telegram getUpdates: HTTP %d", resp.StatusCode)
 	}
 
 	var ack struct {
@@ -295,7 +295,7 @@ func (p *Poller) answerCallbackQuery(ctx context.Context, callbackQueryID, text 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("telegram answerCallbackQuery: %s", resp.Status)
+		return fmt.Errorf("telegram answerCallbackQuery: HTTP %d", resp.StatusCode)
 	}
 	return nil
 }
