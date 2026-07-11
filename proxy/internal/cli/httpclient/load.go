@@ -130,9 +130,9 @@ func loadHTTPError(status int, body []byte) error {
 	var j loadErrorResponse
 	if json.Unmarshal(body, &j) == nil && j.Error != "" {
 		if j.Code != "" {
-			return fmt.Errorf("remote key load (%d): %s [%s]", status, j.Error, j.Code)
+			return fmt.Errorf("remote key load (%d): error code %s", status, j.Code)
 		}
-		return fmt.Errorf("remote key load (%d): %s", status, j.Error)
+		return fmt.Errorf("remote key load (%d): API returned an error", status)
 	}
 	return fmt.Errorf("remote key load: HTTP %d", status)
 }

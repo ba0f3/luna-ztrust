@@ -18,3 +18,8 @@
 **Vulnerability:** HTTP API response bodies were being read using `io.ReadAll(resp.Body)` without a size limit.
 **Learning:** Reading HTTP response bodies without bounds allows a malicious or compromised server to send excessively large payloads, leading to memory exhaustion and potentially crashing the application (Denial of Service).
 **Prevention:** Always use `io.LimitReader` when reading HTTP response bodies (e.g., `io.ReadAll(io.LimitReader(resp.Body, 1<<20))`) to enforce a safe maximum memory allocation.
+
+## 2024-05-31 - [Prevent Information Exposure in CLI Error Handling]
+**Vulnerability:** The HTTP client for CLI key load blindly appended the raw external API response body (`j.Error` and `j.Code` from unmarshaled JSON) to `fmt.Errorf` strings. This could expose sensitive identifiers, paths, or internal server state in application logs or CLI output.
+**Learning:** Always avoid blindly appending external API or HTTP response data to error strings. Even parsed sub-fields like `error` or `code` can leak internal details if the remote server is misconfigured or returning unexpected data.
+**Prevention:** Log or return just the HTTP status code or safe, predefined error constants instead of raw or parsed response strings.
