@@ -23,3 +23,7 @@
 **Vulnerability:** The HTTP client for CLI key load blindly appended the raw external API response body (`j.Error` and `j.Code` from unmarshaled JSON) to `fmt.Errorf` strings. This could expose sensitive identifiers, paths, or internal server state in application logs or CLI output.
 **Learning:** Always avoid blindly appending external API or HTTP response data to error strings. Even parsed sub-fields like `error` or `code` can leak internal details if the remote server is misconfigured or returning unexpected data.
 **Prevention:** Log or return just the HTTP status code or safe, predefined error constants instead of raw or parsed response strings.
+## 2026-08-25 - Avoid Unbounded HTTP Request Readings in Tests
+**Vulnerability:** HTTP API response bodies (and request bodies in mock servers) were being read using `io.ReadAll(resp.Body)` and `json.NewDecoder(resp.Body)` without a size limit in test files.
+**Learning:** While test files aren't directly part of the production service, running tests on large datasets or compromised servers could theoretically exhaust memory. Keeping test environments aligned with production mitigations promotes standard coding practices across the entire codebase.
+**Prevention:** Consistently use `io.LimitReader` when reading HTTP response bodies (e.g., `io.ReadAll(io.LimitReader(resp.Body, 1<<20))`) or `json.NewDecoder(io.LimitReader(resp.Body, 1<<20))` across tests.

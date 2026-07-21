@@ -46,13 +46,13 @@ func TestMobileEnrollAndApprove(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("enroll status %d: %s", resp.StatusCode, b)
 	}
 	var enrollOut struct {
 		DeviceID string `json:"device_id"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&enrollOut); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&enrollOut); err != nil {
 		t.Fatal(err)
 	}
 	if enrollOut.DeviceID == "" {
@@ -102,7 +102,7 @@ func TestMobileEnrollAndApprove(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("approve status %d: %s", resp.StatusCode, b)
 	}
 
@@ -139,7 +139,7 @@ func TestMobileDeleteDevice(t *testing.T) {
 	var out struct {
 		DeviceID string `json:"device_id"`
 	}
-	_ = json.NewDecoder(resp.Body).Decode(&out)
+	_ = json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out)
 	resp.Body.Close()
 
 	req, _ := http.NewRequest(http.MethodDelete, env.ts.URL+"/api/v1/mobile/devices/"+out.DeviceID, nil)
@@ -179,7 +179,7 @@ func TestMobileKeysPendingRequiresDeviceSignature(t *testing.T) {
 	var enrollOut struct {
 		DeviceID string `json:"device_id"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&enrollOut); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&enrollOut); err != nil {
 		t.Fatal(err)
 	}
 
@@ -190,7 +190,7 @@ func TestMobileKeysPendingRequiresDeviceSignature(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer resp.Body.Close()
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		return resp.StatusCode, b
 	}
 

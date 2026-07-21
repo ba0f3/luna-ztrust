@@ -21,13 +21,13 @@ func TestCLIIntegration_FullFlow(t *testing.T) {
 	resp := postCLIKeysLoad(t, cliClient, env.ts.URL, pemBytes, "integration-host")
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("load status %d: %s", resp.StatusCode, b)
 	}
 	var loadOut struct {
 		Fingerprint string `json:"fingerprint"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&loadOut); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&loadOut); err != nil {
 		t.Fatal(err)
 	}
 	if loadOut.Fingerprint == "" {
@@ -58,7 +58,7 @@ func TestCLIIntegration_FullFlow(t *testing.T) {
 			Fingerprint string `json:"fingerprint"`
 		} `json:"loaded_signers"`
 	}
-	if err := json.NewDecoder(capResp.Body).Decode(&caps); err != nil {
+	if err := json.NewDecoder(io.LimitReader(capResp.Body, 1<<20)).Decode(&caps); err != nil {
 		t.Fatal(err)
 	}
 	foundInCaps := false
@@ -90,7 +90,7 @@ func TestCLIIntegration_FullFlow(t *testing.T) {
 	retryResp := postCLIKeysLoad(t, cliClient, env.ts.URL, pemBytes, "after-revoke")
 	defer retryResp.Body.Close()
 	if retryResp.StatusCode != http.StatusForbidden {
-		b, _ := io.ReadAll(retryResp.Body)
+		b, _ := io.ReadAll(io.LimitReader(retryResp.Body, 1<<20))
 		t.Fatalf("retry load status %d, want 403: %s", retryResp.StatusCode, b)
 	}
 }

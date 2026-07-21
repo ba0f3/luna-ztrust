@@ -3,6 +3,7 @@ package approval
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,7 +69,7 @@ func TestEditMessageText(t *testing.T) {
 	var gotBody map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod = r.URL.Path
-		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		_ = json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&gotBody)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"ok":true}`))
 	}))

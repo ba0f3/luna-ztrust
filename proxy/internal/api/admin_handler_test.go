@@ -99,7 +99,7 @@ func TestAdmin_UnsealAndSealStatusGone(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusGone {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("unseal %d: %s", resp.StatusCode, b)
 	}
 

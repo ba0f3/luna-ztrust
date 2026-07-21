@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -100,7 +101,7 @@ func TestMTLSEnroll_SignsAutomationCSR(t *testing.T) {
 	var out struct {
 		CertificatePEM string `json:"certificate_pem"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Contains([]byte(out.CertificatePEM), []byte("BEGIN CERTIFICATE")) {

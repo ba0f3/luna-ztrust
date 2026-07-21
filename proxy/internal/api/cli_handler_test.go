@@ -69,14 +69,14 @@ func TestCLIEnroll_IssuesCert(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("enroll status %d: %s", resp.StatusCode, b)
 	}
 	var out struct {
 		DeviceID       string `json:"device_id"`
 		CertificatePEM string `json:"certificate_pem"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if out.DeviceID == "" || out.CertificatePEM == "" {
@@ -137,14 +137,14 @@ func enrollCLIDevice(t *testing.T, env *testEnv, cfg config.Config) (*mtlsClient
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("enroll status %d: %s", resp.StatusCode, b)
 	}
 	var out struct {
 		DeviceID       string `json:"device_id"`
 		CertificatePEM string `json:"certificate_pem"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	cliTLS := tlsConfigFromCertPEM(t, out.CertificatePEM, key)
@@ -226,13 +226,13 @@ func TestCLIKeysLoad_AddsToPool(t *testing.T) {
 	resp := postCLIKeysLoad(t, cliClient, env.ts.URL, pemBytes, "deploy-host")
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("load status %d: %s", resp.StatusCode, b)
 	}
 	var out struct {
 		Fingerprint string `json:"fingerprint"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if out.Fingerprint == "" {
@@ -259,7 +259,7 @@ func TestCLIKeysLoad_RejectsAdminCert(t *testing.T) {
 	resp := postCLIKeysLoad(t, admin, env.ts.URL, makeEncryptedHostPEM(t), "admin-attempt")
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status %d, want 403: %s", resp.StatusCode, b)
 	}
 }
@@ -273,7 +273,7 @@ func TestCLIKeysLoad_RejectsLocalCA(t *testing.T) {
 	resp := postCLIKeysLoad(t, cliClient, env.ts.URL, makeEncryptedHostPEM(t), "ca-mode")
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusBadRequest {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status %d, want 400: %s", resp.StatusCode, b)
 	}
 }
@@ -297,7 +297,7 @@ func TestCLIKeysLoad_UnknownDevice(t *testing.T) {
 	resp := postCLIKeysLoad(t, cliClient, env.ts.URL, makeEncryptedHostPEM(t), "unknown")
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status %d, want 403: %s", resp.StatusCode, b)
 	}
 }

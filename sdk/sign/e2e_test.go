@@ -152,13 +152,13 @@ func e2eProxyUnsealed(t *testing.T, proxyURL string, clientCert tls.Certificate,
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("capabilities status %d: %s", resp.StatusCode, b)
 	}
 	var caps struct {
 		Sealed bool `json:"sealed"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&caps); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&caps); err != nil {
 		t.Fatal(err)
 	}
 	return !caps.Sealed
