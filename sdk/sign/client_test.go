@@ -74,7 +74,7 @@ func (m *mockSignServer) handleSign(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "client certificate required", http.StatusUnauthorized)
 		return
 	}
-	rawBody, err := io.ReadAll(r.Body)
+	rawBody, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
 		http.Error(w, "read body", http.StatusBadRequest)
 		return

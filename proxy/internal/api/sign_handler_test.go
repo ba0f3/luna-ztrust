@@ -250,14 +250,14 @@ func postSign(t *testing.T, env *testEnv, rawBody []byte) string {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("POST status = %d, body = %s", resp.StatusCode, body)
 	}
 
 	var out struct {
 		TxID string `json:"tx_id"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if out.TxID == "" || !strings.HasPrefix(out.TxID, "tx_") {
@@ -311,7 +311,7 @@ func TestGetWaitReturns200AfterApprove(t *testing.T) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status = %d, body = %s", resp.StatusCode, body)
 	}
 
@@ -319,7 +319,7 @@ func TestGetWaitReturns200AfterApprove(t *testing.T) {
 		SSHCertificate string `json:"ssh_certificate"`
 		ExpiresAt      string `json:"expires_at"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.SSHCertificate, "ssh-ed25519-cert-v01@openssh.com") {
@@ -354,7 +354,7 @@ func TestGetWaitWrongClientCert403(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusForbidden {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status = %d, want 403, body = %s", resp.StatusCode, body)
 	}
 }
@@ -370,7 +370,7 @@ func TestGetWaitTimeout408(t *testing.T) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusRequestTimeout {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status = %d, want 408, body = %s", resp.StatusCode, body)
 	}
 }
@@ -395,7 +395,7 @@ func TestHealthzNoMTLS(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d", resp.StatusCode)
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -458,13 +458,13 @@ func TestApproveIssuesLocalCACert(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		t.Fatalf("status = %d, body = %s", resp.StatusCode, body)
 	}
 	var out struct {
 		SSHCertificate string `json:"ssh_certificate"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.SSHCertificate, "ssh-ed25519-cert-v01@openssh.com") {
@@ -490,7 +490,7 @@ func TestDevBypassIssuesLocalCACert(t *testing.T) {
 			var out struct {
 				SSHCertificate string `json:"ssh_certificate"`
 			}
-			if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+			if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 				t.Fatal(err)
 			}
 			resp.Body.Close()

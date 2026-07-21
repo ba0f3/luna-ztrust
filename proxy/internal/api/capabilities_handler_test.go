@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -32,7 +33,7 @@ func TestCapabilities_ReturnsSignerModeAndTTLs(t *testing.T) {
 		AllowedTTLSeconds []int  `json:"allowed_ttl_seconds"`
 		Sealed            bool   `json:"sealed"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if out.SignerMode != "local-ca" {
@@ -70,7 +71,7 @@ func TestCapabilities_LogsSealedAccess(t *testing.T) {
 	var out struct {
 		Sealed bool `json:"sealed"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if !out.Sealed {

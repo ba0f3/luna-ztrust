@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -56,7 +57,7 @@ func TestLocalKeySignReturnsSignature(t *testing.T) {
 	var out struct {
 		SSHSignature string `json:"ssh_signature"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
 	if out.SSHSignature == "" {
