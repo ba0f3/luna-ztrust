@@ -293,6 +293,7 @@ func (p *Poller) answerCallbackQuery(ctx context.Context, callbackQueryID, text 
 	if err != nil {
 		return err
 	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("telegram answerCallbackQuery: HTTP %d", resp.StatusCode)

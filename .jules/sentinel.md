@@ -27,3 +27,7 @@
 **Vulnerability:** HTTP API response bodies (and request bodies in mock servers) were being read using `io.ReadAll(resp.Body)` and `json.NewDecoder(resp.Body)` without a size limit in test files.
 **Learning:** While test files aren't directly part of the production service, running tests on large datasets or compromised servers could theoretically exhaust memory. Keeping test environments aligned with production mitigations promotes standard coding practices across the entire codebase.
 **Prevention:** Consistently use `io.LimitReader` when reading HTTP response bodies (e.g., `io.ReadAll(io.LimitReader(resp.Body, 1<<20))`) or `json.NewDecoder(io.LimitReader(resp.Body, 1<<20))` across tests.
+## 2026-06-26 - Safely Drain HTTP Response Bodies
+**Vulnerability:** HTTP response bodies in clients (e.g., `Notify` in Telegram approval) were being closed without being read, which can cause connection leaks in Go.
+**Learning:** In Go, failing to drain an HTTP response body before closing it prevents the underlying TCP connection from being reused by `http.Transport`, leading to resource exhaustion (DoS) under load.
+**Prevention:** Always safely drain the response body to prevent connection leaks using `io.Copy(io.Discard, io.LimitReader(resp.Body, maxBytes))` before calling `resp.Body.Close()`, even if the body content is not needed.

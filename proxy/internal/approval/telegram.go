@@ -101,6 +101,7 @@ func (n *Notifier) Notify(ctx context.Context, tx *Transaction) error {
 		n.forgetSent(tx.ID)
 		return err
 	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		n.forgetSent(tx.ID)
