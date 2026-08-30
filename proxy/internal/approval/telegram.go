@@ -283,7 +283,7 @@ func telegramAPIPOST(ctx context.Context, cfg NotifierConfig, method string, pay
 		Description string `json:"description"`
 	}
 	if err := json.Unmarshal(slurp, &ack); err != nil {
-		return fmt.Errorf("telegram %s response: %w", method, err)
+		return fmt.Errorf("telegram %s: invalid json response", method)
 	}
 	if !ack.OK {
 		return fmt.Errorf("telegram %s: not ok", method)
@@ -335,7 +335,7 @@ func DeleteWebhook(ctx context.Context, cfg NotifierConfig) error {
 		Description string `json:"description"`
 	}
 	if err := json.Unmarshal(slurp, &ack); err != nil {
-		return fmt.Errorf("telegram deleteWebhook response: %w", err)
+		return fmt.Errorf("telegram deleteWebhook: invalid json response")
 	}
 	if !ack.OK {
 		return fmt.Errorf("telegram deleteWebhook: not ok")

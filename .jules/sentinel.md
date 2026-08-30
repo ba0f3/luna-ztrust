@@ -31,3 +31,7 @@
 **Vulnerability:** HTTP response bodies in clients (e.g., `Notify` in Telegram approval) were being closed without being read, which can cause connection leaks in Go.
 **Learning:** In Go, failing to drain an HTTP response body before closing it prevents the underlying TCP connection from being reused by `http.Transport`, leading to resource exhaustion (DoS) under load.
 **Prevention:** Always safely drain the response body to prevent connection leaks using `io.Copy(io.Discard, io.LimitReader(resp.Body, maxBytes))` before calling `resp.Body.Close()`, even if the body content is not needed.
+## 2026-09-12 - Avoid Information Exposure in Error Handling
+**Vulnerability:** The HTTP clients for Telegram APIs blindly wrapped `json.Unmarshal` errors containing remote API fragments with `fmt.Errorf`.
+**Learning:** Even `json.Unmarshal` error messages can contain text fragments from raw external API responses if there is a parsing error, which might leak internal details if the remote server returns unexpected data.
+**Prevention:** Log or return just the HTTP status code or safe, predefined error constants instead of raw or parsed response strings, avoiding error wrapping for unmarshaling HTTP responses.
