@@ -146,7 +146,7 @@ func (p *Poller) pollOnce(ctx context.Context) error {
 		Result []telegramUpdate `json:"result"`
 	}
 	if err := json.Unmarshal(body, &ack); err != nil {
-		return fmt.Errorf("telegram getUpdates: invalid json response")
+		return fmt.Errorf("telegram getUpdates: invalid json response: %w", err)
 	}
 	if !ack.OK {
 		return fmt.Errorf("telegram getUpdates: not ok")
