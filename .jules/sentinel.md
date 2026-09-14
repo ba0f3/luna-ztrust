@@ -35,3 +35,7 @@
 **Vulnerability:** The HTTP clients for Telegram APIs blindly wrapped `json.Unmarshal` errors containing remote API fragments with `fmt.Errorf`.
 **Learning:** Even `json.Unmarshal` error messages can contain text fragments from raw external API responses if there is a parsing error, which might leak internal details if the remote server returns unexpected data.
 **Prevention:** Log or return just the HTTP status code or safe, predefined error constants instead of raw or parsed response strings, avoiding error wrapping for unmarshaling HTTP responses.
+## 2026-10-18 - Avoid Information Exposure from json.Unmarshal Errors
+**Vulnerability:** In Telegram HTTP clients (and others), `json.Unmarshal` errors were directly included in `fmt.Errorf` without masking the original error (`%w` or `%v`).
+**Learning:** Unmarshal errors on external API endpoints can expose raw fragments of unexpected HTTP responses. It is critical to sanitize the error to avoid leaking internal variables or state via logs.
+**Prevention:** Remove `%w` and only format safe static strings or HTTP status code, for example: `fmt.Errorf("telegram %s: invalid json response", method)` instead of `fmt.Errorf("...: %w", err)`.
