@@ -225,7 +225,7 @@ func EnrollClientCSR(opts BootstrapOptions) (string, error) {
 		CertificatePEM string `json:"certificate_pem"`
 	}
 	if err := json.Unmarshal(body, &out); err != nil {
-		return "", fmt.Errorf("decode enroll response: %w", err)
+		return "", fmt.Errorf("decode enroll response: invalid json")
 	}
 	if !looksLikePEMCert([]byte(out.CertificatePEM)) {
 		return "", fmt.Errorf("enroll response missing certificate_pem")

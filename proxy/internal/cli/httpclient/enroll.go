@@ -82,7 +82,7 @@ func Enroll(ctx context.Context, cfg MTLSConfig, label, csrPEM string) (EnrollRe
 		CertificatePEM string `json:"certificate_pem"`
 	}
 	if err := json.Unmarshal(respBody, &out); err != nil {
-		return EnrollResult{}, fmt.Errorf("decode response: %w", err)
+		return EnrollResult{}, fmt.Errorf("decode response: invalid json")
 	}
 	if out.DeviceID == "" || out.CertificatePEM == "" {
 		return EnrollResult{}, fmt.Errorf("response missing device_id or certificate_pem")
