@@ -118,7 +118,7 @@ func Load(ctx context.Context, cfg Config, pemPath string, passphrase []byte, la
 
 	var out loadResponse
 	if err := json.Unmarshal(respBody, &out); err != nil {
-		return "", fmt.Errorf("decode response: %w", err)
+		return "", fmt.Errorf("decode response: invalid json")
 	}
 	if out.Fingerprint == "" {
 		return "", fmt.Errorf("response missing fingerprint")

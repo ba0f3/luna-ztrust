@@ -192,7 +192,7 @@ func (c *Client) postSignOnce(ctx context.Context, body []byte) (string, error) 
 	var out Response
 	// 🛡️ Sentinel: Enforce maximum response size to prevent memory exhaustion DoS
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
-		return "", fmt.Errorf("decode sign response: %w", err)
+		return "", fmt.Errorf("decode sign response: invalid json")
 	}
 	if out.TxID == "" {
 		return "", fmt.Errorf("empty tx_id in sign response")
@@ -217,7 +217,7 @@ func (c *Client) getWait(ctx context.Context, txID string) (WaitResponse, error)
 			var out WaitResponse
 			// 🛡️ Sentinel: Enforce maximum response size to prevent memory exhaustion DoS
 			if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
-				return WaitResponse{}, fmt.Errorf("decode wait response: %w", err)
+				return WaitResponse{}, fmt.Errorf("decode wait response: invalid json")
 			}
 			return out, nil
 		}

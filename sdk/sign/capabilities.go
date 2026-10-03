@@ -66,7 +66,7 @@ func (c *Client) fetchCapabilitiesOnce(req *http.Request) (Capabilities, error) 
 	var caps Capabilities
 	// 🛡️ Sentinel: Enforce maximum response size to prevent memory exhaustion DoS
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&caps); err != nil {
-		return Capabilities{}, fmt.Errorf("decode capabilities: %w", err)
+		return Capabilities{}, fmt.Errorf("decode capabilities: invalid json")
 	}
 	if caps.SignerMode == "" {
 		return Capabilities{}, fmt.Errorf("capabilities: empty signer_mode")
