@@ -30,7 +30,7 @@ func parseCLIKeysLoadBody(raw []byte) (parsedCLIKeysLoad, error) {
 	}
 	pass, err := decodeJSONStringField(wire.Passphrase)
 	if err != nil {
-		return parsedCLIKeysLoad{}, fmt.Errorf("passphrase: %w", err)
+		return parsedCLIKeysLoad{}, fmt.Errorf("passphrase: %v", err)
 	}
 	return parsedCLIKeysLoad{
 		EncryptedPEM: wire.EncryptedPEM,
@@ -47,7 +47,7 @@ func decodeJSONStringField(raw json.RawMessage) ([]byte, error) {
 	}
 	var s string
 	if err := json.Unmarshal(raw, &s); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid json string")
 	}
 	return []byte(s), nil
 }

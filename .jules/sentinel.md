@@ -43,3 +43,7 @@
 **Vulnerability:** In HTTP clients across `proxy`, `agent`, and `sdk` modules, `json.Unmarshal` and `json.NewDecoder().Decode()` errors were directly included in `fmt.Errorf` without masking the original error (`%w` or `%v`).
 **Learning:** Unmarshal errors on external API endpoints can expose raw fragments of unexpected HTTP responses. It is critical to sanitize the error to avoid leaking internal variables or state via logs.
 **Prevention:** Remove `%w` and only format safe static strings or HTTP status code, for example: `fmt.Errorf("decode response: invalid json")` instead of `fmt.Errorf("...: %w", err)`.
+## 2026-10-18 - Avoid Information Exposure from json.Unmarshal Errors on json.RawMessage
+**Vulnerability:** In `proxy/internal/api/cli_keys_load_parse.go`, `json.Unmarshal` errors when decoding `json.RawMessage` into strings were directly included in `fmt.Errorf` without masking the original error (`%w`).
+**Learning:** Unmarshal errors on external API payloads, even within custom decoder functions handling `json.RawMessage`, can expose raw fragments of unexpected HTTP JSON payloads. It is critical to sanitize the error to avoid leaking internal variables or state via logs.
+**Prevention:** Remove `%w` and only format safe static strings or HTTP status code, for example: `fmt.Errorf("invalid json string")` instead of `fmt.Errorf("...: %w", err)`.
