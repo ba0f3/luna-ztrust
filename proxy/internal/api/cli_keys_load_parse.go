@@ -30,7 +30,7 @@ func parseCLIKeysLoadBody(raw []byte) (parsedCLIKeysLoad, error) {
 	}
 	pass, err := decodeJSONStringField(wire.Passphrase)
 	if err != nil {
-		return parsedCLIKeysLoad{}, fmt.Errorf("passphrase: %v", err)
+		return parsedCLIKeysLoad{}, fmt.Errorf("invalid json string")
 	}
 	return parsedCLIKeysLoad{
 		EncryptedPEM: wire.EncryptedPEM,
