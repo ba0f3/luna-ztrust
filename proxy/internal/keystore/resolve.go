@@ -16,11 +16,11 @@ func ResolveHostKeyFingerprint(hostPubB64, fpHint string) (string, error) {
 	if hostPubB64 != "" {
 		raw, err := base64.StdEncoding.DecodeString(hostPubB64)
 		if err != nil {
-			return "", fmt.Errorf("decode host_public_key: %w", err)
+			return "", fmt.Errorf("decode host_public_key: invalid base64")
 		}
 		pub, err := ssh.ParsePublicKey(raw)
 		if err != nil {
-			return "", fmt.Errorf("parse host_public_key: %w", err)
+			return "", fmt.Errorf("parse host_public_key: invalid format")
 		}
 		fp := Fingerprint(pub)
 		if fpHint != "" && fpHint != fp {
