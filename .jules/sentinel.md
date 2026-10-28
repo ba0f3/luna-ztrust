@@ -47,3 +47,7 @@
 **Vulnerability:** In `proxy/internal/api/cli_keys_load_parse.go`, `json.Unmarshal` errors when decoding `json.RawMessage` into strings were directly included in `fmt.Errorf` without masking the original error (`%w`).
 **Learning:** Unmarshal errors on external API payloads, even within custom decoder functions handling `json.RawMessage`, can expose raw fragments of unexpected HTTP JSON payloads. It is critical to sanitize the error to avoid leaking internal variables or state via logs.
 **Prevention:** Remove `%w` and only format safe static strings or HTTP status code, for example: `fmt.Errorf("invalid json string")` instead of `fmt.Errorf("...: %w", err)`.
+## 2026-10-28 - Avoid Information Exposure from base64 decode and parse Errors
+**Vulnerability:** Base64 decode and parse errors were directly included in `fmt.Errorf` without masking the original error (`%w`).
+**Learning:** Decode errors on external endpoints can expose raw fragments of unexpected HTTP responses or raw error string. It is critical to sanitize the error to avoid leaking internal variables or state via logs.
+**Prevention:** Remove `%w` and only format safe static strings or HTTP status code, for example: `fmt.Errorf("decode host_public_key: invalid base64")` instead of `fmt.Errorf("...: %w", err)`.

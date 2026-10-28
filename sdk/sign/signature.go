@@ -97,7 +97,7 @@ func (c *Client) RequestSignature(ctx context.Context, req SignatureRequest, sig
 	}
 	blob, err := base64.StdEncoding.DecodeString(wait.SSHSignature)
 	if err != nil {
-		return nil, fmt.Errorf("decode ssh_signature: %w", err)
+		return nil, fmt.Errorf("decode ssh_signature: invalid base64")
 	}
 	format := req.SignatureFormat
 	if format == "" {
