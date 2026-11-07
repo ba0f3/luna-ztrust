@@ -87,7 +87,7 @@ func (s *server) handleMTLSEnroll(w http.ResponseWriter, r *http.Request) {
 	certPEM, _, err := s.csrSigner.SignAutomation([]byte(req.CSRPEM))
 	if err != nil {
 		if errors.Is(err, cli.ErrCSRInvalid) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, cli.ErrCSRInvalid.Error(), http.StatusBadRequest)
 			return
 		}
 		if errors.Is(err, cli.ErrCANotConfigured) {

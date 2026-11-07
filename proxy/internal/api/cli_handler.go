@@ -67,8 +67,12 @@ func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := cli.ValidateLabel(req.Label); err != nil {
-		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		if errors.Is(err, cli.ErrEmptyLabel) {
+			http.Error(w, cli.ErrEmptyLabel.Error(), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, cli.ErrLabelTooLong) {
+			http.Error(w, cli.ErrLabelTooLong.Error(), http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "invalid label", http.StatusBadRequest)
@@ -78,7 +82,7 @@ func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 	certPEM, fp, err := s.csrSigner.Sign([]byte(req.CSRPEM))
 	if err != nil {
 		if errors.Is(err, cli.ErrCSRInvalid) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, cli.ErrCSRInvalid.Error(), http.StatusBadRequest)
 			return
 		}
 		if errors.Is(err, cli.ErrCANotConfigured) {
@@ -91,12 +95,16 @@ func (s *server) handleCLIEnroll(w http.ResponseWriter, r *http.Request) {
 
 	dev, err := s.cli.Enroll(req.Label, fp)
 	if err != nil {
-		if errors.Is(err, cli.ErrEmptyLabel) || errors.Is(err, cli.ErrLabelTooLong) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		if errors.Is(err, cli.ErrEmptyLabel) {
+			http.Error(w, cli.ErrEmptyLabel.Error(), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, cli.ErrLabelTooLong) {
+			http.Error(w, cli.ErrLabelTooLong.Error(), http.StatusBadRequest)
 			return
 		}
 		if errors.Is(err, cli.ErrDuplicateFingerprint) {
-			http.Error(w, err.Error(), http.StatusConflict)
+			http.Error(w, cli.ErrDuplicateFingerprint.Error(), http.StatusConflict)
 			return
 		}
 		http.Error(w, "enroll failed", http.StatusInternalServerError)
