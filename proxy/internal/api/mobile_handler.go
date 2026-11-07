@@ -55,8 +55,12 @@ func (s *server) handleMobileEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 	dev, err := s.mobile.EnrollBound(req.Label, req.DevicePubKey, req.CertFingerprint)
 	if err != nil {
-		if errors.Is(err, mobile.ErrEmptyLabel) || errors.Is(err, mobile.ErrInvalidKey) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		if errors.Is(err, mobile.ErrEmptyLabel) {
+			http.Error(w, mobile.ErrEmptyLabel.Error(), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, mobile.ErrInvalidKey) {
+			http.Error(w, mobile.ErrInvalidKey.Error(), http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "enroll failed", http.StatusInternalServerError)

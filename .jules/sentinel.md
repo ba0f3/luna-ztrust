@@ -51,3 +51,7 @@
 **Vulnerability:** Base64 decode and parse errors were directly included in `fmt.Errorf` without masking the original error (`%w`).
 **Learning:** Decode errors on external endpoints can expose raw fragments of unexpected HTTP responses or raw error string. It is critical to sanitize the error to avoid leaking internal variables or state via logs.
 **Prevention:** Remove `%w` and only format safe static strings or HTTP status code, for example: `fmt.Errorf("decode host_public_key: invalid base64")` instead of `fmt.Errorf("...: %w", err)`.
+## 2026-11-07 - Avoid Information Exposure via Dynamic http.Error Responses
+**Vulnerability:** The HTTP API endpoints directly passed dynamic `err.Error()` output to `http.Error(...)`, which writes the raw error message to the HTTP response body.
+**Learning:** Returning dynamic or wrapped errors directly to clients via HTTP responses can inadvertently expose internal system details, external API response fragments, or stack traces if the error originates from an underlying subsystem (like `json.Unmarshal` or custom parsers).
+**Prevention:** Always use safe, static strings (e.g., `"invalid json"`, `"internal server error"`) or predefined, constant error variables (e.g., `cli.ErrEmptyLabel.Error()`) when calling `http.Error` in HTTP handlers to prevent information leakage.

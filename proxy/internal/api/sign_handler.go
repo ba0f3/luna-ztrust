@@ -103,7 +103,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 	hostKeyFP, err := s.resolveHostKeyFingerprint(&req)
 	if err != nil {
 		s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_host_key", clientMeta)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "invalid host key", http.StatusBadRequest)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (s *server) handleSign(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			s.logSignRequest(r, start, "", req.TargetUser, req.TargetIP, "invalid_session_binding", clientMeta)
 			log.Printf("[sign] invalid_session_binding user=%s ip=%s: %v", req.TargetUser, req.TargetIP, err)
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			http.Error(w, "invalid session binding", http.StatusUnauthorized)
 			return
 		}
 		destinationHostKeyFP = binding.HostKeyFingerprint
@@ -217,13 +217,13 @@ func formatTimeRFC3339(t time.Time, fallbackTTL time.Duration) string {
 func writeAuthError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, auth.ErrReplay):
-		http.Error(w, err.Error(), http.StatusConflict)
+		http.Error(w, auth.ErrReplay.Error(), http.StatusConflict)
 	case errors.Is(err, auth.ErrInvalidHMAC),
 		errors.Is(err, auth.ErrInvalidPoP),
 		errors.Is(err, auth.ErrTimestampOutsideWindow):
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	default:
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "bad request", http.StatusBadRequest)
 	}
 }
 
@@ -244,14 +244,14 @@ func (s *server) resolveHostKeyFingerprint(req *auth.SignRequest) (string, error
 func writeWaitError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, approval.ErrWaitClientMismatch):
-		http.Error(w, err.Error(), http.StatusForbidden)
+		http.Error(w, approval.ErrWaitClientMismatch.Error(), http.StatusForbidden)
 	case errors.Is(err, approval.ErrDenied):
-		http.Error(w, err.Error(), http.StatusForbidden)
+		http.Error(w, approval.ErrDenied.Error(), http.StatusForbidden)
 	case errors.Is(err, approval.ErrTimeout):
-		http.Error(w, err.Error(), http.StatusRequestTimeout)
+		http.Error(w, approval.ErrTimeout.Error(), http.StatusRequestTimeout)
 	case errors.Is(err, approval.ErrNotFound):
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, approval.ErrNotFound.Error(), http.StatusNotFound)
 	default:
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
 }
