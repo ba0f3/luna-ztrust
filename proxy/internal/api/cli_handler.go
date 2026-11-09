@@ -211,7 +211,7 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := cli.ValidateLabel(parsed.Label); err != nil {
-		writeCLIKeysLoadError(w, http.StatusBadRequest, "INVALID_LABEL", err.Error())
+		writeCLIKeysLoadError(w, http.StatusBadRequest, "INVALID_LABEL", "invalid label")
 		return
 	}
 
@@ -229,7 +229,7 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 	fp, err := s.keystore.LoadPEMBytes(blob, string(parsed.Passphrase), parsed.Label)
 	if err != nil {
 		if errors.Is(err, keystore.ErrUnsealLocked) {
-			writeCLIKeysLoadError(w, http.StatusForbidden, "LOCKED", err.Error())
+			writeCLIKeysLoadError(w, http.StatusForbidden, "LOCKED", "unseal temporarily locked")
 			return
 		}
 		writeCLIKeysLoadError(w, http.StatusForbidden, "LOAD_FAILED", "load failed")
@@ -248,12 +248,12 @@ func (s *server) handleCLIKeysLoad(w http.ResponseWriter, r *http.Request) {
 func writeCLIKeysLoadAuthError(w http.ResponseWriter, deviceID string, err error) {
 	switch {
 	case errors.Is(err, auth.ErrReplay):
-		denyCLIKeysLoad(w, http.StatusConflict, "REPLAY", err.Error(), deviceID)
+		denyCLIKeysLoad(w, http.StatusConflict, "REPLAY", "replay detected", deviceID)
 	case errors.Is(err, auth.ErrInvalidHMAC):
-		denyCLIKeysLoad(w, http.StatusUnauthorized, "INVALID_HMAC", err.Error(), deviceID)
+		denyCLIKeysLoad(w, http.StatusUnauthorized, "INVALID_HMAC", "invalid body HMAC", deviceID)
 	case errors.Is(err, auth.ErrTimestampOutsideWindow):
-		denyCLIKeysLoad(w, http.StatusUnauthorized, "TIMESTAMP", err.Error(), deviceID)
+		denyCLIKeysLoad(w, http.StatusUnauthorized, "TIMESTAMP", "timestamp outside allowed window", deviceID)
 	default:
-		denyCLIKeysLoad(w, http.StatusBadRequest, "AUTH", err.Error(), deviceID)
+		denyCLIKeysLoad(w, http.StatusBadRequest, "AUTH", "authentication failed", deviceID)
 	}
 }
