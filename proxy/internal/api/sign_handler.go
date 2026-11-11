@@ -181,7 +181,7 @@ func (s *server) handleWait(w http.ResponseWriter, r *http.Request) {
 	txID := r.PathValue("tx_id")
 	if bound, ok := s.store.ClientCertFP(txID); ok && bound != "" {
 		if clientCertFPFromRequest(r) != bound {
-			http.Error(w, approval.ErrWaitClientMismatch.Error(), http.StatusForbidden)
+			http.Error(w, "wait client mismatch", http.StatusForbidden)
 			return
 		}
 	}
@@ -217,7 +217,7 @@ func formatTimeRFC3339(t time.Time, fallbackTTL time.Duration) string {
 func writeAuthError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, auth.ErrReplay):
-		http.Error(w, auth.ErrReplay.Error(), http.StatusConflict)
+		http.Error(w, "replay detected", http.StatusConflict)
 	case errors.Is(err, auth.ErrInvalidHMAC),
 		errors.Is(err, auth.ErrInvalidPoP),
 		errors.Is(err, auth.ErrTimestampOutsideWindow):
@@ -244,13 +244,13 @@ func (s *server) resolveHostKeyFingerprint(req *auth.SignRequest) (string, error
 func writeWaitError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, approval.ErrWaitClientMismatch):
-		http.Error(w, approval.ErrWaitClientMismatch.Error(), http.StatusForbidden)
+		http.Error(w, "wait client mismatch", http.StatusForbidden)
 	case errors.Is(err, approval.ErrDenied):
-		http.Error(w, approval.ErrDenied.Error(), http.StatusForbidden)
+		http.Error(w, "approval denied", http.StatusForbidden)
 	case errors.Is(err, approval.ErrTimeout):
-		http.Error(w, approval.ErrTimeout.Error(), http.StatusRequestTimeout)
+		http.Error(w, "approval timeout", http.StatusRequestTimeout)
 	case errors.Is(err, approval.ErrNotFound):
-		http.Error(w, approval.ErrNotFound.Error(), http.StatusNotFound)
+		http.Error(w, "approval not found", http.StatusNotFound)
 	default:
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}

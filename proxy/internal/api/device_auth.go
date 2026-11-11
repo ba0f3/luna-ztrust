@@ -35,7 +35,7 @@ func (e errDeviceAuth) Error() string { return e.msg }
 func writeDeviceAuthError(w http.ResponseWriter, err error) {
 	switch err {
 	case errTimestampOutOfRange:
-		http.Error(w, errTimestampOutOfRange.Error(), http.StatusBadRequest)
+		http.Error(w, "timestamp out of range", http.StatusBadRequest)
 	default:
 		http.Error(w, "forbidden", http.StatusForbidden)
 	}
