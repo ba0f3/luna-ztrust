@@ -85,7 +85,7 @@ func (m *mockSignServer) handleSign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := verifyBodyHMAC(conn, rawBody, r.Header.Get("X-Luna-Body-Mac")); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -126,7 +126,7 @@ func (m *mockSignServer) handleWait(w http.ResponseWriter, r *http.Request) {
 
 	certLine, err := certLineForPublicKey(pubLine)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 

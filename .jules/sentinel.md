@@ -55,3 +55,7 @@
 **Vulnerability:** The HTTP API endpoints directly passed dynamic `err.Error()` output to `http.Error(...)`, which writes the raw error message to the HTTP response body.
 **Learning:** Returning dynamic or wrapped errors directly to clients via HTTP responses can inadvertently expose internal system details, external API response fragments, or stack traces if the error originates from an underlying subsystem (like `json.Unmarshal` or custom parsers).
 **Prevention:** Always use safe, static strings (e.g., `"invalid json"`, `"internal server error"`) or predefined, constant error variables (e.g., `cli.ErrEmptyLabel.Error()`) when calling `http.Error` in HTTP handlers to prevent information leakage.
+## 2026-11-07 - Avoid Information Exposure via Dynamic http.Error Responses
+**Vulnerability:** The HTTP API endpoints directly passed dynamic `err.Error()` output to `http.Error(...)`, which writes the raw error message to the HTTP response body.
+**Learning:** Returning dynamic or wrapped errors directly to clients via HTTP responses can inadvertently expose internal system details, external API response fragments, or stack traces if the error originates from an underlying subsystem (like `json.Unmarshal` or custom parsers).
+**Prevention:** Always use safe, static strings (e.g., `"invalid json"`, `"internal server error"`) or predefined, constant error variables (e.g., `cli.ErrEmptyLabel.Error()`) when calling `http.Error` in HTTP handlers to prevent information leakage.
